@@ -1,0 +1,5 @@
+**/node_modules
+**/package-lock.json
+.husky/_/*
+frontend/public/css/output.css
+frontend/public/vendor/gsap.min.js

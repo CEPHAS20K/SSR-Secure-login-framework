@@ -1,0 +1,14 @@
+Project commands (run from root):
+
+npm run setup
+npm run dev
+npm run dev:backend
+npm run dev:frontend
+npm run build
+npm run check
+npm run start
+npm run start:proc
+
+Useful backend endpoint:
+
+GET /health

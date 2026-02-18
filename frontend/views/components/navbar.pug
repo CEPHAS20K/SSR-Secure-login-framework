@@ -1,0 +1,37 @@
+mixin appNavbar(activePage)
+  - const isLoginPage = activePage === "login";
+  - const navHref = isLoginPage ? "/register" : "/";
+  - const navLabel = isLoginPage ? "Register" : "Login";
+  - const navTarget = isLoginPage ? "register" : "login";
+  nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
+    .mx-auto.w-full.max-w-5xl.rounded-2xl.border.px-3.backdrop-blur-xl(
+      class="py-2.5 border-white/35 bg-white/10 sm:px-4 md:px-6"
+    )
+      .flex.items-center.justify-between(data-nav-shell="true")
+        a.uppercase.tracking-wider.text-rose-950.font-display.text-sm(href="/", class="sm:text-base")
+          span.hidden(class="sm:inline") Auth Secure
+          span(class="sm:hidden") AS
+        button#navToggle.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900(
+          type="button",
+          aria-expanded="false",
+          aria-controls="mobileNav",
+          class="border-white/35 bg-white/30 hover:bg-white/60 sm:hidden"
+        )
+          span.sr-only Toggle navigation
+          span#navToggleBars.flex.flex-col.gap-1
+            span.block.w-4.rounded-full.bg-current(class="h-0.5")
+            span.block.w-4.rounded-full.bg-current(class="h-0.5")
+            span.block.w-4.rounded-full.bg-current(class="h-0.5")
+        .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
+          a.font-bold.transition.text-xs(
+            href=navHref,
+            class="text-rose-900/85 hover:text-primary sm:text-sm",
+            data-nav-link=navTarget
+          )= navLabel
+      #mobileNav.hidden.border-t.pt-3.mt-3(class="border-white/35 sm:hidden")
+        .grid.gap-2
+          a.rounded-lg.px-3.py-2.text-sm.font-bold.transition(
+            href=navHref,
+            class="bg-white/20 text-rose-900/90 hover:bg-white/60 hover:text-primary",
+            data-nav-link=navTarget
+          )= navLabel

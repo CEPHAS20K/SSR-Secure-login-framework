@@ -1,0 +1,61 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title= title || "App"
+    script.
+      (function () {
+        try {
+          if (sessionStorage.getItem("auth_nav_transition") === "1") {
+            document.documentElement.setAttribute("data-nav-transition", "1");
+          }
+        } catch (error) {}
+      })();
+    link(rel="preconnect", href="https://fonts.googleapis.com")
+    link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin)
+    link(
+      rel="stylesheet",
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@400;500&family=Inter:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    )
+    link(rel="stylesheet", href="https://fonts.googleapis.com/icon?family=Material+Icons")
+    style.
+      html,
+      body {
+        background: #ff7700;
+      }
+      #pageTransitionOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        pointer-events: none;
+        visibility: hidden;
+        opacity: 1;
+        clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%);
+        background: linear-gradient(160deg, #ff7700 0%, #ba274b 55%, #a62a95 100%);
+      }
+      #pageTransitionStroke {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 2px;
+        opacity: 0;
+        background: linear-gradient(180deg, rgba(255, 248, 237, 0.94) 0%, rgba(255, 170, 106, 0.96) 100%);
+        box-shadow: 0 0 22px rgba(255, 220, 173, 0.85);
+      }
+      html[data-nav-transition="1"] #pageTransitionOverlay {
+        visibility: visible;
+        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+      }
+      html[data-nav-transition="1"] #pageTransitionStroke {
+        opacity: 1;
+        transform: translateX(calc(100vw - 2px));
+      }
+    link(rel="stylesheet", href="/css/output.css")
+  body.min-h-screen.bg-slate-100.font-body.text-slate-900(data-page=page || "")
+    #pageTransitionOverlay
+      #pageTransitionStroke
+    main
+      block content
+    script(src="/vendor/gsap.min.js")
+    script(src="/js/animations/navbar.js")
+    script(src="/js/animations.js")

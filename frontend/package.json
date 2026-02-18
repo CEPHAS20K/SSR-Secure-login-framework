@@ -1,0 +1,24 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "sync:gsap": "mkdir -p ./public/vendor && cp ./node_modules/gsap/dist/gsap.min.js ./public/vendor/gsap.min.js",
+    "predev": "npm run sync:gsap",
+    "dev": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --watch=always",
+    "prebuild": "npm run sync:gsap",
+    "build": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --minify",
+    "tw:watch": "npm run dev",
+    "tw:build": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "gsap": "^3.13.0",
+    "tailwindcss": "^4.1.18"
+  }
+}

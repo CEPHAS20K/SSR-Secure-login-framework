@@ -1,0 +1,98 @@
+extends ./layouts/base
+
+include ./components/navbar
+include ./components/button
+
+block content
+  +appNavbar(activePage || "login")
+  #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
+    canvas#loginParticles.pointer-events-none.absolute.inset-0.z-0
+    .pointer-events-none.absolute.-left-28.-top-28.h-72.w-72.rounded-full.blur-3xl.hidden(
+      class="bg-orange-200/45 sm:block"
+    )
+    .pointer-events-none.absolute.-right-24.h-80.w-80.rounded-full.blur-3xl.hidden(
+      class="top-1/3 bg-orange-300/35"
+    )
+
+    .relative.z-10.mx-auto.w-full.max-w-2xl.items-center.px-4.py-6.min-h-dvh.pt-28.pb-8(
+      class="sm:pt-32 sm:py-10 md:px-6"
+    )
+      section#loginCard.w-full.max-w-md.rounded-2xl.border.bg-white.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold.mx-auto(
+        class="border-white/40 bg-white/20 sm:rounded-3xl sm:p-7 md:p-8"
+      )
+        .mb-6.text-center
+          h1#loginTitle.font-headline.leading-none.text-rose-900.tracking-wide.text-3xl(class="sm:text-5xl")
+            | Sign in
+          p.mt-2.text-sm.font-semibold.text-rose-800 Enter your details to continue.
+
+        form#loginForm.flex.flex-col.space-y-4(action="/auth/login", method="POST", class="sm:space-y-5")
+          .login-field.space-y-2
+            label.block.text-sm.font-semibold.text-rose-900(for="email") Email
+            input#email.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950.outline-none.transition(
+              type="email",
+              name="email",
+              placeholder="you@example.com",
+              required,
+              class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+            )
+
+          .login-field.space-y-2
+            .flex.items-center.justify-between
+              label.block.text-sm.font-semibold.text-rose-900(for="password") Password
+              a.text-xs.font-bold.text-fuchsia-800.transition(href="#", class="hover:text-fuchsia-950") Forgot?
+            .relative
+              input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.pr-16.text-sm.font-semibold.text-rose-950.outline-none.transition(
+                type="password",
+                name="password",
+                placeholder="••••••••",
+                required,
+                class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+              )
+              button#togglePassword.absolute.right-3.rounded-md.px-2.py-1.text-xs.font-semibold.text-fuchsia-700.transition(
+                type="button",
+                class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100 hover:text-fuchsia-900"
+              ) Show
+            p#capsWarning.hidden.text-xs.font-semibold.text-rose-800 Caps Lock is on
+
+          #trustRow.login-field.flex.flex-col.items-start.gap-2(
+            class="sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+          )
+            label.flex.items-center.gap-2.text-xs.font-bold.text-rose-900
+              input#rememberMe.h-4.w-4.rounded.border-rose-300(type="checkbox", name="rememberMe")
+              | Remember me
+            label.flex.items-center.gap-2.text-xs.font-bold.text-rose-900
+              input#trustDevice.h-4.w-4.rounded.border-rose-300(
+                type="checkbox",
+                name="trustDevice"
+              )
+              | Trust device
+
+          #loginFlash.min-h-5.text-sm.font-bold
+
+          +appButton("Login", "primary", "submit")#loginBtn.login-field.py-3(disabled)
+
+  #otpModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
+    class="bg-rose-950/55 sm:p-4"
+  )
+    .otp-card.w-full.max-w-sm.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
+      class="border-white/40 bg-white/25"
+    )
+      .mb-2.flex.items-start.justify-between
+        .pr-3
+          h3.text-lg.font-black.text-rose-900 Enter OTP
+          p.mt-1.text-sm.font-semibold.text-rose-800 Check your device for the code.
+        button#otpClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+          type="button",
+          class="hover:bg-fuchsia-100"
+        ) Close
+      input#otpInput.mt-4.w-full.rounded-xl.border.border-rose-200.px-3.text-rose-950(
+        type="text",
+        maxlength="5",
+        placeholder="65497",
+        class="bg-white/60 py-2.5 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+      )
+      .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
+        +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
+        +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
+  script(src="/js/animations/login-particles.js")
+  script(src="/js/login.js")

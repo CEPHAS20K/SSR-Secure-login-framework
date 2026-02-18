@@ -1,0 +1,24 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "This folder is reserved for backend code.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "start:proc": "NODE_ENV=production node app.js",
+    "dev": "nodemon app.js",
+    "dev:node": "node --watch app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "pug": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

@@ -1,0 +1,13 @@
+mixin appButton(label, variant, buttonType)
+  -
+    const palette = {
+      primary:
+        "bg-primary text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-rose-300",
+      secondary:
+        "bg-secondary text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-rose-300",
+      ghost:
+        "bg-fuchsia-100/80 text-fuchsia-950 hover:bg-fuchsia-200 disabled:cursor-not-allowed disabled:opacity-60",
+    };
+  - const tone = palette[variant] || palette.primary;
+  button.rounded-xl.px-4.text-sm.font-bold.transition(class=`py-2.5 ${tone}`, type=buttonType || "button")&attributes(attributes)
+    = label
