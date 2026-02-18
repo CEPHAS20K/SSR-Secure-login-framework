@@ -1,7 +1,9 @@
 extends ./layouts/base
 
 block content
-  #errorScene.relative.flex.min-h-dvh.items-center.justify-center.overflow-hidden.bg-auth-svg.px-4.py-10
+  #errorScene.relative.flex.min-h-dvh.items-center.justify-center.overflow-hidden.bg-auth-svg.px-4.py-4(
+    class="sm:py-8"
+  )
     canvas#errorParticles.pointer-events-none.absolute.inset-0.z-0
     .pointer-events-none.absolute.inset-0.z-0(class="bg-slate-900/20")
     #errorOrbLeft.pointer-events-none.absolute.left-2.top-20.h-24.w-24.rounded-full.blur-2xl.z-0.bg-fuchsia-300(
@@ -11,8 +13,8 @@ block content
       class="sm:right-10 sm:h-36 sm:w-36"
     )
 
-    .relative.z-10.w-full.max-w-2xl.rounded-3xl.border.p-6.text-center.text-rose-950.border-transparent.bg-transparent.shadow-none(
-      class="sm:p-8"
+    .relative.z-10.w-full.max-w-2xl.rounded-3xl.border.p-5.text-center.text-rose-950.border-transparent.bg-transparent.shadow-none(
+      class="sm:p-7"
     )
       #errorCode.text-xs.font-black.uppercase.text-rose-700(class="tracking-[0.18em]") Error 500
       h1#errorTitle.mt-2.font-headline.text-5xl.leading-none.text-rose-900(class="sm:text-6xl")
@@ -21,16 +23,17 @@ block content
       p#errorMessage.mx-auto.mt-3.max-w-xl.text-sm.font-semibold.text-rose-800
         | Something went wrong on our side. Please try again in a moment.
 
-      #errorIllustrationWrap.relative.mx-auto.mt-6.w-full.max-w-xl
-        img#errorIllustration.w-full.drop-shadow-2xl.mix-blend-multiply.opacity-90.contrast-110.saturate-125(
+      #errorIllustrationWrap.relative.mx-auto.mt-4.w-full.max-w-xl
+        img#errorIllustration.mx-auto.w-full.max-w-full.drop-shadow-2xl.mix-blend-multiply.opacity-90.contrast-110.saturate-125.object-contain(
           src="/images/500.svg",
           alt="500 server error illustration",
-          loading="eager"
+          loading="eager",
+          class="max-h-[34vh] sm:max-h-[42vh]"
         )
 
-      #errorActions.mt-7.flex.flex-col.gap-3(class="sm:flex-row sm:justify-center")
+      #errorActions.mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:justify-center")
         a#errorBtnLogin.rounded-full.bg-primary.px-5.text-sm.font-bold.text-white.transition.border(
-          href="/",
+          href="/login",
           class="py-2.5 hover:bg-secondary border-rose-300/70"
         ) Back to Login
         button#errorBtnRegister.rounded-full.px-5.text-sm.font-bold.text-fuchsia-950.transition.bg-fuchsia-100.border(

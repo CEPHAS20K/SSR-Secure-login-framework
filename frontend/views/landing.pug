@@ -1,0 +1,234 @@
+extends ./layouts/base
+
+block content
+  #landingPage.relative.min-h-dvh.overflow-x-clip.bg-auth-svg.text-rose-950
+    #authView.relative.min-h-dvh
+      .landing-mesh.pointer-events-none.absolute.inset-0.z-0
+      .parallax-layer.pointer-events-none.absolute.-left-16.top-28.h-56.w-56.rounded-full.blur-3xl(
+        class="bg-orange-200/45 sm:h-72 sm:w-72",
+        data-parallax-speed="0.12"
+      )
+      .parallax-layer.pointer-events-none.absolute.-right-20.top-16.h-64.w-64.rounded-full.blur-3xl(
+        class="bg-fuchsia-200/35 sm:h-80 sm:w-80",
+        data-parallax-speed="0.18"
+      )
+      .parallax-layer.pointer-events-none.absolute.bottom-20.h-44.w-44.rounded-full.blur-3xl(
+        class="left-1/3 bg-rose-200/35 sm:h-56 sm:w-56",
+        data-parallax-speed="0.09"
+      )
+
+      nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
+        .mx-auto.w-full.max-w-6xl.rounded-2xl.border.px-3.backdrop-blur-xl(
+          class="py-2.5 border-white/35 bg-white/10 sm:px-4 md:px-6",
+          data-nav-shell="true"
+        )
+          .flex.items-center.justify-between
+            a.uppercase.tracking-wider.text-rose-950.font-display.text-sm(
+              href="/",
+              class="sm:text-base",
+              data-nav-transition="auth"
+            )
+              | Auth Secure
+            .hidden.items-center.gap-4(class="sm:flex")
+              a.text-xs.font-bold.transition(
+                data-nav-link="features",
+                href="#features",
+                class="text-rose-900/85 hover:text-primary"
+              ) Features
+              a.text-xs.font-bold.transition(
+                data-nav-link="security",
+                href="#security",
+                class="text-rose-900/85 hover:text-primary"
+              ) Security
+              a.text-xs.font-bold.transition(
+                data-nav-link="ops",
+                href="#operations",
+                class="text-rose-900/85 hover:text-primary"
+              ) Operations
+            .flex.items-center.gap-2
+              a.rounded-lg.border.px-3.py-2.text-xs.font-bold.text-rose-900.transition(
+                data-nav-link="login",
+                href="/login",
+                class="border-white/45 bg-white/45 hover:bg-white/70"
+              ) Login
+              a.rounded-lg.border.px-3.py-2.text-xs.font-bold.text-white.transition.border-rose-300.bg-primary(
+                data-nav-link="register",
+                href="/register",
+                class="hover:bg-secondary"
+              ) Register
+
+      section#hero.relative.z-10.mx-auto.grid.w-full.max-w-6xl.gap-8.px-4.pb-2.pt-28.items-center(
+        class="min-h-[82dvh] md:grid-cols-[1.1fr_0.9fr] md:px-6 sm:pt-32"
+      )
+        .space-y-5
+          p#hero-note.inline-flex.items-center.rounded-full.border.px-3.py-1.text-xs.font-bold.uppercase.text-rose-800(
+            class="tracking-[0.16em] border-white/45 bg-white/45"
+          ) Adaptive Identity Security Platform
+          h1#hero-title.font-headline.text-4xl.leading-none.text-rose-900(class="sm:text-5xl")
+            span.font-mono.tracking-normal(data-typing-line="0") Trusted Access
+            br
+            span.font-mono.tracking-normal(data-typing-line="1") Without Friction
+            span#heroTitleCaret.inline-block.align-top.opacity-75.font-mono |
+          p#hero-copy.max-w-xl.text-base.font-semibold(class="text-rose-900/90")
+            | Built for teams that need sharp control over user trust, device health, and real-time risk signals.
+          .flex.flex-wrap.gap-3
+            a.rounded-xl.bg-primary.px-5.py-2.text-sm.font-bold.text-white.transition(
+              data-nav-link="cta-login",
+              href="/login",
+              class="hover:bg-secondary"
+            ) Get Started
+            a.rounded-xl.border.px-5.py-2.text-sm.font-bold.text-rose-900.transition(
+              href="#features",
+              class="border-white/45 bg-white/55 hover:bg-white/75"
+            ) Explore Features
+            a.rounded-xl.border.px-5.py-2.text-sm.font-bold.text-rose-900.transition(
+              data-nav-link="cta-admin",
+              href="/admin/login",
+              class="border-white/45 bg-white/55 hover:bg-white/75"
+            ) Admin Login
+        #landingHeroVisual.relative.overflow-hidden.rounded-3xl.bg-transparent(
+          class="h-[24rem] sm:h-[28rem]"
+        )
+          img#landingHeroSvg.relative.z-10.h-full.w-full.object-contain.landing-svg-float.opacity-72.mix-blend-normal.brightness-110.saturate-125.contrast-110(
+            src="/images/land.svg",
+            alt="Landing illustration",
+            loading="eager",
+            decoding="async",
+            style="clip-path: inset(2px)"
+          )
+      section#heroCta.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.pb-8(class="md:px-6")
+        .grid.items-center.gap-6(class="md:grid-cols-[1.1fr_0.9fr] md:gap-12")
+          .flex.w-full.items-center.justify-center(class="md:justify-end")
+            img#heroCtaSvg.up-svg-float.h-auto.w-full.object-contain.max-w-2xl(
+              src="/images/up.svg",
+              alt="Secure access illustration",
+              loading="lazy",
+              decoding="async",
+              class="sm:max-w-3xl"
+            )
+          .w-full.p-6.text-center(class="sm:p-8")
+            h2.text-3xl.font-headline.leading-none.text-rose-900(class="sm:text-4xl") Ready To Launch Secure Access?
+            p.mx-auto.mt-2.max-w-2xl.text-sm.font-semibold.text-rose-800 Start with the user portal, then step into the admin console for complete observability and control.
+            .mt-5.flex.flex-wrap.justify-center.gap-3
+              a.rounded-xl.bg-primary.px-5.py-2.text-sm.font-bold.text-white.transition(
+                data-nav-link="footer-login",
+                href="/login",
+                class="hover:bg-secondary"
+              ) Open User Login
+              a.rounded-xl.border.px-5.py-2.text-sm.font-bold.text-rose-900.transition(
+                data-nav-link="footer-register",
+                href="/register",
+                class="border-white/45 bg-white/60 hover:bg-white/80"
+              ) Create Account
+
+      section#features.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.py-12(class="md:px-6")
+        .mb-5.flex.items-end.justify-between.gap-3
+          h2.text-3xl.font-headline.leading-none.text-rose-900(class="sm:text-4xl") Core Sections
+          p.text-xs.font-bold.uppercase.tracking-wider.text-rose-700 Built for scale
+        .grid.gap-4(class="md:grid-cols-3")
+          article.feature-card.p-5
+            h3.text-lg.font-black.text-rose-900 User Trust Graph
+            p.mt-2.text-sm.font-semibold.text-rose-800 Monitor account lifecycle, access confidence, and anomaly clusters in one risk-aware lane.
+            .mt-4.flex.flex-wrap.gap-2
+              span.rounded-full.border.px-2.py-1.text-xs.font-bold.text-rose-800(
+                class="border-white/40 bg-white/40"
+              ) Lifecycle
+              span.rounded-full.border.px-2.py-1.text-xs.font-bold.text-rose-800(
+                class="border-white/40 bg-white/40"
+              ) Trust score
+          article.feature-card.p-5
+            h3.text-lg.font-black.text-rose-900 Device Signals
+            p.mt-2.text-sm.font-semibold.text-rose-800 Track hardware posture, geo velocity, and stale-session indicators before sessions go risky.
+            .mt-4.flex.flex-wrap.gap-2
+              span.rounded-full.border.px-2.py-1.text-xs.font-bold.text-rose-800(
+                class="border-white/40 bg-white/40"
+              ) Velocity
+              span.rounded-full.border.px-2.py-1.text-xs.font-bold.text-rose-800(
+                class="border-white/40 bg-white/40"
+              ) Posture
+          article.feature-card.p-5
+            h3.text-lg.font-black.text-rose-900 Governance Center
+            p.mt-2.text-sm.font-semibold.text-rose-800 Run approval gates, export controls, and policy updates with full audit visibility.
+            .mt-4.flex.flex-wrap.gap-2
+              span.rounded-full.border.px-2.py-1.text-xs.font-bold.text-rose-800(
+                class="border-white/40 bg-white/40"
+              ) Policy
+              span.rounded-full.border.px-2.py-1.text-xs.font-bold.text-rose-800(
+                class="border-white/40 bg-white/40"
+              ) Audit
+
+      section#security.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.py-12(class="md:px-6")
+        .security-shell.p-5(class="sm:p-6")
+          h2.text-3xl.font-headline.leading-none.text-rose-900(class="sm:text-4xl") Security Journey
+          .mt-5.grid.gap-3(class="md:grid-cols-4")
+            article.security-step.p-3
+              p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Step 01
+              p.mt-1.text-sm.font-bold.text-rose-900 Signal Capture
+            article.security-step.p-3
+              p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Step 02
+              p.mt-1.text-sm.font-bold.text-rose-900 Risk Computation
+            article.security-step.p-3
+              p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Step 03
+              p.mt-1.text-sm.font-bold.text-rose-900 Step-Up Decision
+            article.security-step.p-3
+              p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Step 04
+              p.mt-1.text-sm.font-bold.text-rose-900 Audit + Export
+
+      section#operations.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.py-12(class="md:px-6")
+        .grid.gap-4(class="md:grid-cols-3")
+          article.ops-card.p-4
+            p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Coverage
+            p.mt-2.text-4xl.font-black.text-rose-900 99.95%
+            p.text-sm.font-semibold.text-rose-800 Uptime target for auth services.
+          article.ops-card.p-4
+            p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Throughput
+            p.mt-2.text-4xl.font-black.text-rose-900 24K
+            p.text-sm.font-semibold.text-rose-800 Session evaluations per hour.
+          article.ops-card.p-4
+            p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Integrations
+            p.mt-2.text-4xl.font-black.text-rose-900 12
+            p.text-sm.font-semibold.text-rose-800 Plug in SIEM, OTP, and identity providers.
+
+      footer.relative.z-10.border-t.px-4.py-6(class="border-white/35 bg-white/15 md:px-6 sm:py-7")
+        .mx-auto.grid.w-full.max-w-6xl.gap-5(class="md:grid-cols-[1.1fr_1fr_1fr]")
+          .space-y-2
+            h3.font-display.text-xl.text-rose-900 Auth Secure
+            p.text-xs.font-semibold.text-rose-800 Identity intelligence and adaptive authentication for modern apps.
+          .space-y-2
+            h4.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Product
+            a.block.text-xs.font-semibold.text-rose-900.transition(
+              href="#features",
+              class="hover:text-primary"
+            ) Features
+            a.block.text-xs.font-semibold.text-rose-900.transition(
+              href="#security",
+              class="hover:text-primary"
+            ) Security Journey
+            a.block.text-xs.font-semibold.text-rose-900.transition(
+              href="#operations",
+              class="hover:text-primary"
+            ) Operations
+          .space-y-2
+            h4.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Access
+            a.block.text-xs.font-semibold.text-rose-900.transition(
+              href="/login",
+              class="hover:text-primary",
+              data-nav-transition="auth"
+            ) User Login
+            a.block.text-xs.font-semibold.text-rose-900.transition(
+              href="/register",
+              class="hover:text-primary",
+              data-nav-transition="auth"
+            ) Register
+            a.block.text-xs.font-semibold.text-rose-900.transition(
+              href="/admin/login",
+              class="hover:text-primary"
+            ) Admin Login
+        p.mt-5.text-center.text-xs.font-bold.text-rose-800
+          | ©
+          = " "
+          = new Date().getFullYear()
+          |
+          | Auth Secure. All rights reserved.
+
+  script(src="/js/landing.js")
