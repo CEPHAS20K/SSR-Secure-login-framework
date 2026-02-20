@@ -2396,28 +2396,48 @@ document.addEventListener("DOMContentLoaded", () => {
         requestUrl = `${requestUrl}${separator}rangeDays=${encodeURIComponent(state.rangeDays)}`;
       }
 
-      const fetchOptions = {
-        method: options.method || "GET",
-        headers: {},
-      };
+      const requestMethod = options.method || "GET";
+      let requestPayload;
 
       if (options.body) {
-        const nextBody =
+        requestPayload =
           String(url).startsWith("/admin/api/") &&
           typeof options.body === "object" &&
           options.body !== null
             ? { ...options.body, rangeDays: state.rangeDays }
             : options.body;
-        fetchOptions.headers["Content-Type"] = "application/json";
-        fetchOptions.body = JSON.stringify(nextBody);
+      }
+
+      if (window.axios) {
+        try {
+          const response = await window.axios({
+            url: requestUrl,
+            method: requestMethod,
+            data: requestPayload,
+            headers: requestPayload ? { "Content-Type": "application/json" } : {},
+          });
+          return response.data || {};
+        } catch (axiosError) {
+          const statusCode = axiosError?.response?.status;
+          const payload = axiosError?.response?.data || {};
+          if (statusCode === 401) {
+            window.location.href = "/admin/login";
+            throw new Error("Session expired. Please sign in again.");
+          }
+          throw new Error(payload.error || payload.message || "Request failed.");
+        }
+      }
+
+      const fetchOptions = {
+        method: requestMethod,
+        headers: requestPayload ? { "Content-Type": "application/json" } : {},
+      };
+      if (requestPayload) {
+        fetchOptions.body = JSON.stringify(requestPayload);
       }
 
       const response = await fetch(requestUrl, fetchOptions);
-      const contentType = response.headers.get("content-type") || "";
-      const payload = contentType.includes("application/json")
-        ? await response.json().catch(() => ({}))
-        : {};
-
+      const payload = await response.json().catch(() => ({}));
       if (response.status === 401) {
         window.location.href = "/admin/login";
         throw new Error("Session expired. Please sign in again.");

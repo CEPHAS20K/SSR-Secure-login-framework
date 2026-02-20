@@ -6,7 +6,7 @@ include ./components/button
 block content
   +appNavbar(activePage || "login")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
-    canvas#loginParticles.pointer-events-none.absolute.inset-0.z-0
+    canvas#loginParticles.pointer-events-none.absolute.inset-0.z-0(data-auth-particles)
     .pointer-events-none.absolute.-left-28.-top-28.h-72.w-72.rounded-full.blur-3xl.hidden(
       class="bg-orange-200/45 sm:block"
     )
@@ -17,11 +17,14 @@ block content
     .relative.z-10.mx-auto.w-full.max-w-2xl.items-center.px-4.py-6.min-h-dvh.pt-28.pb-8(
       class="sm:pt-32 sm:py-10 md:px-6"
     )
-      section#loginCard.auth-glass-card.w-full.max-w-md.rounded-2xl.border.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold.mx-auto(
+      section#loginCard.w-full.max-w-md.rounded-2xl.border.bg-white.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold.mx-auto(
         class="border-white/40 bg-white/20 sm:rounded-3xl sm:p-7 md:p-8"
       )
         .mb-6.text-center
-          h1#loginTitle.font-headline.leading-none.text-rose-900.tracking-wide.text-3xl(class="sm:text-5xl")
+          h1#loginTitle.font-headline.leading-none.text-rose-900.tracking-wide.text-3xl(
+            class="sm:text-5xl",
+            style="font-family: 'Finger Paint', cursive"
+          )
             | Sign in
           p.mt-2.text-sm.font-semibold.text-rose-800 Enter your details to continue.
 
@@ -72,9 +75,9 @@ block content
           +appButton("Login", "primary", "submit")#loginBtn.login-field.py-3(disabled)
 
   #otpModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
-    class="bg-rose-950/55 sm:p-4"
+    class="z-[80] bg-rose-950/55 sm:p-4"
   )
-    .otp-card.auth-glass-card.w-full.max-w-sm.rounded-2xl.border.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
+    .otp-card.w-full.max-w-sm.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
       class="border-white/40 bg-white/25"
     )
       .mb-2.flex.items-start.justify-between
@@ -94,5 +97,5 @@ block content
       .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
         +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
         +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
-  script(src=assetPath("/js/animations/login-particles.js"))
-  script(src=assetPath("/js/login.js"))
+  script(src="/js/animations/login-particles.js")
+  script(src="/js/login.js")

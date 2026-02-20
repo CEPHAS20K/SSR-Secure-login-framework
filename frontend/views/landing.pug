@@ -1,4 +1,6 @@
 extends ./layouts/base
+include ./components/navbar
+include ./components/footer
 
 block content
   #landingPage.relative.min-h-dvh.overflow-x-clip.bg-auth-svg.text-rose-950
@@ -17,38 +19,7 @@ block content
         data-parallax-speed="0.09"
       )
 
-      nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
-        .mx-auto.w-full.max-w-6xl.rounded-2xl.border.px-3.backdrop-blur-xl.border-transparent.bg-transparent(
-          class="py-2.5 sm:px-4 md:px-6",
-          data-nav-shell="true"
-        )
-          .flex.items-center.justify-between
-            a.uppercase.tracking-normal.text-rose-950.font-mono.font-black.text-sm(
-              href="/",
-              class="sm:text-base",
-              data-nav-transition="auth"
-            )
-              | Auth Secure
-            .flex.items-center.gap-2
-              button.theme-toggle-btn.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.text-rose-900.transition(
-                type="button",
-                aria-label="Toggle dark mode",
-                aria-pressed="false",
-                data-theme-toggle,
-                class="border-white/45 bg-white/45 hover:bg-white/70"
-              )
-                span.material-icons.text-base.leading-none(data-theme-icon) dark_mode
-                span.sr-only(data-theme-label) Dark
-              a.rounded-lg.border.px-3.py-2.text-xs.font-black.font-mono.tracking-normal.text-rose-900.transition(
-                data-nav-link="login",
-                href="/login",
-                class="border-white/45 bg-white/45 hover:bg-white/70"
-              ) Login
-              a.rounded-lg.border.px-3.py-2.text-xs.font-black.font-mono.tracking-normal.text-white.transition.border-rose-300.bg-primary(
-                data-nav-link="register",
-                href="/register",
-                class="hover:bg-secondary"
-              ) Register
+      +appNavbar(activePage || "landing")
 
       section#hero.relative.z-10.mx-auto.grid.w-full.max-w-6xl.gap-8.px-4.pb-2.pt-28.items-center(
         class="min-h-[82dvh] md:grid-cols-[1.1fr_0.9fr] md:px-6 sm:pt-32"
@@ -112,42 +83,6 @@ block content
                 class="border-white/45 bg-white/60 hover:bg-white/80"
               ) Create Account
 
-      footer.relative.z-10.border-t.px-4.py-4(class="border-white/35 bg-white/12 md:px-6 sm:py-5")
-        .mx-auto.grid.w-full.max-w-6xl.gap-3.grid-cols-2(class="md:grid-cols-4")
-          .space-y-1
-            h3.font-display.text-lg.font-black.text-rose-900 Auth Secure
-            p.text-xs.font-bold.text-rose-800 Adaptive identity and secure authentication.
-          .space-y-1
-            h4.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Product
-            a.block.text-xs.font-bold.text-rose-900.transition(href="/login", class="hover:text-primary") User Portal
-            a.block.text-xs.font-bold.text-rose-900.transition(
-              href="/admin/login",
-              class="hover:text-primary"
-            ) Admin Console
-          .space-y-1
-            h4.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Access
-            a.block.text-xs.font-bold.text-rose-900.transition(
-              href="/login",
-              class="hover:text-primary",
-              data-nav-transition="auth"
-            ) User Login
-            a.block.text-xs.font-bold.text-rose-900.transition(
-              href="/register",
-              class="hover:text-primary",
-              data-nav-transition="auth"
-            ) Register
-          .space-y-1
-            h4.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Admin
-            a.block.text-xs.font-bold.text-rose-900.transition(
-              href="/admin/login",
-              class="hover:text-primary"
-            ) Admin Login
-            a.block.text-xs.font-bold.text-rose-900.transition(href="/register", class="hover:text-primary") Create Account
-        p.mt-3.text-center.text-xs.font-black.text-rose-800
-          | ©
-          = " "
-          = new Date().getFullYear()
-          |
-          | Auth Secure. All rights reserved.
+      +appFooter
 
-  script(src=assetPath("/js/landing.js"))
+  script(src=assetPath("/js/landing.js"), defer)

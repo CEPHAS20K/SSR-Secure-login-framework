@@ -1,6 +1,6 @@
 "use strict";
 
-const SW_VERSION = "v1";
+const SW_VERSION = "v5";
 const ASSET_CACHE = `auth-assets-${SW_VERSION}`;
 
 const STATIC_FILE_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$/i;

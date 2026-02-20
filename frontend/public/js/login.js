@@ -61,8 +61,15 @@ document.addEventListener("DOMContentLoaded", () => {
     resendTimer = null;
   };
 
+  const setModalOpenState = (open) => {
+    modal.classList.toggle("hidden", !open);
+    modal.classList.toggle("flex", open);
+    modal.setAttribute("aria-hidden", open ? "false" : "true");
+    modal.style.display = open ? "flex" : "none";
+  };
+
   const closeOtpModal = () => {
-    if (modal.classList.contains("hidden")) return;
+    if (modal.classList.contains("hidden") && modal.style.display !== "flex") return;
 
     if (window.gsap) {
       if (modalCard) {
@@ -80,16 +87,16 @@ document.addEventListener("DOMContentLoaded", () => {
         ease: "power1.in",
         onComplete: () => {
           stopResendTimer();
-          modal.classList.add("hidden");
-          modal.classList.remove("flex");
+          setModalOpenState(false);
+          gsap.set(modal, { clearProps: "opacity,visibility" });
+          if (modalCard) gsap.set(modalCard, { clearProps: "opacity,transform" });
         },
       });
       return;
     }
 
     stopResendTimer();
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
+    setModalOpenState(false);
   };
 
   const startResendTimer = (duration = OTP_COUNTDOWN_SECONDS) => {
@@ -142,8 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
+    setModalOpenState(true);
     startResendTimer();
     if (otpInput) {
       otpInput.value = "";
@@ -194,6 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
       startResendTimer();
     });
   }
+
+  setModalOpenState(false);
 
   if (otpClose) {
     otpClose.addEventListener("click", closeOtpModal);

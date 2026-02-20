@@ -1,61 +1,70 @@
 mixin appNavbar(activePage)
-  - const isLoginPage = activePage === "login";
-  - const navHref = isLoginPage ? "/register" : "/login";
-  - const navLabel = isLoginPage ? "Register" : "Login";
-  - const navTarget = isLoginPage ? "register" : "login";
+  - const showLogin = activePage !== "login";
+  - const showRegister = activePage !== "register";
   nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
-    .mx-auto.w-full.max-w-5xl.rounded-2xl.border.px-3.backdrop-blur-xl(
-      class="py-2.5 border-white/35 bg-white/10 sm:px-4 md:px-6"
+    .mx-auto.w-full.max-w-5xl.rounded-2xl.px-3.backdrop-blur-xl.border-transparent.bg-transparent(
+      class="py-2.5 sm:px-4 md:px-6"
     )
       .flex.items-center.justify-between(data-nav-shell="true")
-        a.uppercase.tracking-normal.text-rose-950.font-mono.font-black.text-sm(
+        a.uppercase.tracking-wider.text-rose-950.font-display.text-base.font-bold(
           href="/",
-          class="sm:text-base",
-          data-nav-transition="auth"
+          class="sm:text-xl",
+          data-nav-transition="auth",
+          style="font-family: 'Schoolbell', cursive"
         )
           span.hidden(class="sm:inline") Auth Secure
           span(class="sm:hidden") AS
-        .flex.items-center.gap-2(class="sm:gap-4")
-          button.theme-toggle-btn.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900(
-            type="button",
-            aria-label="Toggle dark mode",
-            aria-pressed="false",
-            data-theme-toggle,
-            class="border-white/35 bg-white/30 hover:bg-white/60"
-          )
-            span.material-icons.text-base.leading-none(data-theme-icon) dark_mode
-            span.sr-only(data-theme-label) Dark
-          button#navToggle.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900(
-            type="button",
-            aria-expanded="false",
-            aria-controls="mobileNav",
-            class="border-white/35 bg-white/30 hover:bg-white/60 sm:hidden"
-          )
-            span.sr-only Toggle navigation
-            span#navToggleBars.flex.flex-col.gap-1
-              span.block.w-4.rounded-full.bg-current(class="h-0.5")
-              span.block.w-4.rounded-full.bg-current(class="h-0.5")
-              span.block.w-4.rounded-full.bg-current(class="h-0.5")
-          .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
-            a.font-black.font-mono.tracking-normal.transition.text-xs(
-              href="/",
-              class="text-rose-900/85 hover:text-primary sm:text-sm",
-              data-nav-link="home"
-            ) Home
-            a.font-black.font-mono.tracking-normal.transition.text-xs(
-              href=navHref,
-              class="text-rose-900/85 hover:text-primary sm:text-sm",
-              data-nav-link=navTarget
-            )= navLabel
-      #mobileNav.hidden.border-t.pt-3.mt-3(class="border-white/35 sm:hidden")
-        .grid.gap-2
-          a.rounded-lg.px-3.py-2.text-sm.font-black.font-mono.tracking-normal.transition(
+        button#navToggle.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900.bg-transparent(
+          type="button",
+          aria-expanded="false",
+          aria-controls="mobileNav",
+          class="border-white/25 hover:bg-white/20 sm:hidden"
+        )
+          span.sr-only Toggle navigation
+          span#navToggleBars.flex.flex-col.gap-1
+            span.block.w-4.rounded-full.bg-current(class="h-0.5")
+            span.block.w-4.rounded-full.bg-current(class="h-0.5")
+            span.block.w-4.rounded-full.bg-current(class="h-0.5")
+        .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
+          a.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
             href="/",
-            class="bg-white/20 text-rose-900/90 hover:bg-white/60 hover:text-primary",
-            data-nav-link="home"
+            class="py-1.5 bg-white/20 hover:bg-primary hover:text-white sm:text-base",
+            data-nav-link="home",
+            style="font-family: 'Schoolbell', cursive"
           ) Home
-          a.rounded-lg.px-3.py-2.text-sm.font-black.font-mono.tracking-normal.transition(
-            href=navHref,
-            class="bg-white/20 text-rose-900/90 hover:bg-white/60 hover:text-primary",
-            data-nav-link=navTarget
-          )= navLabel
+          if showLogin
+            a.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
+              href="/login",
+              class="py-1.5 bg-white/20 hover:bg-primary hover:text-white sm:text-base",
+              data-nav-link="login",
+              style="font-family: 'Schoolbell', cursive"
+            ) Login
+          if showRegister
+            a.rounded-lg.px-3.text-sm.font-bold.transition.bg-primary.text-white(
+              href="/register",
+              class="py-1.5 hover:bg-secondary hover:text-amber-50 sm:text-base",
+              data-nav-link="register",
+              style="font-family: 'Schoolbell', cursive"
+            ) Register
+      #mobileNav.hidden.border-t.pt-3.mt-3.border-transparent.bg-transparent(class="sm:hidden")
+        .grid.gap-2
+          a.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
+            href="/",
+            class="bg-white/20 hover:bg-primary hover:text-white",
+            data-nav-link="home",
+            style="font-family: 'Schoolbell', cursive"
+          ) Home
+          if showLogin
+            a.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
+              href="/login",
+              class="bg-white/20 hover:bg-primary hover:text-white",
+              data-nav-link="login",
+              style="font-family: 'Schoolbell', cursive"
+            ) Login
+          if showRegister
+            a.rounded-lg.px-3.py-2.text-base.font-bold.transition.bg-primary.text-white(
+              href="/register",
+              class="hover:bg-secondary hover:text-amber-50",
+              data-nav-link="register",
+              style="font-family: 'Schoolbell', cursive"
+            ) Register

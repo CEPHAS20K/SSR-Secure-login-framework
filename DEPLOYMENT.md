@@ -36,6 +36,14 @@ cd /var/www/auth
 DOMAIN=your-domain.com ./scripts/setup-caddy.sh
 ```
 
+To keep admin routes private (recommended), keep the default:
+
+```bash
+DOMAIN=your-domain.com ADMIN_INTERNAL_ONLY=true ./scripts/setup-caddy.sh
+```
+
+This blocks `/admin*` for non-private source IPs at Caddy (returns `404`).
+
 You can also review the base config template:
 
 - `deploy/caddy/Caddyfile.example`
@@ -84,4 +92,18 @@ pm2 status
 pm2 logs auth-app --lines 100
 curl -I https://your-domain.com/health
 curl -I --http3 https://your-domain.com/health
+```
+
+## 7) Backend admin IP guard
+
+Set in `backend/.env.proc`:
+
+- `ADMIN_INTERNAL_ONLY=true`
+- Optional `ADMIN_INTERNAL_IP_ALLOWLIST` (comma-separated exact IPs or IPv4 CIDR)
+
+Examples:
+
+```env
+ADMIN_INTERNAL_ONLY=true
+ADMIN_INTERNAL_IP_ALLOWLIST=10.8.0.0/24,203.0.113.10
 ```

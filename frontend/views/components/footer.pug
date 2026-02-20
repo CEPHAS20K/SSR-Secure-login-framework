@@ -1,0 +1,48 @@
+mixin appFooter
+  footer.relative.z-10.px-4.pb-6.pt-4(class="md:px-6")
+    .mx-auto.w-full.max-w-6xl.border-t.pt-4(
+      class="border-white/30",
+      style="font-family: 'Finger Paint', cursive"
+    )
+      .grid.gap-4.grid-cols-2(class="md:grid-cols-4")
+        .space-y-1
+          h3.font-display.text-lg.font-black.text-rose-950 Auth Secure
+          p.text-xs.font-bold(class="text-rose-950/85") Adaptive identity and secure authentication.
+        .space-y-2
+          h4.text-xs.font-black.uppercase.tracking-wider(class="text-rose-950/80") Product
+          a.inline-flex.items-center.rounded-md.px-2.py-1.text-xs.font-black.text-rose-950.transition(
+            href="/login",
+            class="hover:bg-white/25 hover:text-primary"
+          ) User Portal
+          a.inline-flex.items-center.rounded-md.px-2.py-1.text-xs.font-black.text-rose-950.transition(
+            href="/admin/login",
+            class="hover:bg-white/25 hover:text-primary"
+          ) Admin Console
+        .space-y-2
+          h4.text-xs.font-black.uppercase.tracking-wider(class="text-rose-950/80") Access
+          a.inline-flex.items-center.rounded-md.px-2.py-1.text-xs.font-black.text-rose-950.transition(
+            href="/login",
+            class="hover:bg-white/25 hover:text-primary",
+            data-nav-transition="auth"
+          ) User Login
+          a.inline-flex.items-center.rounded-md.px-2.py-1.text-xs.font-black.text-rose-950.transition(
+            href="/register",
+            class="hover:bg-white/25 hover:text-primary",
+            data-nav-transition="auth"
+          ) Register
+        .space-y-2
+          h4.text-xs.font-black.uppercase.tracking-wider(class="text-rose-950/80") Admin
+          a.inline-flex.items-center.rounded-md.px-2.py-1.text-xs.font-black.text-rose-950.transition(
+            href="/admin/login",
+            class="hover:bg-white/25 hover:text-primary"
+          ) Admin Login
+          a.inline-flex.items-center.rounded-md.px-2.py-1.text-xs.font-black.text-rose-950.transition(
+            href="/register",
+            class="hover:bg-white/25 hover:text-primary"
+          ) Create Account
+      p.mt-4.text-center.text-xs.font-black(class="text-rose-950/85")
+        | ©
+        = " "
+        = new Date().getFullYear()
+        |
+        | Auth Secure. All rights reserved.

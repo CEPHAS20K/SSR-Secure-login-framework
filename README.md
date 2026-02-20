@@ -1,7 +1,9 @@
 <<<<<<< HEAD
+
 # SSR-Secure-login-framework
-this is a full pack ssr login and admin dashboard crete using pug template engine and express.js it comes with production ready features lots of them 
-=======
+
+this is a full pack ssr login and admin dashboard crete using pug template engine and express.js it comes with production ready features lots of them
+
 # Auth Project
 
 Quick start from project root:
@@ -25,4 +27,4 @@ Main commands:
 Health endpoint:
 
 - `GET /health` returns `{ "status": "ok" }`.
->>>>>>> 87ce71f (init project)
+  > > > > > > > 87ce71f (init project)

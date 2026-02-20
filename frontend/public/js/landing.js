@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+const initLandingPage = () => {
   const landingPage = document.getElementById("landingPage");
   if (!landingPage) return;
 
@@ -13,12 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ? Array.from(heroTitle.querySelectorAll("[data-typing-line]"))
     : [];
   const heroTitleCaret = document.getElementById("heroTitleCaret");
-  const darkModeCards = Array.from(
-    landingPage.querySelectorAll(
-      "#features .feature-card, #security .security-shell, #security .security-step, #operations .ops-card"
-    )
-  );
-  let darkModeCardPulseTween = null;
 
   for (const link of sectionLinks) {
     link.addEventListener("click", (event) => {
@@ -391,38 +385,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const applyDarkModeCardGsap = () => {
-    if (typeof window.gsap === "undefined" || prefersReducedMotion || !darkModeCards.length) return;
-    const gsap = window.gsap;
-
-    if (darkModeCardPulseTween) {
-      darkModeCardPulseTween.kill();
-      darkModeCardPulseTween = null;
-    }
-
-    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-    if (!isDark) {
-      gsap.set(darkModeCards, { clearProps: "boxShadow" });
-      return;
-    }
-
-    darkModeCardPulseTween = gsap.to(darkModeCards, {
-      boxShadow:
-        "0 18px 34px rgba(3, 8, 6, 0.46), 0 0 0 1px rgba(140, 168, 154, 0.22), 0 0 14px rgba(16, 185, 129, 0.2)",
-      duration: 2.2,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
-      stagger: { each: 0.08, from: "center" },
-    });
-  };
-
   animateHeroVisual();
   animateHeroTitleTyping();
   animateHeroCtaVisual();
   animateAdvancedSections();
-  applyDarkModeCardGsap();
-  window.addEventListener("auth:themechange", applyDarkModeCardGsap);
 
   if (!parallaxLayers.length || prefersReducedMotion) return;
 
@@ -457,4 +423,10 @@ document.addEventListener("DOMContentLoaded", () => {
   renderParallax();
   window.addEventListener("scroll", queueRender, { passive: true });
   window.addEventListener("resize", queueRender);
-});
+};
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initLandingPage, { once: true });
+} else {
+  initLandingPage();
+}

@@ -107,6 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
     timer = null;
   };
 
+  const setModalOpenState = (open) => {
+    otpModal.classList.toggle("hidden", !open);
+    otpModal.classList.toggle("flex", open);
+    otpModal.setAttribute("aria-hidden", open ? "false" : "true");
+    otpModal.style.display = open ? "flex" : "none";
+  };
+
   const startTimer = (duration = OTP_COUNTDOWN_SECONDS) => {
     stopTimer();
     secondsLeft = duration;
@@ -123,8 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const openOtpModal = () => {
-    otpModal.classList.remove("hidden");
-    otpModal.classList.add("flex");
+    setModalOpenState(true);
     otpInput.value = "";
     updateOtpSubmitState();
     startTimer();
@@ -136,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const closeOtpModal = () => {
     stopTimer();
-    if (otpModal.classList.contains("hidden")) return;
+    if (otpModal.classList.contains("hidden") && otpModal.style.display !== "flex") return;
 
     if (window.gsap) {
       gsap.to(otpModal, {
@@ -144,15 +150,14 @@ document.addEventListener("DOMContentLoaded", () => {
         duration: 0.2,
         ease: "power1.in",
         onComplete: () => {
-          otpModal.classList.add("hidden");
-          otpModal.classList.remove("flex");
+          setModalOpenState(false);
+          gsap.set(otpModal, { clearProps: "opacity,visibility" });
         },
       });
       return;
     }
 
-    otpModal.classList.add("hidden");
-    otpModal.classList.remove("flex");
+    setModalOpenState(false);
   };
 
   const togglePasswordField = (field, trigger) => {
@@ -185,6 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateRegisterButton();
   updateOtpSubmitState();
   updateResendState();
+  setModalOpenState(false);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
