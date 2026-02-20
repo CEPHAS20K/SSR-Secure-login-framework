@@ -285,3 +285,493 @@
     transform: translateX(6px) rotate(-7deg) scale(1.05);
   }
 }
+
+/* Auth card transparency hard override */
+.auth-glass-card {
+  background: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.52) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 28px rgba(68, 25, 13, 0.18) !important;
+}
+
+.auth-glass-card input,
+.auth-glass-card select,
+.auth-glass-card textarea {
+  background: rgba(255, 255, 255, 0.34) !important;
+}
+
+html[data-theme="dark"] .auth-glass-card {
+  background: rgba(7, 14, 11, 0.3) !important;
+  background-color: rgba(7, 14, 11, 0.3) !important;
+  border-color: rgba(173, 204, 190, 0.46) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="dark"] .auth-glass-card input,
+html[data-theme="dark"] .auth-glass-card select,
+html[data-theme="dark"] .auth-glass-card textarea {
+  background: rgba(19, 29, 26, 0.4) !important;
+}
+
+@layer components {
+  .theme-toggle-btn {
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 14px rgba(120, 37, 58, 0.1);
+  }
+
+  #loginCard,
+  #registerCard,
+  .otp-card,
+  .feature-card,
+  .security-shell,
+  .security-step,
+  .ops-card,
+  #adminDashboard .rounded-2xl.border,
+  #adminDashboard .rounded-xl.border {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+}
+
+@layer base {
+  #landingPage #hero-title [data-typing-line],
+  #landingPage #heroTitleCaret {
+    color: #ff7700 !important;
+    font-weight: 900 !important;
+    text-shadow:
+      0 1px 2px rgba(40, 18, 8, 0.62),
+      0 0 10px rgba(166, 78, 0, 0.25) !important;
+    -webkit-text-stroke: 0.35px rgba(64, 26, 8, 0.4);
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  html[data-theme="dark"],
+  html[data-theme="dark"] body {
+    background: #0e1311;
+    color: #e6eee9;
+  }
+
+  html[data-theme="dark"] #pageTransitionOverlay {
+    background: linear-gradient(160deg, #101915 0%, #1c2b24 55%, #141d19 100%);
+  }
+
+  html[data-theme="dark"] .bg-auth-svg {
+    background-color: #0e1311;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.16), transparent 45%),
+      radial-gradient(circle at 80% 10%, rgba(132, 204, 22, 0.12), transparent 50%),
+      radial-gradient(circle at 55% 75%, rgba(148, 163, 184, 0.16), transparent 55%),
+      url("/images/flat-mount.svg");
+    background-blend-mode: screen, screen, screen, normal;
+  }
+
+  html[data-theme="dark"] .landing-mesh {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.12), transparent 42%),
+      radial-gradient(circle at 80% 10%, rgba(167, 243, 208, 0.1), transparent 44%),
+      radial-gradient(circle at 55% 75%, rgba(156, 163, 175, 0.14), transparent 48%);
+  }
+
+  html[data-theme="dark"] [class*="text-rose-"] {
+    color: #e6eee9 !important;
+  }
+
+  html[data-theme="dark"] #hero-title [data-typing-line],
+  html[data-theme="dark"] #heroTitleCaret {
+    color: #ffe08a !important;
+    font-weight: 900 !important;
+    text-shadow:
+      0 0 14px rgba(242, 181, 11, 0.55),
+      0 2px 6px rgba(0, 0, 0, 0.75) !important;
+  }
+
+  html[data-theme="dark"] [class*="text-fuchsia-"] {
+    color: #cce3d8 !important;
+  }
+
+  html[data-theme="dark"] [class*="bg-white"] {
+    background-color: rgba(24, 33, 30, 0.22) !important;
+  }
+
+  html[data-theme="dark"] [class*="border-white"],
+  html[data-theme="dark"] [class*="border-rose-"] {
+    border-color: rgba(144, 163, 154, 0.34) !important;
+  }
+
+  html[data-theme="dark"] [class*="placeholder:text-rose-"]::placeholder {
+    color: rgba(162, 185, 174, 0.78) !important;
+  }
+
+  html[data-theme="dark"] #loginCard,
+  html[data-theme="dark"] #registerCard,
+  html[data-theme="dark"] .otp-card,
+  html[data-theme="dark"] .feature-card,
+  html[data-theme="dark"] .security-shell,
+  html[data-theme="dark"] .security-step,
+  html[data-theme="dark"] .ops-card {
+    box-shadow: 0 14px 30px rgba(3, 8, 6, 0.3) !important;
+  }
+
+  html[data-theme="dark"] #loginCard,
+  html[data-theme="dark"] #registerCard,
+  html[data-theme="dark"] .otp-card {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  html[data-theme="dark"] .feature-card {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  html[data-theme="dark"] .security-shell {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  html[data-theme="dark"] .security-step,
+  html[data-theme="dark"] .ops-card {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  html[data-theme="dark"] #adminDashboard .rounded-2xl.border,
+  html[data-theme="dark"] #adminDashboard .rounded-xl.border {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  html[data-theme="dark"] input,
+  html[data-theme="dark"] select,
+  html[data-theme="dark"] textarea {
+    color: #edf6f1 !important;
+    background-color: rgba(19, 29, 26, 0.4) !important;
+    border-color: rgba(127, 156, 144, 0.4) !important;
+  }
+
+  html[data-theme="dark"] input::placeholder,
+  html[data-theme="dark"] textarea::placeholder {
+    color: rgba(159, 183, 173, 0.74) !important;
+  }
+
+  html[data-theme="dark"] .theme-toggle-btn {
+    color: #e8f3ed !important;
+    background-color: rgba(25, 38, 33, 0.5) !important;
+    border-color: rgba(133, 163, 151, 0.34) !important;
+  }
+
+  html[data-theme="dark"] .theme-toggle-btn:hover {
+    background-color: rgba(36, 53, 46, 0.9) !important;
+  }
+
+  html[data-theme="dark"]
+    #loginCard
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    #registerCard
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    .otp-card
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    .feature-card
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    .security-shell
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    .security-step
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    .ops-card
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    #adminDashboard
+    .rounded-2xl.border
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a),
+  html[data-theme="dark"]
+    #adminDashboard
+    .rounded-xl.border
+    :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a) {
+    color: #e8f5ee !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.62);
+  }
+
+  html[data-theme="dark"] #loginCard :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] #registerCard :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] .otp-card :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] .feature-card :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] .security-shell :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] .security-step :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] .ops-card :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] #adminDashboard .rounded-2xl.border :is(p, span, li, dt, dd, td),
+  html[data-theme="dark"] #adminDashboard .rounded-xl.border :is(p, span, li, dt, dd, td) {
+    color: #d7e7de !important;
+    font-weight: 650 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.58);
+  }
+
+  html[data-theme="dark"] #loginCard :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"] #registerCard :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"] .otp-card :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"] .feature-card :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"] .security-shell :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"] .security-step :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"] .ops-card :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"]
+    #adminDashboard
+    .rounded-2xl.border
+    :is(h1, h2, h3, h4, h5, h6, th, label, a),
+  html[data-theme="dark"]
+    #adminDashboard
+    .rounded-xl.border
+    :is(h1, h2, h3, h4, h5, h6, th, label, a) {
+    color: #f2b50b !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.78);
+  }
+
+  /* Final readability pass for transparent cards in dark mode */
+  html[data-theme="dark"]
+    :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    ) {
+    background-color: rgba(7, 14, 11, 0.72) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-color: rgba(170, 200, 186, 0.42) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  html[data-theme="dark"]
+    :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    )
+    :is(p, span, li, dt, dd, td, a, button, label, th) {
+    color: #f5fff9 !important;
+    text-shadow: none !important;
+    font-weight: 700 !important;
+  }
+
+  html[data-theme="dark"]
+    :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    )
+    :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #ffe28a !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+    font-weight: 900 !important;
+  }
+
+  /* Readability lock: keep cards readable in both themes */
+  :is(
+    #loginCard,
+    #registerCard,
+    .otp-card,
+    .feature-card,
+    .security-shell,
+    .security-step,
+    .ops-card,
+    #adminDashboard .rounded-2xl.border,
+    #adminDashboard .rounded-xl.border
+  ) {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(120, 95, 78, 0.3) !important;
+  }
+
+  :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    )
+    :is(p, span, li, dt, dd, td, label, th, a) {
+    color: #111827 !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+  }
+
+  :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    )
+    :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #6b2f12 !important;
+    font-weight: 800 !important;
+  }
+
+  html[data-theme="dark"]
+    :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    ) {
+    background-color: rgba(7, 14, 11, 0.56) !important;
+    border-color: rgba(173, 204, 190, 0.44) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42) !important;
+  }
+
+  html[data-theme="dark"]
+    :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    )
+    :is(p, span, li, dt, dd, td, label, th, a) {
+    color: #f2fff7 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  html[data-theme="dark"]
+    :is(
+      #loginCard,
+      #registerCard,
+      .otp-card,
+      .feature-card,
+      .security-shell,
+      .security-step,
+      .ops-card,
+      #adminDashboard .rounded-2xl.border,
+      #adminDashboard .rounded-xl.border
+    )
+    :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #ffd166 !important;
+    font-weight: 900 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+  }
+
+  html[data-theme="dark"] #hero-title [data-typing-line],
+  html[data-theme="dark"] #heroTitleCaret {
+    color: #ffe08a !important;
+    font-weight: 900 !important;
+    text-shadow:
+      0 0 12px rgba(242, 181, 11, 0.45),
+      0 2px 5px rgba(0, 0, 0, 0.72) !important;
+  }
+
+  /* Keep auth forms a bit more transparent than other cards */
+  #loginCard,
+  #registerCard,
+  .otp-card {
+    background-color: rgba(255, 255, 255, 0.72) !important;
+  }
+
+  html[data-theme="dark"] #loginCard,
+  html[data-theme="dark"] #registerCard,
+  html[data-theme="dark"] .otp-card {
+    background-color: rgba(7, 14, 11, 0.44) !important;
+  }
+
+  /* Light mode: landing cards below hero should be more transparent */
+  html[data-theme="light"]
+    :is(
+      #features .feature-card,
+      #security .security-shell,
+      #security .security-step,
+      #operations .ops-card
+    ) {
+    background: rgba(255, 255, 255, 0.32) !important;
+    background-color: rgba(255, 255, 255, 0.32) !important;
+    border-color: rgba(255, 255, 255, 0.42) !important;
+    box-shadow: 0 10px 22px rgba(110, 38, 20, 0.12) !important;
+  }
+
+  /* Light mode: use the same text color as typing text */
+  html[data-theme="light"]
+    :is(
+      #features .feature-card,
+      #security .security-shell,
+      #security .security-step,
+      #operations .ops-card
+    )
+    :is(p, span, li, dt, dd, td, label, th, a) {
+    color: #db5600 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 1px rgba(97, 34, 6, 0.25) !important;
+  }
+
+  html[data-theme="light"]
+    :is(
+      #features .feature-card,
+      #security .security-shell,
+      #security .security-step,
+      #operations .ops-card
+    )
+    :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #ff7700 !important;
+    font-weight: 900 !important;
+    text-shadow: 0 1px 2px rgba(97, 34, 6, 0.32) !important;
+  }
+
+  /* Final auth glass override: keep login/register forms transparent in both themes */
+  :is(#loginCard, #registerCard, .otp-card) {
+    background: rgba(255, 255, 255, 0.14) !important;
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 28px rgba(68, 25, 13, 0.16) !important;
+  }
+
+  html[data-theme="dark"] :is(#loginCard, #registerCard, .otp-card) {
+    background: rgba(7, 14, 11, 0.28) !important;
+    background-color: rgba(7, 14, 11, 0.28) !important;
+    border-color: rgba(173, 204, 190, 0.42) !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35) !important;
+  }
+}

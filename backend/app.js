@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const dotenv = require("dotenv");
 const {
   getDashboardSnapshot,
@@ -36,6 +37,7 @@ dotenv.config({ path: path.join(__dirname, ENV_FILE) });
 const app = express();
 const PORT = resolvePort(process.env.PORT, 3000);
 const HOST = process.env.HOST || "127.0.0.1";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const ADMIN_ROLE = normalizeAdminRole(process.env.ADMIN_ROLE || "super_admin");
@@ -48,10 +50,53 @@ let landingCommentIdCounter = 1;
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
 const PUBLIC_DIR = path.join(FRONTEND_DIR, "public");
+const ASSET_VERSION = resolveAssetVersion({
+  envVersion: process.env.ASSET_VERSION,
+  publicDir: PUBLIC_DIR,
+  isProduction: IS_PRODUCTION,
+});
+const LONG_CACHE_EXTENSIONS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".svg",
+  ".ico",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".eot",
+]);
+const MID_CACHE_EXTENSIONS = new Set([".css", ".js", ".mjs"]);
 
 app.set("view engine", "pug");
 app.set("views", VIEWS_DIR);
-app.use(express.static(PUBLIC_DIR));
+app.set("view cache", IS_PRODUCTION);
+app.locals.assetVersion = ASSET_VERSION;
+app.locals.assetPath = createAssetPathResolver(ASSET_VERSION);
+app.use(
+  express.static(PUBLIC_DIR, {
+    etag: true,
+    lastModified: true,
+    setHeaders(res, filePath) {
+      if (!IS_PRODUCTION) {
+        res.setHeader("Cache-Control", "no-store");
+        return;
+      }
+      const ext = path.extname(filePath).toLowerCase();
+      if (LONG_CACHE_EXTENSIONS.has(ext)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return;
+      }
+      if (MID_CACHE_EXTENSIONS.has(ext)) {
+        res.setHeader("Cache-Control", "public, max-age=86400, must-revalidate");
+        return;
+      }
+      res.setHeader("Cache-Control", "public, max-age=3600, must-revalidate");
+    },
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(trackAdminApiMetrics);
@@ -769,6 +814,30 @@ function createLandingComment(payload) {
   }
 
   return { comment };
+}
+
+function resolveAssetVersion(options = {}) {
+  const { envVersion, publicDir, isProduction } = options;
+  if (envVersion && String(envVersion).trim()) {
+    return String(envVersion).trim();
+  }
+
+  try {
+    const cssPath = path.join(publicDir, "css", "output.css");
+    const stats = fs.statSync(cssPath);
+    return String(Math.trunc(stats.mtimeMs));
+  } catch (error) {
+    return isProduction ? String(Date.now()) : "dev";
+  }
+}
+
+function createAssetPathResolver(version) {
+  const encodedVersion = encodeURIComponent(String(version || "dev"));
+  return function assetPath(assetPathValue) {
+    const value = String(assetPathValue || "");
+    if (!value.startsWith("/")) return value;
+    return `${value}${value.includes("?") ? "&" : "?"}v=${encodedVersion}`;
+  };
 }
 
 function resolveContactFlash(query) {

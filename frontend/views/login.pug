@@ -17,7 +17,7 @@ block content
     .relative.z-10.mx-auto.w-full.max-w-2xl.items-center.px-4.py-6.min-h-dvh.pt-28.pb-8(
       class="sm:pt-32 sm:py-10 md:px-6"
     )
-      section#loginCard.w-full.max-w-md.rounded-2xl.border.bg-white.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold.mx-auto(
+      section#loginCard.auth-glass-card.w-full.max-w-md.rounded-2xl.border.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold.mx-auto(
         class="border-white/40 bg-white/20 sm:rounded-3xl sm:p-7 md:p-8"
       )
         .mb-6.text-center
@@ -74,7 +74,7 @@ block content
   #otpModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
     class="bg-rose-950/55 sm:p-4"
   )
-    .otp-card.w-full.max-w-sm.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
+    .otp-card.auth-glass-card.w-full.max-w-sm.rounded-2xl.border.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
       class="border-white/40 bg-white/25"
     )
       .mb-2.flex.items-start.justify-between
@@ -94,5 +94,5 @@ block content
       .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
         +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
         +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
-  script(src="/js/animations/login-particles.js")
-  script(src="/js/login.js")
+  script(src=assetPath("/js/animations/login-particles.js"))
+  script(src=assetPath("/js/login.js"))

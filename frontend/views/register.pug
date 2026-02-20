@@ -16,7 +16,7 @@ block content
     .mx-auto.flex.w-full.max-w-4xl.items-center.justify-center.px-4.pt-24.pb-6(
       class="min-h-[calc(100dvh-6rem)] sm:min-h-[calc(100dvh-7rem)] sm:pt-28 sm:pb-8 md:px-6"
     )
-      section#registerCard.w-full.max-w-md.rounded-2xl.border.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl(
+      section#registerCard.auth-glass-card.w-full.max-w-md.rounded-2xl.border.p-5.text-rose-950.shadow-2xl.backdrop-blur-2xl(
         class="border-white/45 bg-white/30 sm:rounded-3xl sm:p-7"
       )
         .mb-6.text-center.space-y-2
@@ -106,7 +106,9 @@ block content
           )
 
   #registerOtpModal.fixed.inset-0.hidden.items-center.justify-center.bg-black.p-4.bg-opacity-50
-    .w-full.max-w-sm.rounded-2xl.border.bg-white.p-5.shadow-2xl(class="border-white/40 bg-white/95")
+    .otp-card.auth-glass-card.w-full.max-w-sm.rounded-2xl.border.p-5.shadow-2xl(
+      class="border-white/40 bg-white/95"
+    )
       h3.text-lg.font-bold Verify Email OTP
       p.mt-1.text-sm.text-slate-600 Enter the 5-digit code sent to your email.
       input#registerOtpInput.mt-3.w-full.rounded-md.border.px-3.py-2.border-slate-300(
@@ -119,4 +121,4 @@ block content
         +appButton("Submit", "primary", "button")#registerOtpSubmit.flex-1(disabled)
         +appButton("Resend (10:00)", "ghost", "button")#registerResendOtp.flex-1(disabled)
 
-  script(src="/js/register.js")
+  script(src=assetPath("/js/register.js"))

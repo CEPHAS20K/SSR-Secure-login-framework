@@ -13,6 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
     ? Array.from(heroTitle.querySelectorAll("[data-typing-line]"))
     : [];
   const heroTitleCaret = document.getElementById("heroTitleCaret");
+  const darkModeCards = Array.from(
+    landingPage.querySelectorAll(
+      "#features .feature-card, #security .security-shell, #security .security-step, #operations .ops-card"
+    )
+  );
+  let darkModeCardPulseTween = null;
 
   for (const link of sectionLinks) {
     link.addEventListener("click", (event) => {
@@ -107,10 +113,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const animateHeroTitleTyping = () => {
     if (!heroTitleLines.length) return;
 
-    const lineValues = heroTitleLines.map((line) => String(line.textContent || ""));
+    const lineValues = heroTitleLines.map((line) => String(line.textContent || "").trim());
+    const typingDelay = 170;
+    const deletingDelay = 105;
+    const betweenLinesDelay = 150;
+    const afterDeleteLineDelay = 260;
+    const fullWordPause = 1900;
+    const fullDeletePause = 500;
+
     if (prefersReducedMotion) {
       heroTitleLines.forEach((line, index) => {
-        line.textContent = lineValues[index];
+        line.textContent = lineValues[index] || "";
       });
       if (heroTitleCaret) {
         heroTitleCaret.style.opacity = "0.75";
@@ -127,41 +140,74 @@ document.addEventListener("DOMContentLoaded", () => {
       if (window.gsap) {
         window.gsap.to(heroTitleCaret, {
           opacity: 0.25,
-          duration: 0.48,
+          duration: 0.65,
           ease: "none",
           repeat: -1,
           yoyo: true,
         });
+      } else {
+        window.setInterval(() => {
+          heroTitleCaret.style.opacity = heroTitleCaret.style.opacity === "0.2" ? "1" : "0.2";
+        }, 700);
       }
     }
+
+    const hasContent = lineValues.some((value) => value.length > 0);
+    if (!hasContent) return;
 
     let lineIndex = 0;
     let charIndex = 0;
     let isDeleting = false;
+    let timeoutId = null;
 
-    const runTypingCycle = () => {
+    const schedule = (delay) => {
+      timeoutId = window.setTimeout(step, delay);
+    };
+
+    const step = () => {
       const currentLine = heroTitleLines[lineIndex];
-      const currentValue = lineValues[lineIndex];
-      if (!currentLine || !currentValue) return;
+      const currentValue = lineValues[lineIndex] || "";
+      if (!currentLine) {
+        schedule(180);
+        return;
+      }
+
+      if (!currentValue.length) {
+        if (!isDeleting && lineIndex < heroTitleLines.length - 1) {
+          lineIndex += 1;
+          charIndex = 0;
+          schedule(betweenLinesDelay);
+          return;
+        }
+        if (isDeleting && lineIndex > 0) {
+          lineIndex -= 1;
+          charIndex = (lineValues[lineIndex] || "").length;
+          schedule(afterDeleteLineDelay);
+          return;
+        }
+        isDeleting = !isDeleting;
+        schedule(fullDeletePause);
+        return;
+      }
 
       if (!isDeleting) {
         currentLine.textContent = currentValue.slice(0, charIndex + 1);
         charIndex += 1;
 
         if (charIndex < currentValue.length) {
-          window.setTimeout(runTypingCycle, 135);
+          schedule(typingDelay);
           return;
         }
 
         if (lineIndex < heroTitleLines.length - 1) {
           lineIndex += 1;
           charIndex = 0;
-          window.setTimeout(runTypingCycle, 110);
+          schedule(betweenLinesDelay);
           return;
         }
 
         isDeleting = true;
-        window.setTimeout(runTypingCycle, 1650);
+        schedule(fullWordPause);
         return;
       }
 
@@ -169,22 +215,22 @@ document.addEventListener("DOMContentLoaded", () => {
       charIndex = Math.max(0, charIndex - 1);
 
       if (charIndex > 0) {
-        window.setTimeout(runTypingCycle, 95);
+        schedule(deletingDelay);
         return;
       }
 
       if (lineIndex > 0) {
         lineIndex -= 1;
-        charIndex = lineValues[lineIndex].length;
-        window.setTimeout(runTypingCycle, 280);
+        charIndex = (lineValues[lineIndex] || "").length;
+        schedule(afterDeleteLineDelay);
         return;
       }
 
       isDeleting = false;
-      window.setTimeout(runTypingCycle, 320);
+      schedule(fullDeletePause);
     };
 
-    window.setTimeout(runTypingCycle, 120);
+    schedule(160);
   };
 
   const animateHeroCtaVisual = () => {
@@ -345,10 +391,38 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const applyDarkModeCardGsap = () => {
+    if (typeof window.gsap === "undefined" || prefersReducedMotion || !darkModeCards.length) return;
+    const gsap = window.gsap;
+
+    if (darkModeCardPulseTween) {
+      darkModeCardPulseTween.kill();
+      darkModeCardPulseTween = null;
+    }
+
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    if (!isDark) {
+      gsap.set(darkModeCards, { clearProps: "boxShadow" });
+      return;
+    }
+
+    darkModeCardPulseTween = gsap.to(darkModeCards, {
+      boxShadow:
+        "0 18px 34px rgba(3, 8, 6, 0.46), 0 0 0 1px rgba(140, 168, 154, 0.22), 0 0 14px rgba(16, 185, 129, 0.2)",
+      duration: 2.2,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut",
+      stagger: { each: 0.08, from: "center" },
+    });
+  };
+
   animateHeroVisual();
   animateHeroTitleTyping();
   animateHeroCtaVisual();
   animateAdvancedSections();
+  applyDarkModeCardGsap();
+  window.addEventListener("auth:themechange", applyDarkModeCardGsap);
 
   if (!parallaxLayers.length || prefersReducedMotion) return;
 

@@ -63,8 +63,6 @@
     --text-base--line-height: calc(1.5 / 1);
     --text-lg: 1.125rem;
     --text-lg--line-height: calc(1.75 / 1.125);
-    --text-xl: 1.25rem;
-    --text-xl--line-height: calc(1.75 / 1.25);
     --text-3xl: 1.875rem;
     --text-3xl--line-height: calc(2.25 / 1.875);
     --text-4xl: 2.25rem;
@@ -288,6 +286,9 @@
   .top-0 {
     top: calc(var(--spacing) * 0);
   }
+  .top-1 {
+    top: calc(var(--spacing) * 1);
+  }
   .top-1\/2 {
     top: calc(1/2 * 100%);
   }
@@ -348,6 +349,9 @@
   .-left-28 {
     left: calc(var(--spacing) * -28);
   }
+  .left-1 {
+    left: calc(var(--spacing) * 1);
+  }
   .left-1\/2 {
     left: calc(1/2 * 100%);
   }
@@ -374,6 +378,9 @@
   }
   .mx-auto {
     margin-inline: auto;
+  }
+  .mt-0 {
+    margin-top: calc(var(--spacing) * 0);
   }
   .mt-0\.5 {
     margin-top: calc(var(--spacing) * 0.5);
@@ -408,9 +415,6 @@
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
   }
-  .mb-5 {
-    margin-bottom: calc(var(--spacing) * 5);
-  }
   .mb-6 {
     margin-bottom: calc(var(--spacing) * 6);
   }
@@ -440,6 +444,9 @@
   }
   .table {
     display: table;
+  }
+  .h-0 {
+    height: calc(var(--spacing) * 0);
   }
   .h-0\.5 {
     height: calc(var(--spacing) * 0.5);
@@ -582,8 +589,19 @@
   .flex-1 {
     flex: 1;
   }
+  .border-collapse {
+    border-collapse: collapse;
+  }
+  .-translate-x-1 {
+    --tw-translate-x: calc(var(--spacing) * -1);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
   .-translate-x-1\/2 {
     --tw-translate-x: calc(calc(1/2 * 100%) * -1);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+  .-translate-y-1 {
+    --tw-translate-y: calc(var(--spacing) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
   .-translate-y-1\/2 {
@@ -602,6 +620,9 @@
   .resize {
     resize: both;
   }
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .flex-col {
     flex-direction: column;
   }
@@ -610,9 +631,6 @@
   }
   .items-center {
     align-items: center;
-  }
-  .items-end {
-    align-items: flex-end;
   }
   .items-start {
     align-items: flex-start;
@@ -637,9 +655,6 @@
   }
   .gap-4 {
     gap: calc(var(--spacing) * 4);
-  }
-  .gap-5 {
-    gap: calc(var(--spacing) * 5);
   }
   .gap-6 {
     gap: calc(var(--spacing) * 6);
@@ -743,6 +758,9 @@
   .border-emerald-300 {
     border-color: var(--color-emerald-300);
   }
+  .border-fuchsia-200 {
+    border-color: var(--color-fuchsia-200);
+  }
   .border-fuchsia-200\/80 {
     border-color: color-mix(in srgb, oklch(90.3% 0.076 319.62) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -772,6 +790,9 @@
   }
   .border-transparent {
     border-color: transparent;
+  }
+  .border-white {
+    border-color: var(--color-white);
   }
   .border-white\/30 {
     border-color: color-mix(in srgb, #fff 30%, transparent);
@@ -836,6 +857,9 @@
       background-color: color-mix(in oklab, var(--color-fuchsia-100) 80%, transparent);
     }
   }
+  .bg-fuchsia-200 {
+    background-color: var(--color-fuchsia-200);
+  }
   .bg-fuchsia-200\/30 {
     background-color: color-mix(in srgb, oklch(90.3% 0.076 319.62) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -850,6 +874,9 @@
   }
   .bg-fuchsia-300 {
     background-color: var(--color-fuchsia-300);
+  }
+  .bg-orange-200 {
+    background-color: var(--color-orange-200);
   }
   .bg-orange-200\/30 {
     background-color: color-mix(in srgb, oklch(90.1% 0.076 70.697) 30%, transparent);
@@ -868,6 +895,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-orange-200) 45%, transparent);
     }
+  }
+  .bg-orange-300 {
+    background-color: var(--color-orange-300);
   }
   .bg-orange-300\/35 {
     background-color: color-mix(in srgb, oklch(83.7% 0.128 66.29) 35%, transparent);
@@ -914,6 +944,9 @@
   .bg-rose-600 {
     background-color: var(--color-rose-600);
   }
+  .bg-rose-950 {
+    background-color: var(--color-rose-950);
+  }
   .bg-rose-950\/30 {
     background-color: color-mix(in srgb, oklch(27.1% 0.105 12.094) 30%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -931,6 +964,9 @@
   }
   .bg-slate-100 {
     background-color: var(--color-slate-100);
+  }
+  .bg-slate-900 {
+    background-color: var(--color-slate-900);
   }
   .bg-slate-900\/20 {
     background-color: color-mix(in srgb, oklch(20.8% 0.042 265.755) 20%, transparent);
@@ -962,10 +998,10 @@
       background-color: color-mix(in oklab, var(--color-white) 10%, transparent);
     }
   }
-  .bg-white\/15 {
-    background-color: color-mix(in srgb, #fff 15%, transparent);
+  .bg-white\/12 {
+    background-color: color-mix(in srgb, #fff 12%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-white) 15%, transparent);
+      background-color: color-mix(in oklab, var(--color-white) 12%, transparent);
     }
   }
   .bg-white\/20 {
@@ -990,12 +1026,6 @@
     background-color: color-mix(in srgb, #fff 35%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-white) 35%, transparent);
-    }
-  }
-  .bg-white\/40 {
-    background-color: color-mix(in srgb, #fff 40%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-white) 40%, transparent);
     }
   }
   .bg-white\/45 {
@@ -1073,6 +1103,9 @@
   .px-5 {
     padding-inline: calc(var(--spacing) * 5);
   }
+  .py-0 {
+    padding-block: calc(var(--spacing) * 0);
+  }
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
   }
@@ -1099,9 +1132,6 @@
   }
   .py-10 {
     padding-block: calc(var(--spacing) * 10);
-  }
-  .py-12 {
-    padding-block: calc(var(--spacing) * 12);
   }
   .pt-3 {
     padding-top: calc(var(--spacing) * 3);
@@ -1181,10 +1211,6 @@
     font-size: var(--text-sm);
     line-height: var(--tw-leading, var(--text-sm--line-height));
   }
-  .text-xl {
-    font-size: var(--text-xl);
-    line-height: var(--tw-leading, var(--text-xl--line-height));
-  }
   .text-xs {
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
@@ -1235,6 +1261,9 @@
   .tracking-widest {
     --tw-tracking: var(--tracking-widest);
     letter-spacing: var(--tracking-widest);
+  }
+  .text-\[\#ff7700\] {
+    color: #ff7700;
   }
   .text-amber-700 {
     color: var(--color-amber-700);
@@ -1302,6 +1331,9 @@
   .uppercase {
     text-transform: uppercase;
   }
+  .underline {
+    text-decoration-line: underline;
+  }
   .opacity-50 {
     opacity: 50%;
   }
@@ -1334,6 +1366,10 @@
   .shadow-xl {
     --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 8px 10px -6px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .outline {
+    outline-style: var(--tw-outline-style);
+    outline-width: 1px;
   }
   .blur {
     --tw-blur: blur(8px);
@@ -1382,10 +1418,18 @@
     -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
     backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
   }
+  .backdrop-filter {
+    -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+    backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+  }
   .transition {
     transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, -webkit-backdrop-filter, backdrop-filter, display, content-visibility, overlay, pointer-events;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
     transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .ease-in-out {
+    --tw-ease: var(--ease-in-out);
+    transition-timing-function: var(--ease-in-out);
   }
   .outline-none {
     --tw-outline-style: none;
@@ -1727,6 +1771,11 @@
       gap: calc(var(--spacing) * 3);
     }
   }
+  .sm\:gap-4 {
+    @media (width >= 40rem) {
+      gap: calc(var(--spacing) * 4);
+    }
+  }
   .sm\:gap-5 {
     @media (width >= 40rem) {
       gap: calc(var(--spacing) * 5);
@@ -1751,11 +1800,6 @@
       padding: calc(var(--spacing) * 4);
     }
   }
-  .sm\:p-6 {
-    @media (width >= 40rem) {
-      padding: calc(var(--spacing) * 6);
-    }
-  }
   .sm\:p-7 {
     @media (width >= 40rem) {
       padding: calc(var(--spacing) * 7);
@@ -1776,9 +1820,9 @@
       padding-block: calc(var(--spacing) * 4);
     }
   }
-  .sm\:py-7 {
+  .sm\:py-5 {
     @media (width >= 40rem) {
-      padding-block: calc(var(--spacing) * 7);
+      padding-block: calc(var(--spacing) * 5);
     }
   }
   .sm\:py-8 {
@@ -1836,11 +1880,6 @@
       line-height: var(--tw-leading, var(--text-sm--line-height));
     }
   }
-  .md\:grid-cols-3 {
-    @media (width >= 48rem) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
   .md\:grid-cols-4 {
     @media (width >= 48rem) {
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1849,11 +1888,6 @@
   .md\:grid-cols-\[1\.1fr_0\.9fr\] {
     @media (width >= 48rem) {
       grid-template-columns: 1.1fr 0.9fr;
-    }
-  }
-  .md\:grid-cols-\[1\.1fr_1fr_1fr\] {
-    @media (width >= 48rem) {
-      grid-template-columns: 1.1fr 1fr 1fr;
     }
   }
   .md\:grid-cols-\[1fr_auto\] {
@@ -2127,6 +2161,222 @@
     transform: translateX(6px) rotate(-7deg) scale(1.05);
   }
 }
+.auth-glass-card {
+  background: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.52) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 28px rgba(68, 25, 13, 0.18) !important;
+}
+.auth-glass-card input, .auth-glass-card select, .auth-glass-card textarea {
+  background: rgba(255, 255, 255, 0.34) !important;
+}
+html[data-theme="dark"] .auth-glass-card {
+  background: rgba(7, 14, 11, 0.3) !important;
+  background-color: rgba(7, 14, 11, 0.3) !important;
+  border-color: rgba(173, 204, 190, 0.46) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4) !important;
+}
+html[data-theme="dark"] .auth-glass-card input, html[data-theme="dark"] .auth-glass-card select, html[data-theme="dark"] .auth-glass-card textarea {
+  background: rgba(19, 29, 26, 0.4) !important;
+}
+@layer components {
+  .theme-toggle-btn {
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 14px rgba(120, 37, 58, 0.1);
+  }
+  #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+}
+@layer base {
+  #landingPage #hero-title [data-typing-line], #landingPage #heroTitleCaret {
+    color: #ff7700 !important;
+    font-weight: 900 !important;
+    text-shadow: 0 1px 2px rgba(40, 18, 8, 0.62), 0 0 10px rgba(166, 78, 0, 0.25) !important;
+    -webkit-text-stroke: 0.35px rgba(64, 26, 8, 0.4);
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  html[data-theme="dark"], html[data-theme="dark"] body {
+    background: #0e1311;
+    color: #e6eee9;
+  }
+  html[data-theme="dark"] #pageTransitionOverlay {
+    background: linear-gradient(160deg, #101915 0%, #1c2b24 55%, #141d19 100%);
+  }
+  html[data-theme="dark"] .bg-auth-svg {
+    background-color: #0e1311;
+    background-image: radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.16), transparent 45%), radial-gradient(circle at 80% 10%, rgba(132, 204, 22, 0.12), transparent 50%), radial-gradient(circle at 55% 75%, rgba(148, 163, 184, 0.16), transparent 55%), url("/images/flat-mount.svg");
+    background-blend-mode: screen, screen, screen, normal;
+  }
+  html[data-theme="dark"] .landing-mesh {
+    background-image: radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.12), transparent 42%), radial-gradient(circle at 80% 10%, rgba(167, 243, 208, 0.1), transparent 44%), radial-gradient(circle at 55% 75%, rgba(156, 163, 175, 0.14), transparent 48%);
+  }
+  html[data-theme="dark"] [class*="text-rose-"] {
+    color: #e6eee9 !important;
+  }
+  html[data-theme="dark"] #hero-title [data-typing-line], html[data-theme="dark"] #heroTitleCaret {
+    color: #ffe08a !important;
+    font-weight: 900 !important;
+    text-shadow: 0 0 14px rgba(242, 181, 11, 0.55), 0 2px 6px rgba(0, 0, 0, 0.75) !important;
+  }
+  html[data-theme="dark"] [class*="text-fuchsia-"] {
+    color: #cce3d8 !important;
+  }
+  html[data-theme="dark"] [class*="bg-white"] {
+    background-color: rgba(24, 33, 30, 0.22) !important;
+  }
+  html[data-theme="dark"] [class*="border-white"], html[data-theme="dark"] [class*="border-rose-"] {
+    border-color: rgba(144, 163, 154, 0.34) !important;
+  }
+  html[data-theme="dark"] [class*="placeholder:text-rose-"]::placeholder {
+    color: rgba(162, 185, 174, 0.78) !important;
+  }
+  html[data-theme="dark"] #loginCard, html[data-theme="dark"] #registerCard, html[data-theme="dark"] .otp-card, html[data-theme="dark"] .feature-card, html[data-theme="dark"] .security-shell, html[data-theme="dark"] .security-step, html[data-theme="dark"] .ops-card {
+    box-shadow: 0 14px 30px rgba(3, 8, 6, 0.3) !important;
+  }
+  html[data-theme="dark"] #loginCard, html[data-theme="dark"] #registerCard, html[data-theme="dark"] .otp-card {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+  html[data-theme="dark"] .feature-card {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+  html[data-theme="dark"] .security-shell {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+  html[data-theme="dark"] .security-step, html[data-theme="dark"] .ops-card {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+  html[data-theme="dark"] #adminDashboard .rounded-2xl.border, html[data-theme="dark"] #adminDashboard .rounded-xl.border {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+  html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea {
+    color: #edf6f1 !important;
+    background-color: rgba(19, 29, 26, 0.4) !important;
+    border-color: rgba(127, 156, 144, 0.4) !important;
+  }
+  html[data-theme="dark"] input::placeholder, html[data-theme="dark"] textarea::placeholder {
+    color: rgba(159, 183, 173, 0.74) !important;
+  }
+  html[data-theme="dark"] .theme-toggle-btn {
+    color: #e8f3ed !important;
+    background-color: rgba(25, 38, 33, 0.5) !important;
+    border-color: rgba(133, 163, 151, 0.34) !important;
+  }
+  html[data-theme="dark"] .theme-toggle-btn:hover {
+    background-color: rgba(36, 53, 46, 0.9) !important;
+  }
+  html[data-theme="dark"] #loginCard :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] #registerCard :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] .otp-card :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] .feature-card :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] .security-shell :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] .security-step :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] .ops-card :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] #adminDashboard .rounded-2xl.border :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a), html[data-theme="dark"] #adminDashboard .rounded-xl.border :is(h1, h2, h3, h4, h5, h6, p, span, li, dt, dd, label, th, td, a) {
+    color: #e8f5ee !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.62);
+  }
+  html[data-theme="dark"] #loginCard :is(p, span, li, dt, dd, td), html[data-theme="dark"] #registerCard :is(p, span, li, dt, dd, td), html[data-theme="dark"] .otp-card :is(p, span, li, dt, dd, td), html[data-theme="dark"] .feature-card :is(p, span, li, dt, dd, td), html[data-theme="dark"] .security-shell :is(p, span, li, dt, dd, td), html[data-theme="dark"] .security-step :is(p, span, li, dt, dd, td), html[data-theme="dark"] .ops-card :is(p, span, li, dt, dd, td), html[data-theme="dark"] #adminDashboard .rounded-2xl.border :is(p, span, li, dt, dd, td), html[data-theme="dark"] #adminDashboard .rounded-xl.border :is(p, span, li, dt, dd, td) {
+    color: #d7e7de !important;
+    font-weight: 650 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.58);
+  }
+  html[data-theme="dark"] #loginCard :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] #registerCard :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] .otp-card :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] .feature-card :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] .security-shell :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] .security-step :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] .ops-card :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] #adminDashboard .rounded-2xl.border :is(h1, h2, h3, h4, h5, h6, th, label, a), html[data-theme="dark"] #adminDashboard .rounded-xl.border :is(h1, h2, h3, h4, h5, h6, th, label, a) {
+    color: #f2b50b !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.78);
+  }
+  html[data-theme="dark"] :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) {
+    background-color: rgba(7, 14, 11, 0.72) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-color: rgba(170, 200, 186, 0.42) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45) !important;
+  }
+  html[data-theme="dark"] :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) :is(p, span, li, dt, dd, td, a, button, label, th) {
+    color: #f5fff9 !important;
+    text-shadow: none !important;
+    font-weight: 700 !important;
+  }
+  html[data-theme="dark"] :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #ffe28a !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+    font-weight: 900 !important;
+  }
+  :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(120, 95, 78, 0.3) !important;
+  }
+  :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) :is(p, span, li, dt, dd, td, label, th, a) {
+    color: #111827 !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+  }
+  :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #6b2f12 !important;
+    font-weight: 800 !important;
+  }
+  html[data-theme="dark"] :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) {
+    background-color: rgba(7, 14, 11, 0.56) !important;
+    border-color: rgba(173, 204, 190, 0.44) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42) !important;
+  }
+  html[data-theme="dark"] :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) :is(p, span, li, dt, dd, td, label, th, a) {
+    color: #f2fff7 !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45) !important;
+  }
+  html[data-theme="dark"] :is( #loginCard, #registerCard, .otp-card, .feature-card, .security-shell, .security-step, .ops-card, #adminDashboard .rounded-2xl.border, #adminDashboard .rounded-xl.border ) :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #ffd166 !important;
+    font-weight: 900 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
+  }
+  html[data-theme="dark"] #hero-title [data-typing-line], html[data-theme="dark"] #heroTitleCaret {
+    color: #ffe08a !important;
+    font-weight: 900 !important;
+    text-shadow: 0 0 12px rgba(242, 181, 11, 0.45), 0 2px 5px rgba(0, 0, 0, 0.72) !important;
+  }
+  #loginCard, #registerCard, .otp-card {
+    background-color: rgba(255, 255, 255, 0.72) !important;
+  }
+  html[data-theme="dark"] #loginCard, html[data-theme="dark"] #registerCard, html[data-theme="dark"] .otp-card {
+    background-color: rgba(7, 14, 11, 0.44) !important;
+  }
+  html[data-theme="light"] :is( #features .feature-card, #security .security-shell, #security .security-step, #operations .ops-card ) {
+    background: rgba(255, 255, 255, 0.32) !important;
+    background-color: rgba(255, 255, 255, 0.32) !important;
+    border-color: rgba(255, 255, 255, 0.42) !important;
+    box-shadow: 0 10px 22px rgba(110, 38, 20, 0.12) !important;
+  }
+  html[data-theme="light"] :is( #features .feature-card, #security .security-shell, #security .security-step, #operations .ops-card ) :is(p, span, li, dt, dd, td, label, th, a) {
+    color: #db5600 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 1px rgba(97, 34, 6, 0.25) !important;
+  }
+  html[data-theme="light"] :is( #features .feature-card, #security .security-shell, #security .security-step, #operations .ops-card ) :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    color: #ff7700 !important;
+    font-weight: 900 !important;
+    text-shadow: 0 1px 2px rgba(97, 34, 6, 0.32) !important;
+  }
+  :is(#loginCard, #registerCard, .otp-card) {
+    background: rgba(255, 255, 255, 0.14) !important;
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 28px rgba(68, 25, 13, 0.16) !important;
+  }
+  html[data-theme="dark"] :is(#loginCard, #registerCard, .otp-card) {
+    background: rgba(7, 14, 11, 0.28) !important;
+    background-color: rgba(7, 14, 11, 0.28) !important;
+    border-color: rgba(173, 204, 190, 0.42) !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35) !important;
+  }
+}
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;
@@ -2249,6 +2499,11 @@
   inherits: false;
   initial-value: 0 0 #0000;
 }
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
 @property --tw-blur {
   syntax: "*";
   inherits: false;
@@ -2338,6 +2593,10 @@
   syntax: "*";
   inherits: false;
 }
+@property --tw-ease {
+  syntax: "*";
+  inherits: false;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -2373,6 +2632,7 @@
       --tw-ring-offset-width: 0px;
       --tw-ring-offset-color: #fff;
       --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-outline-style: solid;
       --tw-blur: initial;
       --tw-brightness: initial;
       --tw-contrast: initial;
@@ -2395,6 +2655,7 @@
       --tw-backdrop-opacity: initial;
       --tw-backdrop-saturate: initial;
       --tw-backdrop-sepia: initial;
+      --tw-ease: initial;
     }
   }
 }

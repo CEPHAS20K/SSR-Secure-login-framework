@@ -1,0 +1,36 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          APP_DIR: ${{ secrets.APP_DIR }}
+          BRANCH: ${{ secrets.DEPLOY_BRANCH }}
+          PM2_APP_NAME: ${{ secrets.PM2_APP_NAME }}
+          NODE_ENV: production
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          envs: APP_DIR,BRANCH,PM2_APP_NAME,NODE_ENV
+          script: |
+            if [ -z "${APP_DIR}" ]; then APP_DIR="/var/www/auth"; fi
+            if [ -z "${BRANCH}" ]; then BRANCH="main"; fi
+            if [ -z "${PM2_APP_NAME}" ]; then PM2_APP_NAME="auth-app"; fi
+            cd "${APP_DIR}"
+            chmod +x scripts/deploy.sh
+            APP_DIR="${APP_DIR}" BRANCH="${BRANCH}" PM2_APP_NAME="${PM2_APP_NAME}" NODE_ENV="${NODE_ENV}" ./scripts/deploy.sh

@@ -8,33 +8,53 @@ mixin appNavbar(activePage)
       class="py-2.5 border-white/35 bg-white/10 sm:px-4 md:px-6"
     )
       .flex.items-center.justify-between(data-nav-shell="true")
-        a.uppercase.tracking-wider.text-rose-950.font-display.text-sm(
+        a.uppercase.tracking-normal.text-rose-950.font-mono.font-black.text-sm(
           href="/",
           class="sm:text-base",
           data-nav-transition="auth"
         )
           span.hidden(class="sm:inline") Auth Secure
           span(class="sm:hidden") AS
-        button#navToggle.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900(
-          type="button",
-          aria-expanded="false",
-          aria-controls="mobileNav",
-          class="border-white/35 bg-white/30 hover:bg-white/60 sm:hidden"
-        )
-          span.sr-only Toggle navigation
-          span#navToggleBars.flex.flex-col.gap-1
-            span.block.w-4.rounded-full.bg-current(class="h-0.5")
-            span.block.w-4.rounded-full.bg-current(class="h-0.5")
-            span.block.w-4.rounded-full.bg-current(class="h-0.5")
-        .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
-          a.font-bold.transition.text-xs(
-            href=navHref,
-            class="text-rose-900/85 hover:text-primary sm:text-sm",
-            data-nav-link=navTarget
-          )= navLabel
+        .flex.items-center.gap-2(class="sm:gap-4")
+          button.theme-toggle-btn.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900(
+            type="button",
+            aria-label="Toggle dark mode",
+            aria-pressed="false",
+            data-theme-toggle,
+            class="border-white/35 bg-white/30 hover:bg-white/60"
+          )
+            span.material-icons.text-base.leading-none(data-theme-icon) dark_mode
+            span.sr-only(data-theme-label) Dark
+          button#navToggle.flex.h-9.w-9.items-center.justify-center.rounded-lg.border.transition.text-rose-900(
+            type="button",
+            aria-expanded="false",
+            aria-controls="mobileNav",
+            class="border-white/35 bg-white/30 hover:bg-white/60 sm:hidden"
+          )
+            span.sr-only Toggle navigation
+            span#navToggleBars.flex.flex-col.gap-1
+              span.block.w-4.rounded-full.bg-current(class="h-0.5")
+              span.block.w-4.rounded-full.bg-current(class="h-0.5")
+              span.block.w-4.rounded-full.bg-current(class="h-0.5")
+          .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
+            a.font-black.font-mono.tracking-normal.transition.text-xs(
+              href="/",
+              class="text-rose-900/85 hover:text-primary sm:text-sm",
+              data-nav-link="home"
+            ) Home
+            a.font-black.font-mono.tracking-normal.transition.text-xs(
+              href=navHref,
+              class="text-rose-900/85 hover:text-primary sm:text-sm",
+              data-nav-link=navTarget
+            )= navLabel
       #mobileNav.hidden.border-t.pt-3.mt-3(class="border-white/35 sm:hidden")
         .grid.gap-2
-          a.rounded-lg.px-3.py-2.text-sm.font-bold.transition(
+          a.rounded-lg.px-3.py-2.text-sm.font-black.font-mono.tracking-normal.transition(
+            href="/",
+            class="bg-white/20 text-rose-900/90 hover:bg-white/60 hover:text-primary",
+            data-nav-link="home"
+          ) Home
+          a.rounded-lg.px-3.py-2.text-sm.font-black.font-mono.tracking-normal.transition(
             href=navHref,
             class="bg-white/20 text-rose-900/90 hover:bg-white/60 hover:text-primary",
             data-nav-link=navTarget

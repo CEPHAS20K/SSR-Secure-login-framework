@@ -612,4 +612,4 @@ block content
       )
 
   script#adminInitialData(type="application/json") !{ JSON.stringify(dashboardData || {}) }
-  script(src="/js/admin-dashboard.js")
+  script(src=assetPath("/js/admin-dashboard.js"))

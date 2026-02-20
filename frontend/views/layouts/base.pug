@@ -13,6 +13,17 @@ html(lang="en")
           }
         } catch (error) {}
       })();
+    script.
+      (function () {
+        try {
+          var themeKey = "auth_theme";
+          var storedTheme = localStorage.getItem(themeKey);
+          var resolvedTheme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", resolvedTheme);
+        } catch (error) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
     link(rel="preconnect", href="https://fonts.googleapis.com")
     link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin)
     link(
@@ -51,12 +62,95 @@ html(lang="en")
         opacity: 1;
         transform: translateX(calc(100vw - 2px));
       }
-    link(rel="stylesheet", href="/css/output.css")
+    link(rel="stylesheet", href=assetPath("/css/output.css"))
+    style.
+      /* Auth forms: final blend override (after compiled CSS) */
+      #loginCard,
+      #registerCard,
+      .otp-card {
+        background: rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.45) !important;
+        box-shadow: 0 10px 30px rgba(68, 25, 13, 0.14) !important;
+        backdrop-filter: blur(18px) saturate(120%) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(120%) !important;
+      }
+
+      html[data-theme="light"] #loginCard,
+      html[data-theme="light"] #registerCard,
+      html[data-theme="light"] .otp-card,
+      html:not([data-theme="dark"]) #loginCard,
+      html:not([data-theme="dark"]) #registerCard,
+      html:not([data-theme="dark"]) .otp-card {
+        background: rgba(255, 255, 255, 0.08) !important;
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.42) !important;
+        box-shadow: 0 10px 26px rgba(100, 36, 18, 0.12) !important;
+      }
+
+      #loginCard input,
+      #loginCard select,
+      #loginCard textarea,
+      #registerCard input,
+      #registerCard select,
+      #registerCard textarea,
+      .otp-card input,
+      .otp-card select,
+      .otp-card textarea {
+        background: rgba(255, 255, 255, 0.22) !important;
+        border-color: rgba(255, 255, 255, 0.52) !important;
+      }
+
+      html[data-theme="light"] #loginCard input,
+      html[data-theme="light"] #loginCard select,
+      html[data-theme="light"] #loginCard textarea,
+      html[data-theme="light"] #registerCard input,
+      html[data-theme="light"] #registerCard select,
+      html[data-theme="light"] #registerCard textarea,
+      html[data-theme="light"] .otp-card input,
+      html[data-theme="light"] .otp-card select,
+      html[data-theme="light"] .otp-card textarea,
+      html:not([data-theme="dark"]) #loginCard input,
+      html:not([data-theme="dark"]) #loginCard select,
+      html:not([data-theme="dark"]) #loginCard textarea,
+      html:not([data-theme="dark"]) #registerCard input,
+      html:not([data-theme="dark"]) #registerCard select,
+      html:not([data-theme="dark"]) #registerCard textarea,
+      html:not([data-theme="dark"]) .otp-card input,
+      html:not([data-theme="dark"]) .otp-card select,
+      html:not([data-theme="dark"]) .otp-card textarea {
+        background: rgba(255, 255, 255, 0.16) !important;
+        border-color: rgba(255, 255, 255, 0.48) !important;
+      }
+
+      html[data-theme="dark"] #loginCard,
+      html[data-theme="dark"] #registerCard,
+      html[data-theme="dark"] .otp-card {
+        background: rgba(7, 14, 11, 0.24) !important;
+        background-color: rgba(7, 14, 11, 0.24) !important;
+        border-color: rgba(173, 204, 190, 0.42) !important;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+      }
+
+      html[data-theme="dark"] #loginCard input,
+      html[data-theme="dark"] #loginCard select,
+      html[data-theme="dark"] #loginCard textarea,
+      html[data-theme="dark"] #registerCard input,
+      html[data-theme="dark"] #registerCard select,
+      html[data-theme="dark"] #registerCard textarea,
+      html[data-theme="dark"] .otp-card input,
+      html[data-theme="dark"] .otp-card select,
+      html[data-theme="dark"] .otp-card textarea {
+        background: rgba(19, 29, 26, 0.38) !important;
+        border-color: rgba(173, 204, 190, 0.4) !important;
+      }
   body.min-h-screen.bg-slate-100.font-body.text-slate-900(data-page=page || "")
     #pageTransitionOverlay
       #pageTransitionStroke
     main
       block content
-    script(src="/vendor/gsap.min.js")
-    script(src="/js/animations/navbar.js")
-    script(src="/js/animations.js")
+    script(src=assetPath("/vendor/gsap.min.js"))
+    script(src=assetPath("/js/theme-toggle.js"))
+    script(src=assetPath("/js/animations/navbar.js"))
+    script(src=assetPath("/js/animations.js"))
+    script(src=assetPath("/js/sw-register.js"))
