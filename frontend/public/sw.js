@@ -1,12 +1,20 @@
 "use strict";
 
-const SW_VERSION = "v5";
+const SW_VERSION = "v6";
 const ASSET_CACHE = `auth-assets-${SW_VERSION}`;
+const OFFLINE_FALLBACK_URL = "/offline.html";
+const PRECACHE_ASSETS = [OFFLINE_FALLBACK_URL, "/manifest.webmanifest", "/images/logo.png"];
 
 const STATIC_FILE_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$/i;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(ASSET_CACHE);
+      await cache.addAll(PRECACHE_ASSETS);
+      await self.skipWaiting();
+    })()
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -33,6 +41,11 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/")) return;
   if (url.pathname.startsWith("/auth/")) return;
 
+  if (request.mode === "navigate") {
+    event.respondWith(handleNavigationRequest(request));
+    return;
+  }
+
   const isAssetRequest =
     ["style", "script", "image", "font", "worker"].includes(request.destination) ||
     STATIC_FILE_PATTERN.test(url.pathname);
@@ -41,6 +54,17 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(staleWhileRevalidate(request));
 });
+
+async function handleNavigationRequest(request) {
+  try {
+    return await fetch(request);
+  } catch (error) {
+    const cache = await caches.open(ASSET_CACHE);
+    const offlineResponse = await cache.match(OFFLINE_FALLBACK_URL);
+    if (offlineResponse) return offlineResponse;
+    return new Response("Offline", { status: 503, statusText: "Offline" });
+  }
+}
 
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(ASSET_CACHE);

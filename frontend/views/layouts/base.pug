@@ -3,8 +3,14 @@ html(lang="en")
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    meta(name="theme-color", content="#ff7700")
+    meta(name="apple-mobile-web-app-capable", content="yes")
+    meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
+    meta(name="apple-mobile-web-app-title", content="Auth Secure")
     title= title || "App"
     link(rel="icon", type="image/png", href="/images/logo.png")
+    link(rel="apple-touch-icon", href="/images/logo.png")
+    link(rel="manifest", href="/manifest.webmanifest")
     script.
       (function () {
         try {
@@ -60,3 +66,4 @@ html(lang="en")
     script(src="/vendor/gsap.min.js")
     script(src="/js/animations/navbar.js")
     script(src="/js/animations.js")
+    script(src="/js/sw-register.js")

@@ -12,11 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const registerBtn = document.getElementById("registerBtn");
   const registerFlash = document.getElementById("registerFlash");
   const otpModal = document.getElementById("registerOtpModal");
+  const modalCard = otpModal ? otpModal.querySelector(".otp-card") : null;
   const otpInput = document.getElementById("registerOtpInput");
   const otpSubmit = document.getElementById("registerOtpSubmit");
   const resendOtp = document.getElementById("registerResendOtp");
+  const otpClose = document.getElementById("registerOtpClose");
 
-  const OTP_COUNTDOWN_SECONDS = 10 * 60;
+  const OTP_COUNTDOWN_SECONDS = 5 * 60;
   let secondsLeft = OTP_COUNTDOWN_SECONDS;
   let timer = null;
 
@@ -99,6 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const canResend = secondsLeft <= 0;
     resendOtp.disabled = !canResend;
     resendOtp.textContent = canResend ? "Resend OTP" : `Resend (${formatTime(secondsLeft)})`;
+    resendOtp.classList.toggle("opacity-60", !canResend);
+    resendOtp.classList.toggle("cursor-not-allowed", !canResend);
   };
 
   const stopTimer = () => {
@@ -138,25 +142,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!window.gsap) return;
     gsap.fromTo(otpModal, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "power1.out" });
+    if (modalCard) {
+      gsap.fromTo(
+        modalCard,
+        { y: 18, scale: 0.96, autoAlpha: 0 },
+        { y: 0, scale: 1, autoAlpha: 1, duration: 0.3, ease: "power2.out" }
+      );
+    }
   };
 
   const closeOtpModal = () => {
-    stopTimer();
     if (otpModal.classList.contains("hidden") && otpModal.style.display !== "flex") return;
 
     if (window.gsap) {
+      if (modalCard) {
+        gsap.to(modalCard, {
+          y: 12,
+          scale: 0.98,
+          autoAlpha: 0,
+          duration: 0.2,
+          ease: "power1.in",
+        });
+      }
       gsap.to(otpModal, {
         autoAlpha: 0,
         duration: 0.2,
         ease: "power1.in",
         onComplete: () => {
+          stopTimer();
           setModalOpenState(false);
           gsap.set(otpModal, { clearProps: "opacity,visibility" });
+          if (modalCard) gsap.set(modalCard, { clearProps: "opacity,transform" });
         },
       });
       return;
     }
 
+    stopTimer();
     setModalOpenState(false);
   };
 
@@ -211,6 +233,12 @@ document.addEventListener("DOMContentLoaded", () => {
     otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 5);
     updateOtpSubmitState();
   });
+  otpInput.addEventListener("paste", (event) => {
+    event.preventDefault();
+    const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 5);
+    otpInput.value = pasted;
+    updateOtpSubmitState();
+  });
 
   otpSubmit.addEventListener("click", () => {
     if (otpSubmit.disabled) return;
@@ -226,8 +254,17 @@ document.addEventListener("DOMContentLoaded", () => {
     startTimer();
   });
 
+  if (otpClose) {
+    otpClose.addEventListener("click", closeOtpModal);
+  }
+
   otpModal.addEventListener("click", (event) => {
-    if (event.target !== otpModal) return;
+    if (modalCard && modalCard.contains(event.target)) return;
+    closeOtpModal();
+  });
+
+  otpModal.addEventListener("mousedown", (event) => {
+    if (modalCard && modalCard.contains(event.target)) return;
     closeOtpModal();
   });
 

@@ -1,0 +1,19 @@
+{
+  "name": "Auth Secure",
+  "short_name": "AuthSecure",
+  "description": "Secure authentication portal and admin access.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ff7700",
+  "theme_color": "#ff7700",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -106,23 +106,30 @@ block content
             disabled
           )
 
-  #registerOtpModal.fixed.inset-0.hidden.items-center.justify-center.bg-black.p-4.bg-opacity-50(
-    class="z-[80]"
+  #registerOtpModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
+    aria-hidden="true",
+    class="z-[80] bg-rose-950/55 sm:p-4"
   )
-    .otp-card.w-full.max-w-sm.rounded-2xl.border.bg-white.p-5.shadow-2xl(
-      class="border-white/40 bg-white/95"
+    .otp-card.w-full.max-w-sm.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
+      class="border-white/40 bg-white/25"
     )
-      h3.text-lg.font-bold Verify Email OTP
-      p.mt-1.text-sm.text-slate-600 Enter the 5-digit code sent to your email.
-      input#registerOtpInput.mt-3.w-full.rounded-md.border.px-3.py-2.border-slate-300(
+      .mb-2.flex.items-start.justify-between
+        .pr-3
+          h3.text-lg.font-black.text-rose-900 Verify Email OTP
+          p.mt-1.text-sm.font-semibold.text-rose-800 Enter the 5-digit code sent to your email.
+        button#registerOtpClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+          type="button",
+          class="hover:bg-fuchsia-100"
+        ) Close
+      input#registerOtpInput.mt-4.w-full.rounded-xl.border.border-rose-200.px-3.text-rose-950(
         type="text",
         maxlength="5",
         placeholder="12345",
-        class="focus:border-primary focus:ring-2 focus:ring-primary"
+        class="bg-white/60 py-2.5 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
       )
-      .mt-4.flex.flex-col.gap-3(class="sm:flex-row")
+      .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
         +appButton("Submit", "primary", "button")#registerOtpSubmit.flex-1(disabled)
-        +appButton("Resend (10:00)", "ghost", "button")#registerResendOtp.flex-1(disabled)
+        +appButton("Resend (05:00)", "ghost", "button")#registerResendOtp.flex-1(disabled)
 
   script(src="/js/animations/login-particles.js")
   script(src="/js/register.js")

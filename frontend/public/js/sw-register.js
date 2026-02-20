@@ -2,7 +2,12 @@
 
 (() => {
   if (!("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    regs.forEach((reg) => reg.unregister());
+
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    } catch (error) {
+      console.warn("Service worker registration failed.", error);
+    }
   });
 })();
