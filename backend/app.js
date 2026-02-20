@@ -8,8 +8,8 @@ const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const pino = require("pino");
 const pinoHttp = require("pino-http");
-const { createPublicController } = require("./controllers");
-const { registerPublicRoutes } = require("./routes");
+const { createAdminController, createPublicController } = require("./controllers");
+const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
 const { notFoundHandler, internalServerErrorHandler } = require("./middleware");
 
 const ENV_FILE = process.env.NODE_ENV === "production" ? ".env.proc" : ".env.dev";
@@ -21,6 +21,7 @@ const HOST = process.env.HOST || "127.0.0.1";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const LOG_LEVEL = process.env.LOG_LEVEL || (IS_PRODUCTION ? "info" : "debug");
 const FORCE_NO_STORE = resolveBoolean(process.env.FORCE_NO_STORE, !IS_PRODUCTION);
+const ADMIN_ENABLED = resolveBoolean(process.env.ADMIN_ENABLED, false);
 
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
@@ -64,12 +65,14 @@ const authLimiter = rateLimit({
 });
 
 const publicController = createPublicController({ logger });
+const adminController = createAdminController({ logger });
 
 app.set("view engine", "pug");
 app.set("views", VIEWS_DIR);
 app.set("view cache", IS_PRODUCTION && !FORCE_NO_STORE);
 app.locals.assetVersion = ASSET_VERSION;
 app.locals.assetPath = createAssetPathResolver(ASSET_VERSION);
+app.locals.adminEnabled = ADMIN_ENABLED;
 app.locals.logger = logger;
 
 if (IS_PRODUCTION) {
@@ -126,6 +129,13 @@ app.use("/auth", authLimiter);
 registerPublicRoutes(app, {
   publicController,
 });
+if (ADMIN_ENABLED) {
+  registerAdminRoutes(app, {
+    adminController,
+  });
+} else {
+  logger.info("Admin routes are disabled (set ADMIN_ENABLED=true to enable).");
+}
 
 if (process.env.NODE_ENV !== "production") {
   app.get("/debug-500", (req, res, next) => {

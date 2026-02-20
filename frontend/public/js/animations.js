@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
           pageOverlay,
           {
             clipPath: "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)",
-            duration: 0.58,
+            duration: 0.34,
           },
           0
         )
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
             {
               x: viewportWidth + 18,
               autoAlpha: 0,
-              duration: 0.58,
+              duration: 0.34,
             },
             0
           )
@@ -79,11 +79,11 @@ document.addEventListener("DOMContentLoaded", () => {
         autoAlpha: 1,
         y: 0,
         scale: 1,
-        duration: fromNavTransition ? 0.55 : 0.45,
+        duration: fromNavTransition ? 0.38 : 0.3,
       })
-      .to("#loginTitle", { autoAlpha: 1, y: 0, duration: 0.35 }, "-=0.2")
-      .to(".login-field", { autoAlpha: 1, y: 0, duration: 0.35, stagger: 0.08 }, "-=0.15")
-      .to("#loginBtn", { autoAlpha: 1, y: 0, duration: 0.3 }, "-=0.12");
+      .to("#loginTitle", { autoAlpha: 1, y: 0, duration: 0.24 }, "-=0.15")
+      .to(".login-field", { autoAlpha: 1, y: 0, duration: 0.24, stagger: 0.05 }, "-=0.1")
+      .to("#loginBtn", { autoAlpha: 1, y: 0, duration: 0.2 }, "-=0.08");
 
     if (loginParticles) {
       gsap.to(loginParticles, {
@@ -118,11 +118,11 @@ document.addEventListener("DOMContentLoaded", () => {
         autoAlpha: 1,
         y: 0,
         rotateX: 0,
-        duration: fromNavTransition ? 0.7 : 0.55,
+        duration: fromNavTransition ? 0.45 : 0.34,
       })
-      .to("#registerTitle", { autoAlpha: 1, y: 0, duration: 0.32 }, "-=0.38")
-      .to(fields, { autoAlpha: 1, x: 0, duration: 0.34, stagger: 0.08 }, "-=0.2")
-      .to("#registerBtn", { autoAlpha: 1, y: 0, duration: 0.25 }, "-=0.18");
+      .to("#registerTitle", { autoAlpha: 1, y: 0, duration: 0.22 }, "-=0.24")
+      .to(fields, { autoAlpha: 1, x: 0, duration: 0.24, stagger: 0.05 }, "-=0.12")
+      .to("#registerBtn", { autoAlpha: 1, y: 0, duration: 0.18 }, "-=0.1");
     return;
   }
 
