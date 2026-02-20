@@ -6,6 +6,7 @@ include ../../components/button
 block content
   +appNavbar(activePage || "admin")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
+    canvas#adminLoginParticles.pointer-events-none.absolute.inset-0.z-0(data-auth-particles)
     .pointer-events-none.absolute.-left-24.top-10.hidden.h-64.w-64.rounded-full.blur-3xl(
       class="bg-fuchsia-200/35 sm:block"
     )
@@ -16,14 +17,15 @@ block content
     .mx-auto.flex.w-full.max-w-3xl.items-center.justify-center.px-4.pt-24.pb-6(
       class="min-h-[calc(100dvh-6rem)] sm:min-h-[calc(100dvh-7rem)] sm:pt-28 sm:pb-8 md:px-6"
     )
-      section#adminLoginCard.w-full.max-w-md.rounded-3xl.border.p-6.text-rose-950.shadow-2xl.backdrop-blur-2xl(
+      section#adminLoginCard.w-full.max-w-md.rounded-3xl.border.p-6.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold(
         class="border-white/40 bg-white/25 sm:p-8"
       )
         .text-center
-          p.text-xs.font-bold.uppercase.tracking-widest.text-rose-700 Admin Area
-          h1.mt-2.font-headline.text-4xl.leading-none.text-rose-900(class="sm:text-5xl")
+          h1.mt-2.font-headline.leading-none.text-rose-900.tracking-wide.text-3xl(
+            class="sm:text-5xl",
+            style="font-family: 'Finger Paint', cursive"
+          )
             | Admin Login
-          p.mt-2.text-sm.font-semibold.text-rose-800 Sign in to access the dashboard.
 
         if errorMessage
           #adminFlash.mt-4.rounded-xl.border.p-3.text-sm.font-semibold.text-rose-900.border-rose-300(
@@ -53,8 +55,16 @@ block content
               class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
             )
 
-          +appButton("Sign In", "primary", "submit").mt-1.w-full.py-3
+          +appButton("Sign In", "primary", "submit")#adminLoginBtn.mt-1.w-full.py-3(
+            disabled
+          )
 
-        p.mt-5.text-center.text-xs.font-semibold.text-rose-800
-          | Return to
-          a.ml-1.text-fuchsia-900.transition(href="/login", class="hover:text-fuchsia-700") user login
+        .mt-5.flex.justify-center
+          a.rounded-lg.border.px-4.py-2.text-sm.font-bold.text-rose-900.transition.bg-transparent(
+            href="/login",
+            class="border-white/45 hover:border-primary hover:bg-primary hover:text-white",
+            style="font-family: 'Finger Paint', cursive"
+          ) Return to User Login
+
+  script(src=assetPath("/js/animations/login-particles.js"), defer)
+  script(src=assetPath("/js/admin-login.js"), defer)

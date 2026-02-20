@@ -6,6 +6,7 @@ include ../../components/button
 block content
   +appNavbar(activePage || "admin")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
+    canvas#adminDashboardParticles.pointer-events-none.absolute.inset-0.z-0(data-auth-particles)
     .pointer-events-none.absolute.-left-20.top-12.hidden.h-64.w-64.rounded-full.blur-3xl(
       class="bg-fuchsia-200/30 sm:block"
     )
@@ -612,5 +613,6 @@ block content
       )
 
   script#adminInitialData(type="application/json") !{ JSON.stringify(dashboardData || {}) }
+  script(src=assetPath("/js/animations/login-particles.js"), defer)
   script(src=assetPath("/vendor/axios.min.js"), defer)
   script(src=assetPath("/js/admin-dashboard.js"), defer)

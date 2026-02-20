@@ -10,7 +10,11 @@ const pino = require("pino");
 const pinoHttp = require("pino-http");
 const { createAdminController, createPublicController } = require("./controllers");
 const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
-const { notFoundHandler, internalServerErrorHandler } = require("./middleware");
+const {
+  createAdminInternalAccessGuard,
+  notFoundHandler,
+  internalServerErrorHandler,
+} = require("./middleware");
 
 const ENV_FILE = process.env.NODE_ENV === "production" ? ".env.proc" : ".env.dev";
 dotenv.config({ path: path.join(__dirname, ENV_FILE) });
@@ -21,7 +25,9 @@ const HOST = process.env.HOST || "127.0.0.1";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const LOG_LEVEL = process.env.LOG_LEVEL || (IS_PRODUCTION ? "info" : "debug");
 const FORCE_NO_STORE = resolveBoolean(process.env.FORCE_NO_STORE, !IS_PRODUCTION);
-const ADMIN_ENABLED = resolveBoolean(process.env.ADMIN_ENABLED, false);
+const ADMIN_ENABLED = resolveBoolean(process.env.ADMIN_ENABLED, true);
+const ADMIN_INTERNAL_ONLY = resolveBoolean(process.env.ADMIN_INTERNAL_ONLY, true);
+const ADMIN_ALLOW_IPS = parseList(process.env.ADMIN_ALLOW_IPS);
 
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
@@ -66,6 +72,11 @@ const authLimiter = rateLimit({
 
 const publicController = createPublicController({ logger });
 const adminController = createAdminController({ logger });
+const requireInternalAdminAccess = createAdminInternalAccessGuard({
+  enabled: ADMIN_INTERNAL_ONLY,
+  allowList: ADMIN_ALLOW_IPS,
+  logger,
+});
 
 app.set("view engine", "pug");
 app.set("views", VIEWS_DIR);
@@ -130,6 +141,7 @@ registerPublicRoutes(app, {
   publicController,
 });
 if (ADMIN_ENABLED) {
+  app.use("/admin", requireInternalAdminAccess);
   registerAdminRoutes(app, {
     adminController,
   });
@@ -244,4 +256,12 @@ function resolveBoolean(value, fallback = false) {
     return false;
   }
   return fallback;
+}
+
+function parseList(value) {
+  if (typeof value !== "string" || !value.trim()) return [];
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
