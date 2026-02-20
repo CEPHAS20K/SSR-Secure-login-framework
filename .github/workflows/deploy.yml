@@ -13,8 +13,34 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
     steps:
+      - name: Check deploy secrets
+        id: secrets
+        shell: bash
+        run: |
+          missing=0
+          for var in SSH_HOST SSH_USER SSH_KEY SSH_PORT; do
+            if [ -z "${!var}" ]; then
+              echo "::notice::Missing GitHub secret: ${var}"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy skipped. Add required secrets to enable SSH deployment."
+            exit 0
+          fi
+
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
       - name: Deploy over SSH
+        if: steps.secrets.outputs.ready == 'true'
         uses: appleboy/ssh-action@v1.2.0
         env:
           APP_DIR: ${{ secrets.APP_DIR }}
