@@ -1,0 +1,99 @@
+Environment Setup Guide (.env) For Next Developer
+=================================================
+
+This project reads environment values from backend-local files:
+- `backend/.env.dev` for development
+- `backend/.env.proc` for production mode
+
+
+1) How env loading works
+------------------------
+- Backend app file: `backend/app.js`
+- Behavior:
+  - If `NODE_ENV=production` -> loads `backend/.env.proc`
+  - Otherwise -> loads `backend/.env.dev`
+
+Common commands:
+- `npm run dev` -> development flow (uses `.env.dev`)
+- `npm run start:proc` -> production flow (uses `.env.proc`)
+
+
+2) Required variables currently used by backend
+-----------------------------------------------
+- `PORT`
+  - HTTP server port.
+  - Example: `3004` (dev), `8080` (prod)
+- `HOST`
+  - Bind address.
+  - Example: `127.0.0.1` (local only)
+- `ADMIN_ENABLED`
+  - Enable or disable admin routes.
+  - Values accepted: `true/false`, `1/0`, `yes/no`, `on/off`
+- `ADMIN_INTERNAL_ONLY`
+  - If `true`, admin routes are limited to internal/private IPs (or allowlist).
+- `ADMIN_ALLOW_IPS`
+  - Optional comma-separated IP allowlist.
+  - Example: `10.0.0.5,192.168.1.50`
+
+
+3) Optional variables (supported now)
+-------------------------------------
+- `LOG_LEVEL`
+  - Logger verbosity. Example: `debug`, `info`, `warn`, `error`
+- `FORCE_NO_STORE`
+  - If `true`, static responses use `Cache-Control: no-store` (useful for debugging cache).
+- `ASSET_VERSION`
+  - Manual asset version for cache busting. If omitted, app auto-generates one.
+- `SENTRY_DSN`
+  - If set, enables Sentry error reporting.
+- `SENTRY_TRACES_SAMPLE_RATE`
+  - Number between `0` and `1` (for Sentry tracing).
+
+
+4) Recommended .env templates
+-----------------------------
+Development (`backend/.env.dev`):
+
+PORT=3004
+HOST=127.0.0.1
+ADMIN_ENABLED=true
+ADMIN_INTERNAL_ONLY=true
+ADMIN_ALLOW_IPS=
+LOG_LEVEL=debug
+FORCE_NO_STORE=true
+ASSET_VERSION=dev-local
+# SENTRY_DSN=
+# SENTRY_TRACES_SAMPLE_RATE=0
+
+
+Production (`backend/.env.proc`):
+
+PORT=8080
+HOST=127.0.0.1
+ADMIN_ENABLED=true
+ADMIN_INTERNAL_ONLY=true
+ADMIN_ALLOW_IPS=
+LOG_LEVEL=info
+FORCE_NO_STORE=false
+# ASSET_VERSION=2026-02-21-build-001
+# SENTRY_DSN=
+# SENTRY_TRACES_SAMPLE_RATE=0.1
+
+
+5) Security notes
+-----------------
+- Do not put passwords, API keys, or DSNs in docs/commits.
+- Keep production secrets only on server runtime/secret manager.
+- Keep `ADMIN_INTERNAL_ONLY=true` for production unless you explicitly need public admin exposure.
+
+
+6) Quick verification
+---------------------
+- Start app:
+  - Dev: `npm run dev:backend`
+  - Prod-like: `npm run start:proc`
+- Check health:
+  - `curl http://127.0.0.1:<PORT>/health`
+- Verify admin policy:
+  - If internal-only is active, non-internal clients should get `404` for `/admin/*`.
+
