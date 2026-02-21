@@ -36,6 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const adminFlash = document.getElementById("adminFlash");
   const adminLoading = document.getElementById("adminLoading");
   const refreshBtn = document.getElementById("adminRefreshBtn");
+  const API_CACHE_TTL_MS = 12000;
+  const API_CACHE_MAX_ENTRIES = 120;
 
   const metricTotalUsers = document.getElementById("metricTotalUsers");
   const metricActiveUsers = document.getElementById("metricActiveUsers");
@@ -144,6 +146,10 @@ document.addEventListener("DOMContentLoaded", () => {
     pendingScheduleId: "schedule_daily_users",
     timelineUserId: null,
     timelineCache: new Map(),
+    apiCache: new Map(),
+    pendingRequests: new Map(),
+    usersLoading: false,
+    devicesLoading: false,
     requireApproval: false,
     loadingCount: 0,
     pendingAction: null,
@@ -929,6 +935,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderUsersTable() {
     if (!usersTableBody) return;
+    if (state.usersLoading) {
+      setUsersTableLoading(true);
+      renderUsersSelectionState();
+      return;
+    }
+
     const users = state.usersRows || [];
     const totalUsers = Number(state.usersTotal) || users.length;
     const totalPages = Math.max(1, Math.ceil(totalUsers / state.usersPageSize));
@@ -1042,6 +1054,10 @@ document.addEventListener("DOMContentLoaded", () => {
     setText(detailGeo, user.geo);
     setText(detailRisk, `${user.riskScore} (${user.loginAnomalies} anomalies)`);
     setActionButtonsDisabled(false);
+    if (state.devicesLoading) {
+      setDevicesTableLoading(true);
+      return;
+    }
 
     const devices = state.devicesRows || [];
     const totalDevices = Number(state.devicesTotal) || devices.length;
@@ -1101,6 +1117,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     devicesTableBody.innerHTML = deviceRows.join("");
+  }
+
+  function setUsersTableLoading(isLoading) {
+    if (!usersTableBody) return;
+    if (!isLoading) return;
+    usersTableBody.innerHTML =
+      '<tr><td class="px-3 py-3 text-sm font-semibold text-rose-800" colspan="10">Loading users...</td></tr>';
+    if (usersTableMeta) {
+      setText(usersTableMeta, "Loading users...");
+    }
+    if (usersTablePageIndicator) {
+      setText(usersTablePageIndicator, "Page --/--");
+    }
+    setUsersPaginationButtonsState({ prevDisabled: true, nextDisabled: true });
+  }
+
+  function setDevicesTableLoading(isLoading) {
+    if (!devicesTableBody) return;
+    if (!isLoading) return;
+    devicesTableBody.innerHTML =
+      '<tr><td class="px-3 py-3 text-sm font-semibold text-rose-800" colspan="8">Loading devices...</td></tr>';
+    if (devicesTableMeta) {
+      setText(devicesTableMeta, "Loading devices...");
+    }
+    if (devicesTablePageIndicator) {
+      setText(devicesTablePageIndicator, "Page --/--");
+    }
+    setDevicesPaginationButtonsState({ prevDisabled: true, nextDisabled: true });
   }
 
   function renderRiskTable() {
@@ -1800,6 +1844,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function refreshUsersTableFromApi() {
+    state.usersLoading = true;
+    setUsersTableLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(state.usersPage),
@@ -1811,7 +1857,10 @@ document.addEventListener("DOMContentLoaded", () => {
         params.set("q", state.usersQuery);
       }
 
-      const response = await apiRequest(`/admin/api/users?${params.toString()}`);
+      const response = await apiRequest(`/admin/api/users?${params.toString()}`, {
+        silent: true,
+        cache: true,
+      });
       const rows = Array.isArray(response.users) ? response.users : [];
       const pagination = response.pagination || {};
 
@@ -1820,9 +1869,11 @@ document.addEventListener("DOMContentLoaded", () => {
       state.usersPage = Number(pagination.page) || state.usersPage;
       state.usersPageSize = Number(pagination.pageSize) || state.usersPageSize;
 
+      state.usersLoading = false;
       renderUsersTable();
       renderUsersSelectionState();
     } catch (error) {
+      state.usersLoading = false;
       usersTableBody.innerHTML =
         '<tr><td class="px-3 py-3 text-sm font-semibold text-rose-800" colspan="10">Failed to load users.</td></tr>';
       showFlash(error.message || "Failed to load users.", "error");
@@ -1832,12 +1883,15 @@ document.addEventListener("DOMContentLoaded", () => {
   async function refreshDevicesTableFromApi() {
     const user = getSelectedUser();
     if (!user) {
+      state.devicesLoading = false;
       state.devicesRows = [];
       state.devicesTotal = 0;
       renderUserDetails();
       return;
     }
 
+    state.devicesLoading = true;
+    setDevicesTableLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(state.devicesPage),
@@ -1846,7 +1900,11 @@ document.addEventListener("DOMContentLoaded", () => {
         sortDir: state.devicesSortDir,
       });
       const response = await apiRequest(
-        `/admin/api/users/${encodeURIComponent(user.id)}/devices?${params.toString()}`
+        `/admin/api/users/${encodeURIComponent(user.id)}/devices?${params.toString()}`,
+        {
+          silent: true,
+          cache: true,
+        }
       );
       const rows = Array.isArray(response.devices) ? response.devices : [];
       const pagination = response.pagination || {};
@@ -1854,8 +1912,10 @@ document.addEventListener("DOMContentLoaded", () => {
       state.devicesTotal = Number(pagination.total) || rows.length;
       state.devicesPage = Number(pagination.page) || state.devicesPage;
       state.devicesPageSize = Number(pagination.pageSize) || state.devicesPageSize;
+      state.devicesLoading = false;
       renderUserDetails();
     } catch (error) {
+      state.devicesLoading = false;
       state.devicesRows = [];
       state.devicesTotal = 0;
       renderUserDetails();
@@ -2375,7 +2435,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function refreshDashboard() {
     try {
       const snapshot = await apiRequest(
-        `/admin/api/dashboard?rangeDays=${encodeURIComponent(state.rangeDays)}`
+        `/admin/api/dashboard?rangeDays=${encodeURIComponent(state.rangeDays)}`,
+        { cache: false }
       );
       applyDashboardData(snapshot);
       showFlash("Dashboard refreshed.", "info");
@@ -2385,29 +2446,53 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function apiRequest(url, options = {}) {
-    setLoading(true);
-    try {
-      let requestUrl = url;
-      if (
-        String(requestUrl).startsWith("/admin/api/") &&
-        !String(requestUrl).includes("rangeDays=")
-      ) {
-        const separator = requestUrl.includes("?") ? "&" : "?";
-        requestUrl = `${requestUrl}${separator}rangeDays=${encodeURIComponent(state.rangeDays)}`;
+    let requestUrl = url;
+    if (
+      String(requestUrl).startsWith("/admin/api/") &&
+      !String(requestUrl).includes("rangeDays=")
+    ) {
+      const separator = requestUrl.includes("?") ? "&" : "?";
+      requestUrl = `${requestUrl}${separator}rangeDays=${encodeURIComponent(state.rangeDays)}`;
+    }
+
+    const requestMethod = String(options.method || "GET").toUpperCase();
+    const isSilent = Boolean(options.silent);
+    const shouldUseCache = requestMethod === "GET" && options.cache === true;
+    const cacheTtlMs =
+      Number.isFinite(options.cacheTtlMs) && Number(options.cacheTtlMs) > 0
+        ? Number(options.cacheTtlMs)
+        : API_CACHE_TTL_MS;
+    let requestPayload;
+
+    if (options.body) {
+      requestPayload =
+        String(url).startsWith("/admin/api/") &&
+        typeof options.body === "object" &&
+        options.body !== null
+          ? { ...options.body, rangeDays: state.rangeDays }
+          : options.body;
+    }
+
+    const cacheKey = shouldUseCache
+      ? `${requestMethod}:${requestUrl}:${requestPayload ? JSON.stringify(requestPayload) : ""}`
+      : "";
+
+    if (shouldUseCache) {
+      const cached = readFromApiCache(cacheKey);
+      if (cached) {
+        return cached;
       }
-
-      const requestMethod = options.method || "GET";
-      let requestPayload;
-
-      if (options.body) {
-        requestPayload =
-          String(url).startsWith("/admin/api/") &&
-          typeof options.body === "object" &&
-          options.body !== null
-            ? { ...options.body, rangeDays: state.rangeDays }
-            : options.body;
+      const pending = state.pendingRequests.get(cacheKey);
+      if (pending) {
+        return pending;
       }
+    }
 
+    if (!isSilent) {
+      setLoading(true);
+    }
+
+    const requestTask = (async () => {
       if (window.axios) {
         try {
           const response = await window.axios({
@@ -2416,7 +2501,13 @@ document.addEventListener("DOMContentLoaded", () => {
             data: requestPayload,
             headers: requestPayload ? { "Content-Type": "application/json" } : {},
           });
-          return response.data || {};
+          const payload = response.data || {};
+          if (requestMethod === "GET" && shouldUseCache) {
+            writeToApiCache(cacheKey, payload, cacheTtlMs);
+          } else if (requestMethod !== "GET") {
+            clearApiCache();
+          }
+          return payload;
         } catch (axiosError) {
           const statusCode = axiosError?.response?.status;
           const payload = axiosError?.response?.data || {};
@@ -2447,9 +2538,76 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(payload.error || payload.message || "Request failed.");
       }
 
+      if (requestMethod === "GET" && shouldUseCache) {
+        writeToApiCache(cacheKey, payload, cacheTtlMs);
+      } else if (requestMethod !== "GET") {
+        clearApiCache();
+      }
       return payload;
+    })();
+
+    if (shouldUseCache) {
+      state.pendingRequests.set(cacheKey, requestTask);
+    }
+
+    try {
+      return await requestTask;
     } finally {
-      setLoading(false);
+      if (shouldUseCache) {
+        state.pendingRequests.delete(cacheKey);
+      }
+      if (!isSilent) {
+        setLoading(false);
+      }
+    }
+  }
+
+  function readFromApiCache(cacheKey) {
+    const entry = state.apiCache.get(cacheKey);
+    if (!entry) {
+      return null;
+    }
+    if (entry.expiresAt <= Date.now()) {
+      state.apiCache.delete(cacheKey);
+      return null;
+    }
+    return clonePayload(entry.payload);
+  }
+
+  function writeToApiCache(cacheKey, payload, ttlMs) {
+    const now = Date.now();
+    if (state.apiCache.has(cacheKey)) {
+      state.apiCache.delete(cacheKey);
+    }
+    state.apiCache.set(cacheKey, {
+      payload: clonePayload(payload),
+      expiresAt: now + ttlMs,
+      createdAt: now,
+    });
+
+    while (state.apiCache.size > API_CACHE_MAX_ENTRIES) {
+      const oldestKey = state.apiCache.keys().next().value;
+      if (!oldestKey) break;
+      state.apiCache.delete(oldestKey);
+    }
+  }
+
+  function clearApiCache() {
+    state.apiCache.clear();
+    state.pendingRequests.clear();
+  }
+
+  function clonePayload(payload) {
+    if (typeof payload === "undefined" || payload === null) {
+      return payload;
+    }
+    if (typeof structuredClone === "function") {
+      return structuredClone(payload);
+    }
+    try {
+      return JSON.parse(JSON.stringify(payload));
+    } catch (error) {
+      return payload;
     }
   }
 

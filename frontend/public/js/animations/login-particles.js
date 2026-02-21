@@ -4,17 +4,29 @@ const initAuthParticles = () => {
     navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
   const effectiveType = connection?.effectiveType || "";
   const isDataSaver = Boolean(connection?.saveData);
+  const deviceMemory = Number(navigator.deviceMemory || 0);
+  const hasDeviceMemory = Number.isFinite(deviceMemory) && deviceMemory > 0;
+  const memoryScale = !hasDeviceMemory
+    ? 1
+    : deviceMemory <= 2
+      ? 0.5
+      : deviceMemory <= 4
+        ? 0.72
+        : deviceMemory <= 8
+          ? 0.88
+          : 1;
+  const isUltraLowMemory = hasDeviceMemory && deviceMemory <= 1;
   const isVerySlowConnection =
     effectiveType === "slow-2g" || effectiveType === "2g" || effectiveType === "3g";
 
   const scenes = Array.from(document.querySelectorAll("[data-auth-particles]"));
   if (!scenes.length) return;
-  if (isDataSaver || isVerySlowConnection) return;
+  if (isDataSaver || isVerySlowConnection || isUltraLowMemory) return;
 
   const motionScale = prefersReducedMotion ? 0.45 : 1;
   const config = {
-    maxParticles: Math.max(36, Math.round(108 * motionScale)),
-    areaDensity: 8600,
+    maxParticles: Math.max(24, Math.round(104 * motionScale * memoryScale)),
+    areaDensity: Math.round(8600 / Math.max(0.48, memoryScale)),
     minSize: 0.8,
     maxSize: 2.3,
     minSpeed: 0.02 * motionScale,
@@ -60,7 +72,8 @@ const initAuthParticles = () => {
 
     const seedParticles = () => {
       const estimated = Math.round((state.width * state.height) / config.areaDensity);
-      const count = Math.max(44, Math.min(config.maxParticles, estimated));
+      const minimumParticles = Math.max(18, Math.round(34 * motionScale * memoryScale));
+      const count = Math.max(minimumParticles, Math.min(config.maxParticles, estimated));
       state.particles = Array.from({ length: count }, createParticle);
     };
 

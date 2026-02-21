@@ -13,6 +13,11 @@
   if (isConstrained) return;
 
   const prefetchedUrls = new Set();
+  const runWhenIdle =
+    typeof window.requestIdleCallback === "function"
+      ? (cb) => window.requestIdleCallback(cb, { timeout: 1200 })
+      : (cb) => window.setTimeout(cb, 250);
+
   const prefetchEligible = (href) => {
     if (!href || href.startsWith("#")) return false;
     if (/^(mailto:|tel:|javascript:)/i.test(href)) return false;
@@ -39,14 +44,25 @@
     document.head.appendChild(hint);
   };
 
+  const prefetchOnIdle = (href) => {
+    runWhenIdle(() => {
+      prefetchUrl(href);
+    });
+  };
+
   const trackedLinks = Array.from(document.querySelectorAll("a[href]"));
   trackedLinks.forEach((link) => {
     const href = link.getAttribute("href") || "";
     if (!prefetchEligible(href)) return;
 
-    const onIntent = () => prefetchUrl(href);
+    const onIntent = () => prefetchOnIdle(href);
     link.addEventListener("mouseenter", onIntent, { passive: true, once: true });
     link.addEventListener("focus", onIntent, { passive: true, once: true });
     link.addEventListener("touchstart", onIntent, { passive: true, once: true });
   });
+
+  if (document.body?.dataset?.page === "landing") {
+    prefetchOnIdle("/login");
+    prefetchOnIdle("/register");
+  }
 })();

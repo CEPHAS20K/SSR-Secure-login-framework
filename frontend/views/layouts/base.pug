@@ -4,18 +4,35 @@ html(lang="en")
     const currentPage = typeof page === "string" ? page : "";
     const gsapPages = new Set(["landing", "login", "register", "admin-login", "error"]);
     const shouldLoadGsap = gsapPages.has(currentPage);
+    const shouldPreloadLandingVisuals = currentPage === "landing";
+    const shouldPreloadAuthBackground = new Set(["landing", "login", "register", "admin-login"]).has(currentPage);
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
     meta(name="theme-color", content="#ff7700")
     meta(name="mobile-web-app-capable", content="yes")
-    meta(name="apple-mobile-web-app-capable", content="yes")
     meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
     meta(name="apple-mobile-web-app-title", content="Auth Secure")
     title= title || "App"
     link(rel="icon", type="image/png", href=assetPath("/images/logo.png"))
     link(rel="apple-touch-icon", href=assetPath("/images/logo.png"))
     link(rel="manifest", href=assetPath("/manifest.webmanifest"))
+    if shouldPreloadAuthBackground
+      link(
+        rel="preload",
+        as="image",
+        href=assetPath("/images/flat-mount.svg"),
+        type="image/svg+xml"
+      )
+    if shouldPreloadLandingVisuals
+      link(
+        rel="preload",
+        as="image",
+        href=assetPath("/images/land.svg"),
+        type="image/svg+xml",
+        fetchpriority="high"
+      )
+      link(rel="preload", as="image", href=assetPath("/images/up.svg"), type="image/svg+xml")
     script.
       (function () {
         try {
