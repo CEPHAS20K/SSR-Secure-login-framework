@@ -91,6 +91,8 @@ CI fails when performance or bundle-size budgets regress.
   - `status`
   - `uptimeSeconds`
   - `timestamp`
+- `GET /api-docs` serves Swagger UI API documentation.
+- `GET /api-docs.json` serves the raw OpenAPI JSON document.
 
 Structured logs use `pino` + `pino-http`.
 
@@ -124,3 +126,44 @@ Connection details (default):
 
 - PostgreSQL: `postgresql://authuser:authpass@127.0.0.1:5432/authdb`
 - Redis: `redis://127.0.0.1:6379`
+
+## Auto-Deploy From GitHub
+
+This repo already includes `.github/workflows/deploy.yml`.
+When configured, every push to `main` will SSH into your server and run `scripts/deploy.sh`.
+
+### 1) Add GitHub Actions secrets
+
+Required:
+
+- `SSH_HOST`: server public IP or hostname
+- `SSH_USER`: deploy user on server
+- `SSH_KEY`: private key contents for that user
+
+Optional:
+
+- `SSH_PORT`: defaults to `22` if missing
+- `SSH_PASSPHRASE`: only if your SSH key is encrypted
+- `APP_DIR`: defaults to `/var/www/auth`
+- `DEPLOY_BRANCH`: defaults to `main`
+- `PM2_APP_NAME`: defaults to `auth-app`
+
+### 2) Ensure server is ready
+
+- Repo cloned on server at `APP_DIR`
+- `pm2` installed globally
+- Node/npm available
+- `scripts/deploy.sh` executable
+
+### 3) Deploy trigger
+
+- Push to `main`, or
+- Run workflow manually from GitHub Actions (`workflow_dispatch`)
+
+### 4) Verify deployment
+
+```bash
+pm2 status
+pm2 logs auth-app --lines 100
+curl -I https://your-domain.com/health
+```

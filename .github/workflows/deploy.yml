@@ -18,13 +18,14 @@ jobs:
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_KEY: ${{ secrets.SSH_KEY }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
     steps:
       - name: Check deploy secrets
         id: secrets
         shell: bash
         run: |
           missing=0
-          for var in SSH_HOST SSH_USER SSH_KEY SSH_PORT; do
+          for var in SSH_HOST SSH_USER SSH_KEY; do
             if [ -z "${!var}" ]; then
               echo "::notice::Missing GitHub secret: ${var}"
               missing=1
@@ -37,7 +38,13 @@ jobs:
             exit 0
           fi
 
+          if [ -z "${SSH_PORT}" ]; then
+            SSH_PORT="22"
+            echo "::notice::SSH_PORT not set. Defaulting to 22."
+          fi
+
           echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "ssh_port=${SSH_PORT}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy over SSH
         if: steps.secrets.outputs.ready == 'true'
@@ -51,7 +58,8 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ steps.secrets.outputs.ssh_port }}
           envs: APP_DIR,BRANCH,PM2_APP_NAME,NODE_ENV
           script: |
             if [ -z "${APP_DIR}" ]; then APP_DIR="/var/www/auth"; fi

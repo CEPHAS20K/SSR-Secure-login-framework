@@ -1,0 +1,208 @@
+HOME SERVER RUNBOOK (DOCKER + CADDY + CLOUDFLARE)
+For next IT admin
+
+Goal
+- Host the Auth app on a home bare-metal server.
+- Use Docker for app/services.
+- Use Caddy as reverse proxy with HTTPS + HTTP/3.
+- Use Cloudflare for DNS/proxy and basic edge protection.
+
+==================================================
+1) Recommended Architecture
+==================================================
+Internet
+  -> Cloudflare (DNS/proxy)
+  -> Home router port-forward 80/443
+  -> Server (Ubuntu)
+      -> Caddy (TLS termination, reverse proxy)
+      -> App container (Node/Express)
+      -> Postgres container
+      -> Redis container
+
+Notes
+- Keep app private behind Caddy; expose only 80/443 externally.
+- Do NOT expose Postgres/Redis ports publicly.
+
+==================================================
+2) Server Baseline Hardening (First Day)
+==================================================
+- Create non-root sudo user.
+- SSH keys only (disable password login).
+- Disable root SSH login.
+- Enable UFW:
+  - allow 22/tcp (or custom SSH port)
+  - allow 80/tcp
+  - allow 443/tcp
+  - allow 443/udp (HTTP/3 QUIC)
+- Install fail2ban and unattended upgrades.
+- Keep system clock synced (chrony/systemd-timesyncd).
+
+Commands (Ubuntu quick baseline)
+- sudo apt update && sudo apt upgrade -y
+- sudo apt install -y ufw fail2ban unattended-upgrades ca-certificates curl git
+- sudo ufw allow 22/tcp
+- sudo ufw allow 80/tcp
+- sudo ufw allow 443/tcp
+- sudo ufw allow 443/udp
+- sudo ufw enable
+
+==================================================
+3) Install Docker Engine + Compose Plugin
+==================================================
+Ubuntu official path:
+- sudo apt-get update
+- sudo apt-get install -y ca-certificates curl gnupg
+- sudo install -m 0755 -d /etc/apt/keyrings
+- curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+- sudo chmod a+r /etc/apt/keyrings/docker.gpg
+- echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+- sudo apt-get update
+- sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+- sudo usermod -aG docker $USER
+- newgrp docker
+
+Verify
+- docker --version
+- docker compose version
+
+==================================================
+4) Cloudflare + Router Setup
+==================================================
+Cloudflare
+- Add domain to Cloudflare.
+- Create DNS records:
+  - A record: app.example.com -> YOUR_PUBLIC_HOME_IP
+- Keep proxy ON (orange cloud) after validation.
+- SSL/TLS mode: Full (strict).
+- Enable Always Use HTTPS.
+- Optional: WAF managed rules + rate limiting for /auth/*.
+
+Router
+- Port forward WAN 80 -> server 80
+- Port forward WAN 443 TCP+UDP -> server 443
+- Reserve static DHCP lease for server LAN IP.
+
+==================================================
+5) Repo + Environment Preparation
+==================================================
+On server:
+- mkdir -p /opt/auth && cd /opt/auth
+- git clone <repo-url> .
+
+Create backend/.env.proc (example, adjust secrets):
+- NODE_ENV=production
+- HOST=0.0.0.0
+- PORT=8080
+- FORCE_NO_STORE=false
+- API_DOCS_ENABLED=false
+- ADMIN_ENABLED=true
+- ADMIN_INTERNAL_ONLY=true
+- ADMIN_ALLOW_IPS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+- DATABASE_URL=postgresql://authuser:CHANGE_ME@postgres:5432/authdb
+- REDIS_URL=redis://redis:6379
+
+If using SMTP later:
+- SMTP_HOST=
+- SMTP_PORT=587
+- SMTP_SECURE=false
+- SMTP_USER=
+- SMTP_PASS=
+- SMTP_FROM=no-reply@example.com
+
+==================================================
+6) Docker Compose (Production Pattern)
+==================================================
+Use one compose file for app + postgres + redis + caddy.
+
+Core design
+- app listens on 8080 internally
+- caddy reverse proxies to app:8080
+- postgres and redis on internal docker network only
+- persistent named volumes for db/redis/caddy data
+
+Key caddy config requirements
+- encode zstd gzip
+- protocols h1 h2 h3
+- reverse_proxy app:8080
+- optional admin guard (404 for non-private /admin*)
+
+==================================================
+7) Build and Start
+==================================================
+- docker compose -f docker-compose.yml up -d --build
+
+Check
+- docker compose ps
+- docker compose logs -f app
+- docker compose logs -f caddy
+
+Health test
+- curl -I https://app.example.com/health
+- curl -I --http3 https://app.example.com/health
+
+==================================================
+8) Updates / Deployment Flow
+==================================================
+Manual pull and redeploy
+- cd /opt/auth
+- git fetch origin main
+- git checkout main
+- git pull --ff-only
+- docker compose up -d --build
+
+Rollback (quick)
+- git log --oneline -n 10
+- git checkout <last-good-commit>
+- docker compose up -d --build
+
+==================================================
+9) Backups (Critical)
+==================================================
+Minimum backup policy
+- Postgres daily dump + 7/30 day retention.
+- Weekly Redis snapshot backup (if session/state critical).
+- Store backups off-host (NAS or cloud bucket).
+
+Suggested Postgres dump command
+- docker exec -t auth-postgres pg_dump -U authuser authdb > /backup/authdb_$(date +%F).sql
+
+==================================================
+10) Monitoring / Operations
+==================================================
+- Track container restarts and disk usage.
+- Alert on:
+  - App health check failure
+  - SSL cert renewal failure
+  - Host disk > 80%
+- Basic checks:
+  - docker stats
+  - docker compose ps
+  - journalctl -u docker -n 100
+
+==================================================
+11) Security Checklist Before Go-Live
+==================================================
+- API docs disabled in production (API_DOCS_ENABLED=false).
+- .env files never committed to git.
+- Strong DB passwords and rotated secrets.
+- Admin path internally restricted (app + proxy layer).
+- Cloudflare SSL mode is Full (strict), not Flexible.
+- Rate limiting active for /auth/* routes.
+- No public exposed ports except 80/443.
+
+==================================================
+12) Project-Specific Notes
+==================================================
+- Existing repository has Caddy examples in:
+  - deploy/caddy/Caddyfile.example
+- Existing deployment script:
+  - scripts/deploy.sh
+- Existing Caddy setup helper:
+  - scripts/setup-caddy.sh
+- Existing local infra compose (postgres/redis only):
+  - docker-compose.yml
+
+If switching from PM2 deployment to fully dockerized deployment,
+remove PM2 from operational path and keep one source of truth in Docker Compose.
