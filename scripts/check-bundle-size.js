@@ -15,7 +15,7 @@ const BUDGETS = [
   {
     name: "main-dashboard-js",
     type: "file",
-    target: "frontend/public/js/admin-dashboard.js",
+    target: "frontend/public/js/pages/admin/dashboard.js",
     maxBytes: 130 * 1024,
   },
   {

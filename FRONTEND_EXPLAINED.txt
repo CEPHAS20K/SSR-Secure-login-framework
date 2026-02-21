@@ -209,11 +209,10 @@ Auth Project Frontend - Full Technical Overview
 - Navbar layout/links: frontend/views/components/navbar.pug
 - Footer layout: frontend/views/components/footer.pug
 - Shared page shell/meta/scripts: frontend/views/layouts/base.pug
-- Landing interactions: frontend/public/js/landing.js
-- Login interactions/OTP/reset modal: frontend/public/js/login.js
-- Register interactions/OTP modal: frontend/public/js/register.js
+- Landing interactions: frontend/public/js/pages/landing.js
+- Login interactions/OTP/reset modal: frontend/public/js/pages/login.js
+- Register interactions/OTP modal: frontend/public/js/pages/register.js
 - Admin dashboard UI: frontend/views/pages/admin/dashboard.pug
-- Admin dashboard logic: frontend/public/js/admin-dashboard.js
+- Admin dashboard logic: frontend/public/js/pages/admin/dashboard.js
 - PWA/offline behavior: frontend/public/sw.js and frontend/public/offline.html
 - Global style tuning/overrides: frontend/public/css/input.css
-

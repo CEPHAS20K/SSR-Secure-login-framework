@@ -1,3 +1,12 @@
+import { createApiClient } from "../lib/api-client.js";
+import {
+  firstSchemaError,
+  loginSchema,
+  otpSchema,
+  resetAccountSchema,
+} from "../lib/auth-schemas.js";
+import { createModalFocusTrap } from "../lib/modal-a11y.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
   const email = document.getElementById("email");
@@ -32,6 +41,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
 
+  const apiClient = createApiClient({
+    retries: 1,
+    timeoutMs: 5500,
+    onUnauthorized: () => {
+      window.location.href = "/login";
+    },
+  });
+
+  const otpFocusTrap = createModalFocusTrap(modal, {
+    onEscape: () => closeOtpModal(),
+  });
+  const resetFocusTrap = createModalFocusTrap(resetModal, {
+    onEscape: () => closeResetModal(),
+  });
+
   const revealForm = () => {
     if (!formShell) return;
     window.setTimeout(() => {
@@ -46,17 +70,29 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rememberMe) rememberMe.checked = true;
   }
 
-  const isEmailValid = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  const setFlash = (message, tone = "info") => {
+    if (!flash) return;
+    const tones = {
+      info: "min-h-5 text-sm font-bold text-rose-900",
+      success: "min-h-5 text-sm font-bold text-fuchsia-900",
+      error: "min-h-5 text-sm font-bold text-rose-900",
+    };
+    flash.className = tones[tone] || tones.info;
+    flash.textContent = message;
+  };
 
   const updateButtonState = () => {
-    const ready = isEmailValid(email.value) && password.value.trim().length >= 6;
-    loginBtn.disabled = !ready;
+    const parse = loginSchema.safeParse({
+      email: email.value.trim(),
+      password: password.value,
+    });
+    loginBtn.disabled = !parse.success;
   };
 
   const updateOtpSubmitState = () => {
     if (!otpSubmit || !otpInput) return;
-    const isValidOtp = /^\d{5}$/.test(otpInput.value.trim());
-    otpSubmit.disabled = !isValidOtp;
+    const parse = otpSchema.safeParse(otpInput.value.trim());
+    otpSubmit.disabled = !parse.success;
   };
 
   const formatTime = (totalSeconds) => {
@@ -109,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
         onComplete: () => {
           stopResendTimer();
           setModalOpenState(false);
+          otpFocusTrap.deactivate();
           gsap.set(modal, { clearProps: "opacity,visibility" });
           if (modalCard) gsap.set(modalCard, { clearProps: "opacity,transform" });
         },
@@ -118,6 +155,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     stopResendTimer();
     setModalOpenState(false);
+    otpFocusTrap.deactivate();
+  };
+
+  const openOtpModal = () => {
+    setModalOpenState(true);
+    startResendTimer();
+    otpInput.value = "";
+    updateOtpSubmitState();
+
+    if (!window.gsap) {
+      otpFocusTrap.activate({ initialFocus: otpInput });
+      return;
+    }
+
+    gsap.fromTo(modal, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "power1.out" });
+    if (modalCard) {
+      gsap.fromTo(
+        modalCard,
+        { y: 18, scale: 0.96, autoAlpha: 0 },
+        {
+          y: 0,
+          scale: 1,
+          autoAlpha: 1,
+          duration: 0.3,
+          ease: "power2.out",
+          onComplete: () => otpFocusTrap.activate({ initialFocus: otpInput }),
+        }
+      );
+    }
   };
 
   const startResendTimer = (duration = OTP_COUNTDOWN_SECONDS) => {
@@ -160,15 +226,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const updateResetSubmitState = () => {
     if (!isResetModalReady) return;
-    const emailValue = resetEmail.value.trim();
-    const newPasswordValue = resetNewPassword.value;
-    const confirmPasswordValue = resetConfirmPassword.value;
-    const isReady =
-      isEmailValid(emailValue) &&
-      newPasswordValue.length >= 8 &&
-      confirmPasswordValue.length >= 8 &&
-      newPasswordValue === confirmPasswordValue;
-    resetSubmit.disabled = !isReady;
+    const parse = resetAccountSchema.safeParse({
+      email: resetEmail.value.trim(),
+      newPassword: resetNewPassword.value,
+      confirmPassword: resetConfirmPassword.value,
+    });
+    resetSubmit.disabled = !parse.success;
   };
 
   const closeResetModal = () => {
@@ -191,6 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ease: "power1.in",
         onComplete: () => {
           setResetModalOpenState(false);
+          resetFocusTrap.deactivate();
           gsap.set(resetModal, { clearProps: "opacity,visibility" });
           if (resetModalCard) gsap.set(resetModalCard, { clearProps: "opacity,transform" });
         },
@@ -199,6 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     setResetModalOpenState(false);
+    resetFocusTrap.deactivate();
   };
 
   const openResetModal = () => {
@@ -210,29 +275,36 @@ document.addEventListener("DOMContentLoaded", () => {
     resetNewPassword.value = "";
     resetConfirmPassword.value = "";
     updateResetSubmitState();
-    resetEmail.focus();
 
-    if (!window.gsap) return;
+    if (!window.gsap) {
+      resetFocusTrap.activate({ initialFocus: resetEmail });
+      return;
+    }
+
     gsap.fromTo(resetModal, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "power1.out" });
     if (resetModalCard) {
       gsap.fromTo(
         resetModalCard,
         { y: 18, scale: 0.96, autoAlpha: 0 },
-        { y: 0, scale: 1, autoAlpha: 1, duration: 0.3, ease: "power2.out" }
+        {
+          y: 0,
+          scale: 1,
+          autoAlpha: 1,
+          duration: 0.3,
+          ease: "power2.out",
+          onComplete: () => resetFocusTrap.activate({ initialFocus: resetEmail }),
+        }
       );
     }
   };
 
   email.addEventListener("input", updateButtonState);
-  password.addEventListener("input", () => {
-    updateButtonState();
-  });
+  password.addEventListener("input", updateButtonState);
   password.addEventListener("keydown", updateCapsLockWarning);
   password.addEventListener("keyup", updateCapsLockWarning);
   password.addEventListener("blur", () => {
     if (capsWarning) capsWarning.classList.add("hidden");
   });
-
   updateButtonState();
 
   togglePassword.addEventListener("click", () => {
@@ -241,93 +313,95 @@ document.addEventListener("DOMContentLoaded", () => {
     togglePassword.textContent = isPassword ? "Hide" : "Show";
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    flash.textContent = "";
+
+    const parse = loginSchema.safeParse({
+      email: email.value.trim(),
+      password: password.value,
+    });
+    if (!parse.success) {
+      setFlash(firstSchemaError(parse), "error");
+      return;
+    }
 
     if (rememberMe) {
       if (rememberMe.checked) {
-        localStorage.setItem("auth_email", email.value.trim());
+        localStorage.setItem("auth_email", parse.data.email);
       } else {
         localStorage.removeItem("auth_email");
       }
     }
 
-    setModalOpenState(true);
-    startResendTimer();
-    if (otpInput) {
-      otpInput.value = "";
-      otpInput.focus();
-    }
-    updateOtpSubmitState();
+    const originalText = loginBtn.textContent;
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Checking...";
+    setFlash("");
 
-    if (!window.gsap) return;
-    gsap.fromTo(modal, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "power1.out" });
-    if (modalCard) {
-      gsap.fromTo(
-        modalCard,
-        { y: 18, scale: 0.96, autoAlpha: 0 },
-        { y: 0, scale: 1, autoAlpha: 1, duration: 0.3, ease: "power2.out" }
-      );
+    try {
+      await apiClient.request("/auth/login", {
+        method: "POST",
+        data: parse.data,
+        retries: 1,
+        timeoutMs: 5200,
+      });
+      setFlash("Credentials accepted. Enter OTP to continue.", "success");
+    } catch (error) {
+      if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
+        setFlash(error.message || "Unable to sign in right now.", "error");
+        return;
+      }
+      setFlash("Auth backend is in setup mode. Continuing with OTP demo flow.", "info");
+    } finally {
+      loginBtn.textContent = originalText;
+      updateButtonState();
     }
+
+    openOtpModal();
   });
 
-  if (otpInput) {
-    otpInput.addEventListener("input", () => {
-      otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 5);
-      updateOtpSubmitState();
-    });
-    otpInput.addEventListener("paste", (event) => {
-      event.preventDefault();
-      const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 5);
-      otpInput.value = pasted;
-      updateOtpSubmitState();
-    });
+  otpInput.addEventListener("input", () => {
+    otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 5);
     updateOtpSubmitState();
-  }
+  });
+  otpInput.addEventListener("paste", (event) => {
+    event.preventDefault();
+    const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 5);
+    otpInput.value = pasted;
+    updateOtpSubmitState();
+  });
+  updateOtpSubmitState();
 
-  if (otpSubmit) {
-    otpSubmit.addEventListener("click", () => {
-      if (otpSubmit.disabled) return;
-      flash.textContent = "OTP submitted.";
-      flash.className = "min-h-5 text-sm font-medium text-fuchsia-800";
-      closeOtpModal();
-    });
-  }
+  otpSubmit.addEventListener("click", () => {
+    if (otpSubmit.disabled) return;
+    const parse = otpSchema.safeParse(otpInput.value.trim());
+    if (!parse.success) {
+      setFlash(firstSchemaError(parse, "Invalid OTP format."), "error");
+      return;
+    }
+    setFlash("OTP submitted.", "success");
+    closeOtpModal();
+  });
 
-  if (resendOtp) {
-    updateResendState();
-    resendOtp.addEventListener("click", () => {
-      if (resendSecondsLeft > 0) return;
-      flash.textContent = "OTP resent successfully.";
-      flash.className = "min-h-5 text-sm font-medium text-rose-800";
-      startResendTimer();
-    });
-  }
+  updateResendState();
+  resendOtp.addEventListener("click", () => {
+    if (resendSecondsLeft > 0) return;
+    setFlash("OTP resent successfully.", "info");
+    startResendTimer();
+  });
 
   setModalOpenState(false);
-  setResetModalOpenState(false);
-
-  if (otpClose) {
-    otpClose.addEventListener("click", closeOtpModal);
-  }
-
+  if (otpClose) otpClose.addEventListener("click", closeOtpModal);
   modal.addEventListener("click", (event) => {
     if (modalCard && modalCard.contains(event.target)) return;
     closeOtpModal();
   });
-
   modal.addEventListener("mousedown", (event) => {
     if (modalCard && modalCard.contains(event.target)) return;
     closeOtpModal();
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return;
-    closeOtpModal();
-    closeResetModal();
-  });
-
+  setResetModalOpenState(false);
   if (isResetModalReady) {
     [resetEmail, resetNewPassword, resetConfirmPassword].forEach((field) => {
       field.addEventListener("input", updateResetSubmitState);
@@ -340,37 +414,59 @@ document.addEventListener("DOMContentLoaded", () => {
       openResetModal();
     });
 
-    if (resetClose) {
-      resetClose.addEventListener("click", closeResetModal);
-    }
-    if (resetCancel) {
-      resetCancel.addEventListener("click", closeResetModal);
-    }
+    if (resetClose) resetClose.addEventListener("click", closeResetModal);
+    if (resetCancel) resetCancel.addEventListener("click", closeResetModal);
 
-    resetSubmit.addEventListener("click", () => {
+    resetSubmit.addEventListener("click", async () => {
       if (resetSubmit.disabled) return;
-      if (resetNewPassword.value !== resetConfirmPassword.value) {
-        resetFlash.textContent = "New password and confirmation do not match.";
+      const parse = resetAccountSchema.safeParse({
+        email: resetEmail.value.trim(),
+        newPassword: resetNewPassword.value,
+        confirmPassword: resetConfirmPassword.value,
+      });
+      if (!parse.success) {
+        resetFlash.textContent = firstSchemaError(parse);
         resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-rose-900";
         updateResetSubmitState();
         return;
       }
 
-      resetFlash.textContent = "Reset request submitted. Check your email for next steps.";
-      resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-fuchsia-900";
-      setTimeout(() => {
-        closeResetModal();
-      }, 650);
+      resetSubmit.disabled = true;
+      resetSubmit.textContent = "Submitting...";
+      try {
+        await apiClient.request("/health", {
+          method: "GET",
+          cache: false,
+          retries: 0,
+          timeoutMs: 3000,
+        });
+        resetFlash.textContent = "Reset request submitted. Check your email for next steps.";
+        resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-fuchsia-900";
+        setTimeout(() => {
+          closeResetModal();
+        }, 650);
+      } catch (error) {
+        resetFlash.textContent = error.message || "Unable to submit reset request right now.";
+        resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-rose-900";
+      } finally {
+        resetSubmit.textContent = "Submit Reset";
+        updateResetSubmitState();
+      }
     });
 
     resetModal.addEventListener("click", (event) => {
       if (resetModalCard && resetModalCard.contains(event.target)) return;
       closeResetModal();
     });
-
     resetModal.addEventListener("mousedown", (event) => {
       if (resetModalCard && resetModalCard.contains(event.target)) return;
       closeResetModal();
     });
   }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeOtpModal();
+    closeResetModal();
+  });
 });

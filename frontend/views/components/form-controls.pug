@@ -1,0 +1,22 @@
+mixin authFieldShell(fieldId, labelText, wrapperClass, labelClass)
+  -
+    const resolvedWrapperClass = wrapperClass || "space-y-2";
+    const resolvedLabelClass = labelClass || "block text-sm font-semibold text-rose-900";
+  div(class=resolvedWrapperClass)
+    if labelText
+      label(for=fieldId, class=resolvedLabelClass)= labelText
+    block
+
+mixin authStatusMessage(messageId, className, liveMode)
+  -
+    const resolvedClass = className || "min-h-5 text-sm font-semibold";
+    const resolvedLiveMode = liveMode || "polite";
+  p(id=messageId, class=resolvedClass, aria-live=resolvedLiveMode, role="status")
+
+mixin authModalShell(modalId, wrapperClass, cardClass)
+  -
+    const resolvedWrapperClass = wrapperClass || "fixed inset-0 hidden items-center justify-center p-3 backdrop-blur-sm z-[80] bg-rose-950/55 sm:p-4";
+    const resolvedCardClass = cardClass || "otp-card w-full max-w-sm rounded-2xl border bg-white p-4 shadow-2xl backdrop-blur-2xl font-semibold border-white/40 bg-white/25";
+  div(id=modalId, class=resolvedWrapperClass, aria-hidden="true")
+    div(class=resolvedCardClass)
+      block

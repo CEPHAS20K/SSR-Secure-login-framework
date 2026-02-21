@@ -20,6 +20,7 @@ const { initSentry, captureSentryException } = require("./observability");
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
 const PUBLIC_DIR = path.join(FRONTEND_DIR, "public");
+const ZOD_VENDOR_DIR = path.join(__dirname, "node_modules", "zod");
 
 const LONG_CACHE_EXTENSIONS = new Set([
   ".png",
@@ -140,6 +141,20 @@ function createApp(options = {}) {
           return;
         }
         res.setHeader("Cache-Control", "public, max-age=3600, must-revalidate");
+      },
+    })
+  );
+  app.use(
+    "/vendor/zod",
+    express.static(ZOD_VENDOR_DIR, {
+      etag: true,
+      lastModified: true,
+      setHeaders(res) {
+        if (!config.IS_PRODUCTION || config.FORCE_NO_STORE) {
+          res.setHeader("Cache-Control", "no-store");
+          return;
+        }
+        res.setHeader("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400");
       },
     })
   );

@@ -1,3 +1,50 @@
+import { createAdminApiLayer } from "./api.js";
+import {
+  createDashboardState,
+  normalizeDashboardDataModel,
+  parseInitialDashboardData,
+} from "./state.js";
+import { createAdminUiHelpers } from "./ui.js";
+
+let chartsModulePromise = null;
+let chartsModuleCache = null;
+let exportsModulePromise = null;
+let exportsModuleCache = null;
+
+function ensureChartsModule() {
+  if (chartsModuleCache) return Promise.resolve(chartsModuleCache);
+  if (!chartsModulePromise) {
+    chartsModulePromise = import("./charts.js").then((moduleValue) => {
+      chartsModuleCache = moduleValue;
+      return moduleValue;
+    });
+  }
+  return chartsModulePromise;
+}
+
+function ensureExportsModule() {
+  if (exportsModuleCache) return Promise.resolve(exportsModuleCache);
+  if (!exportsModulePromise) {
+    exportsModulePromise = import("./exports.js").then((moduleValue) => {
+      exportsModuleCache = moduleValue;
+      return moduleValue;
+    });
+  }
+  return exportsModulePromise;
+}
+
+function warmDashboardModules() {
+  const run = () => {
+    ensureChartsModule().catch(() => {});
+    ensureExportsModule().catch(() => {});
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 1500 });
+    return;
+  }
+  window.setTimeout(run, 300);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const root = document.getElementById("adminDashboard");
   if (!root) return;
@@ -118,42 +165,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const logFilters = Array.from(document.querySelectorAll(".admin-log-filter"));
 
-  const state = {
-    data: normalizeDashboardData(parseInitialData(initialDataNode)),
-    selectedUserId: null,
-    selectedLogCategory: "all",
-    rangeDays: 7,
-    usersQuery: "",
-    usersSortBy: "lastLogin",
-    usersSortDir: "desc",
-    usersRows: [],
-    usersTotal: 0,
-    selectedUserIds: new Set(),
-    usersPage: 1,
-    usersPageSize: 8,
-    devicesRows: [],
-    devicesTotal: 0,
-    devicesPage: 1,
-    devicesPageSize: 5,
-    devicesSortBy: "lastSeen",
-    devicesSortDir: "desc",
-    lookupQuery: "",
-    lookupSelectedUserId: null,
-    lookupPage: 1,
-    lookupPageSize: 6,
-    usersExportScope: "users_only",
-    pendingUsersExport: null,
-    pendingScheduleId: "schedule_daily_users",
-    timelineUserId: null,
-    timelineCache: new Map(),
-    apiCache: new Map(),
-    pendingRequests: new Map(),
-    usersLoading: false,
-    devicesLoading: false,
-    requireApproval: false,
-    loadingCount: 0,
-    pendingAction: null,
-  };
+  const state = createDashboardState(parseInitialDashboardData(initialDataNode));
+  const uiHelpers = createAdminUiHelpers({
+    root,
+    modal,
+    modalTitle,
+    modalMessage,
+    adminFlash,
+    adminLoading,
+    state,
+    setText,
+  });
+  const adminApi = createAdminApiLayer({
+    state,
+    defaultCacheTtlMs: API_CACHE_TTL_MS,
+    maxCacheEntries: API_CACHE_MAX_ENTRIES,
+    onLoading: uiHelpers.setLoading,
+    onUnauthorized: () => {
+      window.location.href = "/admin/login";
+    },
+  });
 
   state.selectedUserId = state.data.users[0]?.id || null;
   state.requireApproval = Boolean(state.data.governance?.requireApproval);
@@ -167,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
       refreshDevicesTableFromApi();
     });
   animateIn();
+  warmDashboardModules();
 
   if (!state.data.users.length && !state.usersRows.length) {
     refreshDashboard();
@@ -1178,125 +1210,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderRiskChart() {
     if (!riskTrendChart) return;
-
-    const series = state.data.riskTrend || [];
-    if (riskTrendHint) {
-      setText(riskTrendHint, `Last ${state.rangeDays} days • click points to drill into logs`);
-    }
-    if (!series.length) {
-      riskTrendChart.innerHTML = "";
+    if (!chartsModuleCache) {
+      ensureChartsModule().then(() => renderRiskChart());
       return;
     }
 
-    const width = 640;
-    const height = 176;
-    const paddingX = 36;
-    const paddingTop = 16;
-    const paddingBottom = 30;
-
-    const maxScore = Math.max(100, ...series.map((item) => item.score));
-    const stepX = (width - paddingX * 2) / Math.max(series.length - 1, 1);
-
-    const points = series.map((item, index) => {
-      const x = paddingX + stepX * index;
-      const y =
-        paddingTop + ((maxScore - item.score) / maxScore) * (height - paddingTop - paddingBottom);
-      return { ...item, x, y };
+    chartsModuleCache.renderRiskTrendChart({
+      chartNode: riskTrendChart,
+      hintNode: riskTrendHint,
+      series: state.data.riskTrend || [],
+      rangeDays: state.rangeDays,
+      onDrillDown: (label) => {
+        state.selectedLogCategory = "login_attempt";
+        renderLogFilters();
+        renderAuditLogs();
+        const logsPanel = document.getElementById("logs");
+        logsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+        showFlash(`Drill-down: ${label} risk events`, "info");
+      },
     });
-
-    const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-    const pointNodes = points
-      .map(
-        (point) =>
-          `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#ba274b" data-risk-index="${point.label}" style="cursor:pointer" />` +
-          `<text x="${point.x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#7f1d1d">${escapeHtml(
-            point.label
-          )}</text>`
-      )
-      .join("");
-
-    riskTrendChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    riskTrendChart.innerHTML = `
-      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255,255,255,0.55)" />
-      <line x1="${paddingX}" y1="${height - paddingBottom}" x2="${width - paddingX}" y2="${height - paddingBottom}" stroke="rgba(127,29,29,0.35)" stroke-width="1" />
-      <polyline fill="none" stroke="#ba274b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${polyline}" />
-      ${pointNodes}
-    `;
-
-    riskTrendChart.onclick = (event) => {
-      const point = event.target.closest("circle[data-risk-index]");
-      if (!point) return;
-      state.selectedLogCategory = "login_attempt";
-      renderLogFilters();
-      renderAuditLogs();
-      const logsPanel = document.getElementById("logs");
-      logsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-      showFlash(`Drill-down: ${point.dataset.riskIndex} risk events`, "info");
-    };
   }
 
   function renderUserGrowthChart() {
     if (!userGrowthChart) return;
-
-    const series = state.data.userGrowthTrend || [];
-    if (userGrowthHint) {
-      setText(userGrowthHint, `Last ${series.length} months`);
-    }
-    if (!series.length) {
-      userGrowthChart.innerHTML = "";
+    if (!chartsModuleCache) {
+      ensureChartsModule().then(() => renderUserGrowthChart());
       return;
     }
 
-    const width = 640;
-    const height = 176;
-    const paddingX = 36;
-    const paddingTop = 16;
-    const paddingBottom = 30;
-    const plotHeight = height - paddingTop - paddingBottom;
-    const maxTotal = Math.max(1, ...series.map((item) => item.totalUsers || 0));
-    const maxNewUsers = Math.max(1, ...series.map((item) => item.newUsers || 0));
-    const stepX = (width - paddingX * 2) / Math.max(series.length - 1, 1);
-
-    const points = series.map((item, index) => {
-      const x = paddingX + stepX * index;
-      const y = paddingTop + ((maxTotal - (item.totalUsers || 0)) / maxTotal) * plotHeight;
-      const barHeight = ((item.newUsers || 0) / maxNewUsers) * plotHeight;
-      const barY = height - paddingBottom - barHeight;
-
-      return {
-        ...item,
-        x,
-        y,
-        barY,
-        barHeight,
-      };
+    chartsModuleCache.renderUserGrowthTrendChart({
+      chartNode: userGrowthChart,
+      hintNode: userGrowthHint,
+      series: state.data.userGrowthTrend || [],
     });
-
-    const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-    const barNodes = points
-      .map(
-        (point) =>
-          `<rect x="${point.x - 12}" y="${point.barY}" width="24" height="${point.barHeight}" rx="6" fill="rgba(186,39,75,0.24)" />`
-      )
-      .join("");
-    const pointNodes = points
-      .map(
-        (point) =>
-          `<circle cx="${point.x}" cy="${point.y}" r="4" fill="#7f1d1d" />` +
-          `<text x="${point.x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#7f1d1d">${escapeHtml(
-            point.label
-          )}</text>`
-      )
-      .join("");
-
-    userGrowthChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    userGrowthChart.innerHTML = `
-      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255,255,255,0.55)" />
-      <line x1="${paddingX}" y1="${height - paddingBottom}" x2="${width - paddingX}" y2="${height - paddingBottom}" stroke="rgba(127,29,29,0.35)" stroke-width="1" />
-      ${barNodes}
-      <polyline fill="none" stroke="#7f1d1d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${polyline}" />
-      ${pointNodes}
-    `;
   }
 
   function renderTrafficOverview() {
@@ -1309,57 +1255,23 @@ document.addEventListener("DOMContentLoaded", () => {
     setText(trafficUniqueCountries, summary.uniqueCountriesEstimate);
 
     if (!trafficTrendChart) return;
-
-    if (!series.length) {
-      trafficTrendChart.innerHTML = "";
+    if (!chartsModuleCache) {
+      ensureChartsModule().then(() => renderTrafficOverview());
       return;
     }
 
-    const width = 640;
-    const height = 124;
-    const paddingX = 36;
-    const paddingTop = 12;
-    const paddingBottom = 24;
-    const maxVisits = Math.max(1, ...series.map((item) => item.visits || 0));
-    const stepX = (width - paddingX * 2) / Math.max(series.length - 1, 1);
-
-    const points = series.map((item, index) => {
-      const x = paddingX + stepX * index;
-      const y =
-        paddingTop +
-        ((maxVisits - (item.visits || 0)) / maxVisits) * (height - paddingTop - paddingBottom);
-      return { ...item, x, y };
+    chartsModuleCache.renderTrafficTrendChart({
+      chartNode: trafficTrendChart,
+      series,
+      onDrillDown: (label) => {
+        state.selectedLogCategory = "login_attempt";
+        renderLogFilters();
+        renderAuditLogs();
+        const logsPanel = document.getElementById("logs");
+        logsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+        showFlash(`Drill-down: ${label} traffic`, "info");
+      },
     });
-
-    const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-    const pointNodes = points
-      .map(
-        (point) =>
-          `<circle cx="${point.x}" cy="${point.y}" r="3.5" fill="#ba274b" data-traffic-label="${point.label}" style="cursor:pointer" />` +
-          `<text x="${point.x}" y="${height - 6}" text-anchor="middle" font-size="9" fill="#7f1d1d">${escapeHtml(
-            point.label
-          )}</text>`
-      )
-      .join("");
-
-    trafficTrendChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    trafficTrendChart.innerHTML = `
-      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255,255,255,0.55)" />
-      <line x1="${paddingX}" y1="${height - paddingBottom}" x2="${width - paddingX}" y2="${height - paddingBottom}" stroke="rgba(127,29,29,0.35)" stroke-width="1" />
-      <polyline fill="none" stroke="#ba274b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${polyline}" />
-      ${pointNodes}
-    `;
-
-    trafficTrendChart.onclick = (event) => {
-      const point = event.target.closest("circle[data-traffic-label]");
-      if (!point) return;
-      state.selectedLogCategory = "login_attempt";
-      renderLogFilters();
-      renderAuditLogs();
-      const logsPanel = document.getElementById("logs");
-      logsPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-      showFlash(`Drill-down: ${point.dataset.trafficLabel} traffic`, "info");
-    };
   }
 
   function renderThreatGeo() {
@@ -2177,6 +2089,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function runPendingUsersExport() {
     const pending = state.pendingUsersExport;
     if (!pending) return;
+    const exporter = await ensureExportsModule();
 
     const includeRelated = state.usersExportScope === "users_with_related";
     const isSuperAdmin = (state.data.adminProfile?.role || "super_admin") === "super_admin";
@@ -2191,9 +2104,10 @@ document.addEventListener("DOMContentLoaded", () => {
         includeRelated,
         sourceLabel: pending.sourceLabel,
         queryLabel: pending.queryLabel,
+        exporter,
       });
-      downloadPdfReport({
-        filename: `${pending.filenamePrefix}-${scopeLabel}-${buildDateStamp()}.pdf`,
+      exporter.downloadPdfReport({
+        filename: `${pending.filenamePrefix}-${scopeLabel}-${exporter.buildDateStamp()}.pdf`,
         title: pending.reportTitle,
         lines,
       });
@@ -2220,9 +2134,10 @@ document.addEventListener("DOMContentLoaded", () => {
       includeRelated,
       sourceLabel: pending.sourceLabel,
       queryLabel: pending.queryLabel,
+      exporter,
     });
-    downloadCsvFile({
-      filename: `${pending.filenamePrefix}-${scopeLabel}-${buildDateStamp()}.csv`,
+    exporter.downloadCsvFile({
+      filename: `${pending.filenamePrefix}-${scopeLabel}-${exporter.buildDateStamp()}.csv`,
       content: csv,
     });
     try {
@@ -2244,6 +2159,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildUsersExportPdfLines(users, options = {}) {
+    const exporter = options.exporter || exportsModuleCache;
+    if (!exporter) return [];
+    const formatDateValue = exporter?.formatDate || formatDate;
+    const buildTable =
+      exporter?.buildTableLines ||
+      ((columns, rows) => {
+        const header = columns.join(" | ");
+        const separator = columns.map(() => "----").join(" | ");
+        const content = rows.map((row) => row.map((cell) => String(cell ?? "-")).join(" | "));
+        return [header, separator, ...content];
+      });
     const includeRelated = Boolean(options.includeRelated);
     const lines = [
       `Scope: ${includeRelated ? "Users with related details" : "Users only (profile overview)"}`,
@@ -2255,7 +2181,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!includeRelated) {
       lines.push(
-        ...buildTableLines(
+        ...buildTable(
           [
             "Username",
             "Email",
@@ -2274,8 +2200,8 @@ document.addEventListener("DOMContentLoaded", () => {
             user.riskScore,
             user.loginAnomalies,
             user.stepUpRequired ? "Yes" : "No",
-            formatDate(user.createdAt),
-            formatDate(user.lastLogin),
+            formatDateValue(user.createdAt),
+            formatDateValue(user.lastLogin),
             user.geo,
           ])
         )
@@ -2293,7 +2219,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }`
       );
       lines.push(
-        `Geo: ${user.geo || "-"} | Created: ${formatDate(user.createdAt)} | Last Login: ${formatDate(user.lastLogin)}`
+        `Geo: ${user.geo || "-"} | Created: ${formatDateValue(user.createdAt)} | Last Login: ${formatDateValue(user.lastLogin)}`
       );
       lines.push(`Anomaly Tags: ${tags.length ? tags.join(", ") : "None"}`);
 
@@ -2303,7 +2229,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lines.push(`Devices (${devices.length}):`);
         for (const device of devices) {
           lines.push(
-            `  - ${device.label} | ${device.platform} | ${device.trusted ? "Trusted" : "Untrusted"} | ${formatDate(
+            `  - ${device.label} | ${device.platform} | ${device.trusted ? "Trusted" : "Untrusted"} | ${formatDateValue(
               device.lastSeen
             )} | ${device.ipAddress} | ${device.geo}`
           );
@@ -2316,6 +2242,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildUsersExportCsv(users, options = {}) {
+    const exporter = options.exporter || exportsModuleCache;
+    if (!exporter) return "";
+    const formatDateValue = exporter?.formatDate || formatDate;
+    const buildCsvDoc =
+      exporter?.buildCsvDocument ||
+      ((metaRows, headers, rows) => {
+        const lines = [];
+        for (const row of metaRows || []) {
+          if (!Array.isArray(row) || !row.length) {
+            lines.push("");
+            continue;
+          }
+          lines.push(row.map((cell) => String(cell ?? "")).join(","));
+        }
+        lines.push((headers || []).map((cell) => String(cell ?? "")).join(","));
+        for (const row of rows || []) {
+          lines.push((row || []).map((cell) => String(cell ?? "")).join(","));
+        }
+        return lines.join("\n");
+      });
     const includeRelated = Boolean(options.includeRelated);
     const scopeLabel = includeRelated
       ? "Users with related details"
@@ -2349,11 +2295,11 @@ document.addEventListener("DOMContentLoaded", () => {
         user.riskScore,
         user.loginAnomalies,
         user.stepUpRequired ? "yes" : "no",
-        formatDate(user.createdAt),
-        formatDate(user.lastLogin),
+        formatDateValue(user.createdAt),
+        formatDateValue(user.lastLogin),
         user.geo,
       ]);
-      return buildCsvDocument(metaRows, headers, rows);
+      return buildCsvDoc(metaRows, headers, rows);
     }
 
     const headers = [
@@ -2387,21 +2333,21 @@ document.addEventListener("DOMContentLoaded", () => {
           user.riskScore,
           user.loginAnomalies,
           user.stepUpRequired ? "yes" : "no",
-          formatDate(user.createdAt),
-          formatDate(user.lastLogin),
+          formatDateValue(user.createdAt),
+          formatDateValue(user.lastLogin),
           user.geo,
           tags || "-",
           device?.label || "-",
           device?.platform || "-",
           device ? (device.trusted ? "trusted" : "untrusted") : "-",
-          device ? formatDate(device.lastSeen) : "-",
+          device ? formatDateValue(device.lastSeen) : "-",
           device?.ipAddress || "-",
           device?.geo || "-",
         ]);
       }
     }
 
-    return buildCsvDocument(metaRows, headers, rows);
+    return buildCsvDoc(metaRows, headers, rows);
   }
 
   function applyDashboardData(data) {
@@ -2446,257 +2392,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function apiRequest(url, options = {}) {
-    let requestUrl = url;
-    if (
-      String(requestUrl).startsWith("/admin/api/") &&
-      !String(requestUrl).includes("rangeDays=")
-    ) {
-      const separator = requestUrl.includes("?") ? "&" : "?";
-      requestUrl = `${requestUrl}${separator}rangeDays=${encodeURIComponent(state.rangeDays)}`;
-    }
-
-    const requestMethod = String(options.method || "GET").toUpperCase();
-    const isSilent = Boolean(options.silent);
-    const shouldUseCache = requestMethod === "GET" && options.cache === true;
-    const cacheTtlMs =
-      Number.isFinite(options.cacheTtlMs) && Number(options.cacheTtlMs) > 0
-        ? Number(options.cacheTtlMs)
-        : API_CACHE_TTL_MS;
-    let requestPayload;
-
-    if (options.body) {
-      requestPayload =
-        String(url).startsWith("/admin/api/") &&
-        typeof options.body === "object" &&
-        options.body !== null
-          ? { ...options.body, rangeDays: state.rangeDays }
-          : options.body;
-    }
-
-    const cacheKey = shouldUseCache
-      ? `${requestMethod}:${requestUrl}:${requestPayload ? JSON.stringify(requestPayload) : ""}`
-      : "";
-
-    if (shouldUseCache) {
-      const cached = readFromApiCache(cacheKey);
-      if (cached) {
-        return cached;
-      }
-      const pending = state.pendingRequests.get(cacheKey);
-      if (pending) {
-        return pending;
-      }
-    }
-
-    if (!isSilent) {
-      setLoading(true);
-    }
-
-    const requestTask = (async () => {
-      if (window.axios) {
-        try {
-          const response = await window.axios({
-            url: requestUrl,
-            method: requestMethod,
-            data: requestPayload,
-            headers: requestPayload ? { "Content-Type": "application/json" } : {},
-          });
-          const payload = response.data || {};
-          if (requestMethod === "GET" && shouldUseCache) {
-            writeToApiCache(cacheKey, payload, cacheTtlMs);
-          } else if (requestMethod !== "GET") {
-            clearApiCache();
-          }
-          return payload;
-        } catch (axiosError) {
-          const statusCode = axiosError?.response?.status;
-          const payload = axiosError?.response?.data || {};
-          if (statusCode === 401) {
-            window.location.href = "/admin/login";
-            throw new Error("Session expired. Please sign in again.");
-          }
-          throw new Error(payload.error || payload.message || "Request failed.");
-        }
-      }
-
-      const fetchOptions = {
-        method: requestMethod,
-        headers: requestPayload ? { "Content-Type": "application/json" } : {},
-      };
-      if (requestPayload) {
-        fetchOptions.body = JSON.stringify(requestPayload);
-      }
-
-      const response = await fetch(requestUrl, fetchOptions);
-      const payload = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        window.location.href = "/admin/login";
-        throw new Error("Session expired. Please sign in again.");
-      }
-
-      if (!response.ok) {
-        throw new Error(payload.error || payload.message || "Request failed.");
-      }
-
-      if (requestMethod === "GET" && shouldUseCache) {
-        writeToApiCache(cacheKey, payload, cacheTtlMs);
-      } else if (requestMethod !== "GET") {
-        clearApiCache();
-      }
-      return payload;
-    })();
-
-    if (shouldUseCache) {
-      state.pendingRequests.set(cacheKey, requestTask);
-    }
-
-    try {
-      return await requestTask;
-    } finally {
-      if (shouldUseCache) {
-        state.pendingRequests.delete(cacheKey);
-      }
-      if (!isSilent) {
-        setLoading(false);
-      }
-    }
-  }
-
-  function readFromApiCache(cacheKey) {
-    const entry = state.apiCache.get(cacheKey);
-    if (!entry) {
-      return null;
-    }
-    if (entry.expiresAt <= Date.now()) {
-      state.apiCache.delete(cacheKey);
-      return null;
-    }
-    return clonePayload(entry.payload);
-  }
-
-  function writeToApiCache(cacheKey, payload, ttlMs) {
-    const now = Date.now();
-    if (state.apiCache.has(cacheKey)) {
-      state.apiCache.delete(cacheKey);
-    }
-    state.apiCache.set(cacheKey, {
-      payload: clonePayload(payload),
-      expiresAt: now + ttlMs,
-      createdAt: now,
-    });
-
-    while (state.apiCache.size > API_CACHE_MAX_ENTRIES) {
-      const oldestKey = state.apiCache.keys().next().value;
-      if (!oldestKey) break;
-      state.apiCache.delete(oldestKey);
-    }
-  }
-
-  function clearApiCache() {
-    state.apiCache.clear();
-    state.pendingRequests.clear();
-  }
-
-  function clonePayload(payload) {
-    if (typeof payload === "undefined" || payload === null) {
-      return payload;
-    }
-    if (typeof structuredClone === "function") {
-      return structuredClone(payload);
-    }
-    try {
-      return JSON.parse(JSON.stringify(payload));
-    } catch (error) {
-      return payload;
-    }
+    return adminApi.request(url, options);
   }
 
   function openModal({ title, message, onConfirm }) {
-    if (!modal || !modalTitle || !modalMessage) return;
-
-    state.pendingAction = onConfirm;
-    setText(modalTitle, title);
-    setText(modalMessage, message);
-
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-
-    if (window.gsap) {
-      gsap.fromTo(
-        modal.querySelector("div"),
-        { y: 20, autoAlpha: 0, scale: 0.97 },
-        { y: 0, autoAlpha: 1, scale: 1, duration: 0.2, ease: "power2.out" }
-      );
-    }
+    uiHelpers.openModal({ title, message, onConfirm });
   }
 
   function closeModal() {
-    if (!modal) return;
-    state.pendingAction = null;
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
+    uiHelpers.closeModal();
   }
 
   function showFlash(message, tone = "info") {
-    if (!adminFlash) return;
-
-    const toneClasses = {
-      success: "border-emerald-300 bg-emerald-50 text-emerald-800",
-      error: "border-rose-300 bg-rose-50 text-rose-800",
-      info: "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-900",
-    };
-
-    adminFlash.className =
-      "pointer-events-none fixed left-1/2 top-20 z-50 w-[92vw] max-w-md -translate-x-1/2 rounded-xl border px-4 py-3 text-sm font-bold shadow-xl " +
-      (toneClasses[tone] || toneClasses.info);
-    setText(adminFlash, message);
-
-    if (window.gsap) {
-      gsap.killTweensOf(adminFlash);
-      gsap.fromTo(
-        adminFlash,
-        { autoAlpha: 0, y: -10 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.22,
-          ease: "power2.out",
-          onComplete: () => {
-            gsap.to(adminFlash, {
-              autoAlpha: 0,
-              y: -8,
-              delay: 2.2,
-              duration: 0.24,
-              ease: "power2.in",
-            });
-          },
-        }
-      );
-    }
+    uiHelpers.showFlash(message, tone);
   }
 
   function setLoading(isLoading) {
-    if (!adminLoading) return;
-
-    state.loadingCount += isLoading ? 1 : -1;
-    state.loadingCount = Math.max(state.loadingCount, 0);
-
-    if (state.loadingCount > 0) {
-      adminLoading.classList.remove("hidden");
-      adminLoading.classList.add("flex");
-      return;
-    }
-
-    adminLoading.classList.add("hidden");
-    adminLoading.classList.remove("flex");
+    uiHelpers.setLoading(isLoading);
   }
 
   function animateIn() {
-    if (!window.gsap) return;
-
-    const panels = root.querySelectorAll("section, aside");
-    gsap.set(panels, { autoAlpha: 0, y: 18 });
-    gsap.to(panels, { autoAlpha: 1, y: 0, duration: 0.42, stagger: 0.06, ease: "power3.out" });
+    uiHelpers.animateIn();
   }
 
   function getSelectedUser() {
@@ -2788,111 +2504,13 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  function parseInitialData(node) {
-    if (!node) return {};
-    try {
-      return JSON.parse(node.textContent || "{}");
-    } catch (error) {
-      return {};
-    }
-  }
-
   function normalizeDashboardData(data) {
-    const fallback = {
-      adminProfile: {
-        username: "admin",
-        role: "super_admin",
-      },
-      metrics: {
-        totalUsers: 0,
-        activeUsers: 0,
-        flaggedUsers: 0,
-        trustedDevices: 0,
-        untrustedDevices: 0,
-        averageRisk: 0,
-        totalAnomalies: 0,
-      },
-      riskTrend: [],
-      userGrowthTrend: [],
-      trafficTrend: [],
-      traffic: {
-        totalVisits: 0,
-        successfulLogins: 0,
-        failedLogins: 0,
-        successRate: 0,
-        uniqueIps: 0,
-        uniqueCountries: 0,
-      },
-      realtime: {
-        activeSessions: 0,
-        failedLogins10m: 0,
-        stepUpQueue: 0,
-      },
-      health: {
-        averageApiLatencyMs: 0,
-        failedApiRequests: 0,
-        recentErrors: 0,
-        queueBacklog: 0,
-      },
-      threatGeo: [],
-      alertRules: {
-        enabled: true,
-        failedLogins15mThreshold: 4,
-        highRiskThreshold: 75,
-        uniqueCountries24hThreshold: 3,
-      },
-      triggeredAlerts: [],
-      governance: {
-        requireApproval: false,
-        pendingApprovals: 0,
-        approvals: [],
-      },
-      exportCenter: {
-        history: [],
-        schedules: [],
-      },
-      anomalies: [],
-      flaggedAccounts: [],
-      users: [],
-      auditLogs: [],
-    };
-
-    return {
-      ...fallback,
-      ...(data || {}),
-      adminProfile: { ...fallback.adminProfile, ...((data || {}).adminProfile || {}) },
-      metrics: { ...fallback.metrics, ...((data || {}).metrics || {}) },
-      riskTrend: Array.isArray((data || {}).riskTrend) ? data.riskTrend : [],
-      userGrowthTrend: Array.isArray((data || {}).userGrowthTrend) ? data.userGrowthTrend : [],
-      trafficTrend: Array.isArray((data || {}).trafficTrend) ? data.trafficTrend : [],
-      traffic: { ...fallback.traffic, ...((data || {}).traffic || {}) },
-      realtime: { ...fallback.realtime, ...((data || {}).realtime || {}) },
-      health: { ...fallback.health, ...((data || {}).health || {}) },
-      threatGeo: Array.isArray((data || {}).threatGeo) ? data.threatGeo : [],
-      alertRules: { ...fallback.alertRules, ...((data || {}).alertRules || {}) },
-      triggeredAlerts: Array.isArray((data || {}).triggeredAlerts) ? data.triggeredAlerts : [],
-      governance: { ...fallback.governance, ...((data || {}).governance || {}) },
-      exportCenter: { ...fallback.exportCenter, ...((data || {}).exportCenter || {}) },
-      anomalies: Array.isArray((data || {}).anomalies) ? data.anomalies : [],
-      flaggedAccounts: Array.isArray((data || {}).flaggedAccounts) ? data.flaggedAccounts : [],
-      users: Array.isArray((data || {}).users) ? data.users : [],
-      auditLogs: Array.isArray((data || {}).auditLogs) ? data.auditLogs : [],
-    };
+    return normalizeDashboardDataModel(data);
   }
 
   function setText(node, value) {
     if (!node) return;
     node.textContent = String(value ?? "");
-  }
-
-  function buildDateStamp() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    return `${year}${month}${day}-${hours}${minutes}`;
   }
 
   function sanitizeFileToken(value) {
@@ -2911,207 +2529,6 @@ document.addEventListener("DOMContentLoaded", () => {
         fn(...args);
       }, waitMs);
     };
-  }
-
-  function buildTableLines(columns, rows) {
-    const header = columns.join(" | ");
-    const separator = columns.map(() => "----").join(" | ");
-    const content = rows.map((row) => row.map((cell) => String(cell ?? "-")).join(" | "));
-    return [header, separator, ...content];
-  }
-
-  function buildCsv(headers, rows) {
-    const csvRows = [];
-    csvRows.push(headers.map(escapeCsvCell).join(","));
-    for (const row of rows) {
-      csvRows.push(row.map(escapeCsvCell).join(","));
-    }
-    return csvRows.join("\n");
-  }
-
-  function buildCsvDocument(metaRows, headers, rows) {
-    const lines = [];
-    for (const row of metaRows || []) {
-      if (!Array.isArray(row) || !row.length) {
-        lines.push("");
-        continue;
-      }
-      lines.push(row.map(escapeCsvCell).join(","));
-    }
-    lines.push((headers || []).map(escapeCsvCell).join(","));
-    for (const row of rows || []) {
-      lines.push((row || []).map(escapeCsvCell).join(","));
-    }
-    return lines.join("\n");
-  }
-
-  function escapeCsvCell(value) {
-    const normalized = String(value ?? "");
-    if (
-      normalized.includes(",") ||
-      normalized.includes('"') ||
-      normalized.includes("\n") ||
-      normalized.includes("\r")
-    ) {
-      return `"${normalized.replaceAll('"', '""')}"`;
-    }
-    return normalized;
-  }
-
-  function downloadCsvFile({ filename, content }) {
-    const blob = new Blob(["\uFEFF", content], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadPdfReport({ filename, title, lines }) {
-    const generatedAt = formatDate(new Date().toISOString(), true);
-    const printableLines = [
-      `Generated: ${generatedAt}`,
-      "",
-      ...lines.map((line) => String(line ?? "")),
-    ];
-    const blob = createPdfBlob(title, printableLines);
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function createPdfBlob(title, lines) {
-    const wrappedLines = wrapPdfLines(lines, 105);
-    const linesPerPage = 44;
-    const pages = chunkArray(wrappedLines, linesPerPage);
-    if (!pages.length) {
-      pages.push(["No data available."]);
-    }
-
-    const encoder = new TextEncoder();
-    const objects = [];
-
-    const addObject = (body) => {
-      objects.push(body);
-      return objects.length;
-    };
-
-    const fontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-    const pageIds = [];
-
-    for (let index = 0; index < pages.length; index += 1) {
-      const contentStream = buildPdfPageContent(title, pages[index], index + 1, pages.length);
-      const streamLength = encoder.encode(contentStream).length;
-      const contentId = addObject(
-        `<< /Length ${streamLength} >>\nstream\n${contentStream}\nendstream`
-      );
-      const pageId = addObject(
-        `<< /Type /Page /Parent PAGES_REF /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`
-      );
-      pageIds.push(pageId);
-    }
-
-    const pagesId = addObject(
-      `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${
-        pageIds.length
-      } >>`
-    );
-
-    for (const pageId of pageIds) {
-      objects[pageId - 1] = objects[pageId - 1].replace("PAGES_REF", `${pagesId} 0 R`);
-    }
-
-    const catalogId = addObject(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-
-    let pdf = "%PDF-1.4\n";
-    const offsets = [0];
-
-    for (let i = 0; i < objects.length; i += 1) {
-      offsets[i + 1] = encoder.encode(pdf).length;
-      pdf += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`;
-    }
-
-    const xrefOffset = encoder.encode(pdf).length;
-    pdf += `xref\n0 ${objects.length + 1}\n`;
-    pdf += "0000000000 65535 f \n";
-
-    for (let i = 1; i <= objects.length; i += 1) {
-      pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
-    }
-
-    pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-    return new Blob([pdf], { type: "application/pdf" });
-  }
-
-  function buildPdfPageContent(title, lines, pageNumber, totalPages) {
-    const operations = [];
-
-    operations.push(`BT /F1 16 Tf 1 0 0 1 40 758 Tm (${escapePdfText(toPdfAscii(title))}) Tj ET`);
-    operations.push(
-      `BT /F1 9 Tf 1 0 0 1 40 742 Tm (${escapePdfText(
-        toPdfAscii(`Page ${pageNumber} of ${totalPages}`)
-      )}) Tj ET`
-    );
-    operations.push("0.6 w 40 736 m 572 736 l S");
-
-    let y = 718;
-    for (const line of lines) {
-      operations.push(`BT /F1 10 Tf 1 0 0 1 40 ${y} Tm (${escapePdfText(toPdfAscii(line))}) Tj ET`);
-      y -= 15;
-    }
-
-    return operations.join("\n");
-  }
-
-  function wrapPdfLines(lines, maxChars) {
-    const wrapped = [];
-    for (const rawLine of lines) {
-      const normalized = toPdfAscii(rawLine || "").trimEnd();
-      if (!normalized.length) {
-        wrapped.push("");
-        continue;
-      }
-
-      let remaining = normalized;
-      while (remaining.length > maxChars) {
-        let splitIndex = remaining.lastIndexOf(" ", maxChars);
-        if (splitIndex <= 0) {
-          splitIndex = maxChars;
-        }
-        wrapped.push(remaining.slice(0, splitIndex).trimEnd());
-        remaining = remaining.slice(splitIndex).trimStart();
-      }
-      wrapped.push(remaining);
-    }
-    return wrapped;
-  }
-
-  function chunkArray(items, chunkSize) {
-    const chunks = [];
-    for (let index = 0; index < items.length; index += chunkSize) {
-      chunks.push(items.slice(index, index + chunkSize));
-    }
-    return chunks;
-  }
-
-  function escapePdfText(value) {
-    return String(value || "")
-      .replaceAll("\\", "\\\\")
-      .replaceAll("(", "\\(")
-      .replaceAll(")", "\\)");
-  }
-
-  function toPdfAscii(value) {
-    return String(value || "").replace(/[^\x20-\x7E]/g, "?");
   }
 
   function formatDate(value, includeTime = false) {

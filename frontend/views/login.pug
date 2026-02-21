@@ -2,6 +2,7 @@ extends ./layouts/base
 
 include ./components/navbar
 include ./components/button
+include ./components/form-controls
 
 block content
   +appNavbar(activePage || "login")
@@ -38,8 +39,7 @@ block content
             .auth-skeleton-block.h-10
             .auth-skeleton-block.h-11.mt-1
           form#loginForm.flex.flex-col.space-y-4(action="/auth/login", method="POST", class="sm:space-y-5")
-            .login-field.space-y-2
-              label.block.text-sm.font-semibold.text-rose-900(for="email") Email
+            +authFieldShell("email", "Email", "login-field space-y-2")
               input#email.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950.outline-none.transition(
                 type="email",
                 name="email",
@@ -49,7 +49,7 @@ block content
                 class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
 
-            .login-field.space-y-2
+            +authFieldShell("password", "", "login-field space-y-2")
               .flex.items-center.justify-between
                 label.block.text-sm.font-semibold.text-rose-900(for="password") Password
                 a#forgotPasswordLink.text-xs.font-bold.text-fuchsia-800.transition(
@@ -87,87 +87,74 @@ block content
                 )
                 | Trust device
 
-            #loginFlash.min-h-5.text-sm.font-bold(aria-live="polite")
+            +authStatusMessage("loginFlash", "min-h-5 text-sm font-bold", "polite")
 
             +appButton("Login", "primary", "submit")#loginBtn.login-field.py-3(
               disabled
             )
 
-  #otpModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
-    class="z-[80] bg-rose-950/55 sm:p-4"
-  )
-    .otp-card.w-full.max-w-sm.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
-      class="border-white/40 bg-white/25"
+  +authModalShell("otpModal")
+    .mb-2.flex.items-start.justify-between
+      .pr-3
+        h3.text-lg.font-black.text-rose-900 Enter OTP
+        p.mt-1.text-sm.font-semibold.text-rose-800 Check your device for the code.
+      button#otpClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+        type="button",
+        class="hover:bg-fuchsia-100"
+      ) Close
+    input#otpInput.mt-4.w-full.rounded-xl.border.border-rose-200.px-3.text-rose-950(
+      type="text",
+      autocomplete="one-time-code",
+      inputmode="numeric",
+      maxlength="5",
+      placeholder="65497",
+      class="bg-white/60 py-2.5 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
     )
-      .mb-2.flex.items-start.justify-between
-        .pr-3
-          h3.text-lg.font-black.text-rose-900 Enter OTP
-          p.mt-1.text-sm.font-semibold.text-rose-800 Check your device for the code.
-        button#otpClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
-          type="button",
-          class="hover:bg-fuchsia-100"
-        ) Close
-      input#otpInput.mt-4.w-full.rounded-xl.border.border-rose-200.px-3.text-rose-950(
-        type="text",
-        autocomplete="one-time-code",
-        inputmode="numeric",
-        maxlength="5",
-        placeholder="65497",
-        class="bg-white/60 py-2.5 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-      )
-      .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
-        +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
-        +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
+    .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
+      +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
+      +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
 
-  #resetModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
-    aria-hidden="true",
-    class="z-[81] bg-rose-950/55 sm:p-4"
-  )
-    .otp-card.w-full.max-w-md.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
-      class="border-white/40 bg-white/25"
-    )
-      .mb-2.flex.items-start.justify-between
-        .pr-3
-          h3.text-lg.leading-none.text-rose-900(style="font-family: 'Finger Paint', cursive")
-            | Reset Account
-          p.mt-1.text-sm.font-semibold.text-rose-800 Update your email and create a new password.
-        button#resetClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
-          type="button",
-          class="hover:bg-fuchsia-100"
-        ) Close
-      .mt-4.space-y-3
-        div(class="space-y-1.5")
-          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(for="resetEmail") Email
-          input#resetEmail.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
-            type="email",
-            autocomplete="email",
-            placeholder="you@example.com",
-            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          )
-        div(class="space-y-1.5")
-          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(
-            for="resetNewPassword"
-          )
-            | New Password
-          input#resetNewPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
-            type="password",
-            autocomplete="new-password",
-            placeholder="Minimum 8 characters",
-            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          )
-        div(class="space-y-1.5")
-          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(
-            for="resetConfirmPassword"
-          ) Confirm Password
-          input#resetConfirmPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
-            type="password",
-            autocomplete="new-password",
-            placeholder="Repeat new password",
-            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          )
-      #resetFlash.min-h-5.mt-3.text-sm.font-semibold(aria-live="polite")
-      .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
-        +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
-        +appButton("Cancel", "ghost", "button")#resetCancel.flex-1
+  +authModalShell("resetModal", "fixed inset-0 hidden items-center justify-center p-3 backdrop-blur-sm z-[81] bg-rose-950/55 sm:p-4", "otp-card w-full max-w-md rounded-2xl border bg-white p-4 shadow-2xl backdrop-blur-2xl font-semibold border-white/40 bg-white/25")
+    .mb-2.flex.items-start.justify-between
+      .pr-3
+        h3.text-lg.leading-none.text-rose-900(style="font-family: 'Finger Paint', cursive")
+          | Reset Account
+        p.mt-1.text-sm.font-semibold.text-rose-800 Update your email and create a new password.
+      button#resetClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+        type="button",
+        class="hover:bg-fuchsia-100"
+      ) Close
+    .mt-4.space-y-3
+      div(class="space-y-1.5")
+        label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(for="resetEmail") Email
+        input#resetEmail.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
+          type="email",
+          autocomplete="email",
+          placeholder="you@example.com",
+          class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        )
+      div(class="space-y-1.5")
+        label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(for="resetNewPassword")
+          | New Password
+        input#resetNewPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
+          type="password",
+          autocomplete="new-password",
+          placeholder="Minimum 8 characters",
+          class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        )
+      div(class="space-y-1.5")
+        label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(
+          for="resetConfirmPassword"
+        ) Confirm Password
+        input#resetConfirmPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
+          type="password",
+          autocomplete="new-password",
+          placeholder="Repeat new password",
+          class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        )
+    +authStatusMessage("resetFlash", "min-h-5 mt-3 text-sm font-semibold", "polite")
+    .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
+      +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
+      +appButton("Cancel", "ghost", "button")#resetCancel.flex-1
   script(src=assetPath("/js/animations/login-particles.js"), defer)
-  script(src=assetPath("/js/login.js"), defer)
+  script(src=assetPath("/js/pages/login.js"), type="module")

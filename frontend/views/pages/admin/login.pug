@@ -2,6 +2,7 @@ extends ../../layouts/base
 
 include ../../components/navbar
 include ../../components/button
+include ../../components/form-controls
 
 block content
   +appNavbar(activePage || "admin")
@@ -40,8 +41,7 @@ block content
             .auth-skeleton-block.h-11
             .auth-skeleton-block.h-11.mt-3
           form#adminLoginForm.flex.flex-col.space-y-4(action="/admin/login", method="POST")
-            .space-y-2
-              label.block.text-sm.font-semibold.text-rose-900(for="username") Username
+            +authFieldShell("username", "Username", "space-y-2")
               input#username.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
                 type="text",
                 name="username",
@@ -51,8 +51,7 @@ block content
                 class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
 
-            .space-y-2
-              label.block.text-sm.font-semibold.text-rose-900(for="password") Password
+            +authFieldShell("password", "Password", "space-y-2")
               input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
                 type="password",
                 name="password",
@@ -74,4 +73,4 @@ block content
           ) Return to User Login
 
   script(src=assetPath("/js/animations/login-particles.js"), defer)
-  script(src=assetPath("/js/admin-login.js"), defer)
+  script(src=assetPath("/js/pages/admin/login.js"), type="module")

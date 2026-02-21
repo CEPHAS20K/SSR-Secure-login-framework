@@ -32,6 +32,8 @@ npm run dev
 - `npm run test:e2e`: browser E2E tests (Playwright).
 - `npm run test`: runs API + E2E tests.
 - `npm run test:all`: runs API + E2E + bundle budget + Lighthouse checks.
+- `npm run lint`: frontend JavaScript lint checks.
+- `npm run optimize:svg`: minify landing/auth SVG assets (`land.svg`, `up.svg`, `off.svg`).
 
 ### Testing Guide For Next Developer
 
@@ -60,12 +62,20 @@ npm run test:api
 npm run test:e2e
 npm run check:bundle-size
 npm run perf:lighthouse
+npm run lint
 ```
 
 Notes:
 
 - Run commands from repo root (`/home/kephas/Desktop/auth`).
 - `test:e2e` auto-starts backend on `127.0.0.1:4173` via Playwright config.
+- Visual baselines live in `e2e/auth-visual.spec.js-snapshots/`.
+- To refresh visual snapshots intentionally:
+
+```bash
+npm run test:e2e -- e2e/auth-visual.spec.js --update-snapshots=all
+```
+
 - `perf:lighthouse` is stricter and may take longer than API/E2E tests.
 
 ## Performance Budgets

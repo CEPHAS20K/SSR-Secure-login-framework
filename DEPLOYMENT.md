@@ -102,7 +102,7 @@ pm2 logs auth-app --lines 100
 curl -I https://your-domain.com/health
 curl -I --http3 https://your-domain.com/health
 curl -I https://your-domain.com/css/output.css
-curl -I https://your-domain.com/js/register.js
+curl -I https://your-domain.com/js/pages/register.js
 ```
 
 Expected in production:
