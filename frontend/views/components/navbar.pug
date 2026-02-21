@@ -1,4 +1,5 @@
 mixin appNavbar(activePage)
+  - const showHome = activePage !== "landing";
   - const showLogin = activePage !== "login";
   - const showRegister = activePage !== "register";
   nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
@@ -26,12 +27,13 @@ mixin appNavbar(activePage)
             span.block.w-4.rounded-full.bg-current(class="h-0.5")
             span.block.w-4.rounded-full.bg-current(class="h-0.5")
         .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
-          a.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
-            href="/",
-            class="py-1.5 bg-white/20 hover:bg-primary hover:text-white sm:text-base",
-            data-nav-link="home",
-            style="font-family: 'Schoolbell', cursive"
-          ) Home
+          if showHome
+            a.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
+              href="/",
+              class="py-1.5 bg-white/20 hover:bg-primary hover:text-white sm:text-base",
+              data-nav-link="home",
+              style="font-family: 'Schoolbell', cursive"
+            ) Home
           if showLogin
             a.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
               href="/login",
@@ -48,12 +50,13 @@ mixin appNavbar(activePage)
             ) Register
       #mobileNav.hidden.border-t.pt-3.mt-3.border-transparent.bg-transparent(class="sm:hidden")
         .grid.gap-2
-          a.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
-            href="/",
-            class="bg-white/20 hover:bg-primary hover:text-white",
-            data-nav-link="home",
-            style="font-family: 'Schoolbell', cursive"
-          ) Home
+          if showHome
+            a.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
+              href="/",
+              class="bg-white/20 hover:bg-primary hover:text-white",
+              data-nav-link="home",
+              style="font-family: 'Schoolbell', cursive"
+            ) Home
           if showLogin
             a.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
               href="/login",

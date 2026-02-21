@@ -25,9 +25,10 @@ block content
 
       #errorIllustrationWrap.relative.mx-auto.mt-4.w-full.max-w-xl
         img#errorIllustration.mx-auto.w-full.max-w-full.drop-shadow-2xl.mix-blend-multiply.opacity-90.contrast-110.saturate-125.object-contain(
-          src="/images/500.svg",
+          src=assetPath("/images/500.svg"),
           alt="500 server error illustration",
           loading="eager",
+          decoding="async",
           class="max-h-[34vh] sm:max-h-[42vh]"
         )
 
@@ -42,5 +43,5 @@ block content
           class="py-2.5 hover:bg-fuchsia-200 border-fuchsia-200/80"
         ) Try Again
 
-  script(src=assetPath("/js/errors/404-particles.js"))
-  script(src=assetPath("/js/errors/404.js"))
+  script(src=assetPath("/js/errors/404-particles.js"), defer)
+  script(src=assetPath("/js/errors/404.js"), defer)

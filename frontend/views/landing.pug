@@ -61,17 +61,18 @@ block content
           class="h-[24rem] sm:h-[28rem]"
         )
           img#landingHeroSvg.relative.z-10.h-full.w-full.object-contain.landing-svg-float.opacity-72.mix-blend-normal.brightness-110.saturate-125.contrast-110(
-            src="/images/land.svg",
+            src=assetPath("/images/land.svg"),
             alt="Landing illustration",
             loading="eager",
             decoding="async",
+            fetchpriority="high",
             style="clip-path: inset(2px)"
           )
       section#heroCta.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.pb-8(class="md:px-6")
         .grid.items-center.gap-6(class="md:grid-cols-[1.1fr_0.9fr] md:gap-12")
           .flex.w-full.items-center.justify-center(class="md:justify-end")
             img#heroCtaSvg.up-svg-float.h-auto.w-full.object-contain.max-w-2xl(
-              src="/images/up.svg",
+              src=assetPath("/images/up.svg"),
               alt="Secure access illustration",
               loading="lazy",
               decoding="async",

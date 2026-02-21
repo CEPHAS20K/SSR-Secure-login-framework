@@ -1,16 +1,21 @@
 doctype html
 html(lang="en")
+  -
+    const currentPage = typeof page === "string" ? page : "";
+    const gsapPages = new Set(["landing", "login", "register", "admin-login", "error"]);
+    const shouldLoadGsap = gsapPages.has(currentPage);
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
     meta(name="theme-color", content="#ff7700")
+    meta(name="mobile-web-app-capable", content="yes")
     meta(name="apple-mobile-web-app-capable", content="yes")
     meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
     meta(name="apple-mobile-web-app-title", content="Auth Secure")
     title= title || "App"
-    link(rel="icon", type="image/png", href="/images/logo.png")
-    link(rel="apple-touch-icon", href="/images/logo.png")
-    link(rel="manifest", href="/manifest.webmanifest")
+    link(rel="icon", type="image/png", href=assetPath("/images/logo.png"))
+    link(rel="apple-touch-icon", href=assetPath("/images/logo.png"))
+    link(rel="manifest", href=assetPath("/manifest.webmanifest"))
     script.
       (function () {
         try {
@@ -23,7 +28,7 @@ html(lang="en")
     link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin)
     link(
       rel="stylesheet",
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cabin+Sketch:wght@400;700&family=Finger+Paint&family=Fira+Code:wght@400;500&family=Inter:wght@400;600;700&family=Irish+Grover&family=Playfair+Display:wght@600;700&family=Schoolbell&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cabin+Sketch:wght@400;700&family=Finger+Paint&family=Fira+Code:wght@400;500&family=Inter:wght@400;600;700&family=Irish+Grover&family=Schoolbell&display=swap"
     )
     link(rel="stylesheet", href="https://fonts.googleapis.com/icon?family=Material+Icons")
     style.
@@ -57,13 +62,15 @@ html(lang="en")
         opacity: 1;
         transform: translateX(calc(100vw - 2px));
       }
-    link(rel="stylesheet", href="/css/output.css")
+    link(rel="stylesheet", href=assetPath("/css/output.css"))
   body.min-h-screen.bg-slate-100.font-body.text-slate-900(data-page=page || "")
     #pageTransitionOverlay
       #pageTransitionStroke
     main
       block content
-    script(src="/vendor/gsap.min.js")
-    script(src="/js/animations/navbar.js")
-    script(src="/js/animations.js")
-    script(src="/js/sw-register.js")
+    if shouldLoadGsap
+      script(src=assetPath("/vendor/gsap.min.js"), defer)
+    script(src=assetPath("/js/animations/navbar.js"), defer)
+    script(src=assetPath("/js/animations.js"), defer)
+    script(src=assetPath("/js/link-prefetch.js"), defer)
+    script(src=assetPath("/js/sw-register.js"), defer)

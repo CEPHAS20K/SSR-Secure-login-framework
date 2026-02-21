@@ -20,7 +20,7 @@ cd auth
 npm run setup
 npm run build
 
-ASSET_VERSION=$(git rev-parse --short HEAD) NODE_ENV=production \
+ASSET_VERSION=$(git rev-parse --short HEAD) NODE_ENV=production FORCE_NO_STORE=false \
 pm2 start npm --name auth-app --prefix /var/www/auth/backend -- run start:proc
 
 pm2 save
@@ -76,13 +76,22 @@ On every push to `main`, the server will:
 2. Install dependencies
 3. Build frontend assets
 4. Set `ASSET_VERSION` to current commit hash
-5. Restart PM2 app with updated env
+5. Set `FORCE_NO_STORE=false` for production cache headers
+6. Restart PM2 app with updated env
 
 ## 5) Manual deploy command
 
 ```bash
 cd /var/www/auth
 ./scripts/deploy.sh
+```
+
+If you previously started PM2 manually, update env once and restart:
+
+```bash
+cd /var/www/auth
+FORCE_NO_STORE=false NODE_ENV=production ASSET_VERSION=$(git rev-parse --short HEAD) \
+pm2 restart auth-app --update-env
 ```
 
 ## 6) Verify
@@ -92,7 +101,14 @@ pm2 status
 pm2 logs auth-app --lines 100
 curl -I https://your-domain.com/health
 curl -I --http3 https://your-domain.com/health
+curl -I https://your-domain.com/css/output.css
+curl -I https://your-domain.com/js/register.js
 ```
+
+Expected in production:
+
+- CSS/JS: `Cache-Control: public, max-age=604800, stale-while-revalidate=86400`
+- Images/fonts: `Cache-Control: public, max-age=31536000, immutable`
 
 ## 7) Backend admin IP guard
 

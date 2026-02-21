@@ -131,5 +131,5 @@ block content
         +appButton("Submit", "primary", "button")#registerOtpSubmit.flex-1(disabled)
         +appButton("Resend (05:00)", "ghost", "button")#registerResendOtp.flex-1(disabled)
 
-  script(src="/js/animations/login-particles.js")
-  script(src="/js/register.js")
+  script(src=assetPath("/js/animations/login-particles.js"), defer)
+  script(src=assetPath("/js/register.js"), defer)

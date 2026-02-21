@@ -42,7 +42,10 @@ block content
           .login-field.space-y-2
             .flex.items-center.justify-between
               label.block.text-sm.font-semibold.text-rose-900(for="password") Password
-              a.text-xs.font-bold.text-fuchsia-800.transition(href="#", class="hover:text-fuchsia-950") Forgot?
+              a#forgotPasswordLink.text-xs.font-bold.text-fuchsia-800.transition(
+                href="#",
+                class="hover:text-fuchsia-950"
+              ) Forgot?
             .relative
               input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.pr-16.text-sm.font-semibold.text-rose-950.outline-none.transition(
                 type="password",
@@ -97,5 +100,56 @@ block content
       .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
         +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
         +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
-  script(src="/js/animations/login-particles.js")
-  script(src="/js/login.js")
+
+  #resetModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
+    aria-hidden="true",
+    class="z-[81] bg-rose-950/55 sm:p-4"
+  )
+    .otp-card.w-full.max-w-md.rounded-2xl.border.bg-white.p-4.shadow-2xl.backdrop-blur-2xl.font-semibold(
+      class="border-white/40 bg-white/25"
+    )
+      .mb-2.flex.items-start.justify-between
+        .pr-3
+          h3.text-lg.leading-none.text-rose-900(style="font-family: 'Finger Paint', cursive")
+            | Reset Account
+          p.mt-1.text-sm.font-semibold.text-rose-800 Update your email and create a new password.
+        button#resetClose.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+          type="button",
+          class="hover:bg-fuchsia-100"
+        ) Close
+      .mt-4.space-y-3
+        div(class="space-y-1.5")
+          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(for="resetEmail") Email
+          input#resetEmail.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
+            type="email",
+            autocomplete="email",
+            placeholder="you@example.com",
+            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          )
+        div(class="space-y-1.5")
+          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(
+            for="resetNewPassword"
+          )
+            | New Password
+          input#resetNewPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
+            type="password",
+            autocomplete="new-password",
+            placeholder="Minimum 8 characters",
+            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          )
+        div(class="space-y-1.5")
+          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(
+            for="resetConfirmPassword"
+          ) Confirm Password
+          input#resetConfirmPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
+            type="password",
+            autocomplete="new-password",
+            placeholder="Repeat new password",
+            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          )
+      #resetFlash.min-h-5.mt-3.text-sm.font-semibold
+      .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
+        +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
+        +appButton("Cancel", "ghost", "button")#resetCancel.flex-1
+  script(src=assetPath("/js/animations/login-particles.js"), defer)
+  script(src=assetPath("/js/login.js"), defer)

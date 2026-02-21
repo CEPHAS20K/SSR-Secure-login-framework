@@ -23,9 +23,10 @@ block content
 
       #errorIllustrationWrap.relative.mx-auto.mt-6.w-full.max-w-xl
         img#errorIllustration.w-full.drop-shadow-2xl.mix-blend-multiply.opacity-90.contrast-110.saturate-125(
-          src="/images/404.svg",
+          src=assetPath("/images/404.svg"),
           alt="404 illustration",
-          loading="eager"
+          loading="eager",
+          decoding="async"
         )
 
       #errorActions.mt-7.flex.flex-col.gap-3(class="sm:flex-row sm:justify-center")
@@ -38,5 +39,5 @@ block content
           class="py-2.5 hover:bg-fuchsia-200 border-fuchsia-200/80"
         ) Go to Register
 
-  script(src=assetPath("/js/errors/404-particles.js"))
-  script(src=assetPath("/js/errors/404.js"))
+  script(src=assetPath("/js/errors/404-particles.js"), defer)
+  script(src=assetPath("/js/errors/404.js"), defer)

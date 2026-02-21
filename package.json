@@ -13,6 +13,7 @@
     "build": "npm run build:frontend",
     "start": "npm --prefix ./backend run start",
     "start:proc": "npm run build:frontend && npm --prefix ./backend run start:proc",
+    "perf:lighthouse": "npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json",
     "check": "npm run format:check && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

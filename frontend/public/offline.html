@@ -12,7 +12,9 @@
       html,
       body {
         margin: 0;
-        min-height: 100%;
+        width: 100%;
+        height: 100%;
+        min-height: 100vh;
         font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
         background: radial-gradient(circle at top right, #ffd7b3, #ffae58 42%, #ff7700 100%);
         color: #431407;
@@ -21,6 +23,7 @@
         display: grid;
         place-items: center;
         padding: 24px;
+        box-sizing: border-box;
       }
       .card {
         width: min(460px, 100%);
@@ -31,13 +34,34 @@
         backdrop-filter: blur(8px);
         box-shadow: 0 20px 35px rgba(67, 20, 7, 0.18);
       }
+      .offline-illustration {
+        width: 84px;
+        height: 84px;
+        display: block;
+        margin: 0 auto 14px;
+        padding: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(194, 65, 12, 0.18);
+        box-shadow: 0 10px 22px rgba(194, 65, 12, 0.2);
+        object-fit: contain;
+      }
       h1 {
         margin: 0 0 8px;
         font-size: 1.35rem;
+        text-align: center;
       }
       p {
         margin: 0 0 16px;
         line-height: 1.45;
+        text-align: center;
+      }
+      .status {
+        margin: 0 0 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-align: center;
+        color: #9a3412;
       }
       a {
         display: inline-block;
@@ -48,13 +72,85 @@
         padding: 10px 14px;
         border-radius: 10px;
       }
+      .actions {
+        text-align: center;
+      }
     </style>
   </head>
   <body>
     <main class="card">
+      <img class="offline-illustration" src="/images/off.svg" alt="Offline state" />
       <h1>You are offline</h1>
       <p>Auth Secure cannot reach the server right now. Reconnect and retry.</p>
-      <a href="/">Retry</a>
+      <p class="status" id="connectionStatus">Checking connection every 5 seconds...</p>
+      <div class="actions">
+        <a href="/">Retry</a>
+      </div>
     </main>
+    <script>
+      (() => {
+        const statusNode = document.getElementById("connectionStatus");
+        const PING_INTERVAL_MS = 5000;
+        const PING_TIMEOUT_MS = 3500;
+        let redirecting = false;
+        let intervalId = null;
+
+        const setStatus = (message) => {
+          if (!statusNode) return;
+          statusNode.textContent = message;
+        };
+
+        const pingServer = async () => {
+          let timeoutId = null;
+          let controller = null;
+
+          try {
+            if (typeof AbortController !== "undefined") {
+              controller = new AbortController();
+              timeoutId = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+            }
+
+            const response = await fetch(`/health?_=${Date.now()}`, {
+              method: "GET",
+              cache: "no-store",
+              credentials: "same-origin",
+              headers: { Accept: "application/json" },
+              signal: controller ? controller.signal : undefined,
+            });
+
+            if (!response.ok) return false;
+            return true;
+          } catch (error) {
+            try {
+              const fallbackResponse = await fetch(`/?reconnect=${Date.now()}`, {
+                method: "HEAD",
+                cache: "no-store",
+                credentials: "same-origin",
+              });
+              return fallbackResponse.ok;
+            } catch (fallbackError) {
+              return false;
+            }
+          } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+          }
+        };
+
+        const tryRecover = async () => {
+          if (redirecting) return;
+          setStatus("Checking connection every 5 seconds...");
+          const isBackOnline = await pingServer();
+          if (!isBackOnline) return;
+          redirecting = true;
+          if (intervalId) clearInterval(intervalId);
+          setStatus("Connection restored. Redirecting...");
+          window.location.replace("/");
+        };
+
+        window.addEventListener("online", tryRecover);
+        intervalId = setInterval(tryRecover, PING_INTERVAL_MS);
+        tryRecover();
+      })();
+    </script>
   </body>
 </html>

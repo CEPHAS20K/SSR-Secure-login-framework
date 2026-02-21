@@ -1,9 +1,14 @@
 "use strict";
 
-const SW_VERSION = "v6";
+const SW_VERSION = "v10";
 const ASSET_CACHE = `auth-assets-${SW_VERSION}`;
 const OFFLINE_FALLBACK_URL = "/offline.html";
-const PRECACHE_ASSETS = [OFFLINE_FALLBACK_URL, "/manifest.webmanifest", "/images/logo.png"];
+const PRECACHE_ASSETS = [
+  OFFLINE_FALLBACK_URL,
+  "/manifest.webmanifest",
+  "/images/logo.png",
+  "/images/off.svg",
+];
 
 const STATIC_FILE_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$/i;
 
@@ -40,6 +45,19 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/admin/api/")) return;
   if (url.pathname.startsWith("/api/")) return;
   if (url.pathname.startsWith("/auth/")) return;
+
+  if (url.pathname === "/health") {
+    event.respondWith(
+      fetch(request, { cache: "no-store" }).catch(
+        () =>
+          new Response(JSON.stringify({ status: "offline" }), {
+            status: 503,
+            headers: { "Content-Type": "application/json" },
+          })
+      )
+    );
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(handleNavigationRequest(request));

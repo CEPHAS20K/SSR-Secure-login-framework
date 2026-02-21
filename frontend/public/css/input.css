@@ -316,6 +316,10 @@ html[data-theme="dark"] .auth-glass-card textarea {
 }
 
 @layer components {
+  button[type="submit"] {
+    font-family: "Finger Paint", cursive;
+  }
+
   .theme-toggle-btn {
     backdrop-filter: blur(10px);
     box-shadow: 0 6px 14px rgba(120, 37, 58, 0.1);
@@ -537,62 +541,6 @@ html[data-theme="dark"] .auth-glass-card textarea {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.78);
   }
 
-  /* Final readability pass for transparent cards in dark mode */
-  html[data-theme="dark"]
-    :is(
-      #loginCard,
-      #registerCard,
-      .otp-card,
-      .feature-card,
-      .security-shell,
-      .security-step,
-      .ops-card,
-      #adminDashboard .rounded-2xl.border,
-      #adminDashboard .rounded-xl.border
-    ) {
-    background-color: rgba(7, 14, 11, 0.72) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-color: rgba(170, 200, 186, 0.42) !important;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45) !important;
-  }
-
-  html[data-theme="dark"]
-    :is(
-      #loginCard,
-      #registerCard,
-      .otp-card,
-      .feature-card,
-      .security-shell,
-      .security-step,
-      .ops-card,
-      #adminDashboard .rounded-2xl.border,
-      #adminDashboard .rounded-xl.border
-    )
-    :is(p, span, li, dt, dd, td, a, button, label, th) {
-    color: #f5fff9 !important;
-    text-shadow: none !important;
-    font-weight: 700 !important;
-  }
-
-  html[data-theme="dark"]
-    :is(
-      #loginCard,
-      #registerCard,
-      .otp-card,
-      .feature-card,
-      .security-shell,
-      .security-step,
-      .ops-card,
-      #adminDashboard .rounded-2xl.border,
-      #adminDashboard .rounded-xl.border
-    )
-    :is(h1, h2, h3, h4, h5, h6, strong, b) {
-    color: #ffe28a !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
-    font-weight: 900 !important;
-  }
-
   /* Readability lock: keep cards readable in both themes */
   :is(
     #loginCard,
@@ -693,15 +641,6 @@ html[data-theme="dark"] .auth-glass-card textarea {
     color: #ffd166 !important;
     font-weight: 900 !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65) !important;
-  }
-
-  html[data-theme="dark"] #hero-title [data-typing-line],
-  html[data-theme="dark"] #heroTitleCaret {
-    color: #ffe08a !important;
-    font-weight: 900 !important;
-    text-shadow:
-      0 0 12px rgba(242, 181, 11, 0.45),
-      0 2px 5px rgba(0, 0, 0, 0.72) !important;
   }
 
   /* Keep auth forms a bit more transparent than other cards */

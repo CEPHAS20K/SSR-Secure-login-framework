@@ -11,6 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const otpInput = document.getElementById("otpInput");
   const resendOtp = document.getElementById("resendOtp");
   const otpClose = document.getElementById("otpClose");
+  const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+  const resetModal = document.getElementById("resetModal");
+  const resetModalCard = resetModal ? resetModal.querySelector(".otp-card") : null;
+  const resetClose = document.getElementById("resetClose");
+  const resetCancel = document.getElementById("resetCancel");
+  const resetEmail = document.getElementById("resetEmail");
+  const resetNewPassword = document.getElementById("resetNewPassword");
+  const resetConfirmPassword = document.getElementById("resetConfirmPassword");
+  const resetSubmit = document.getElementById("resetSubmit");
+  const resetFlash = document.getElementById("resetFlash");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
@@ -119,6 +129,89 @@ document.addEventListener("DOMContentLoaded", () => {
     capsWarning.classList.toggle("hidden", !event.getModifierState("CapsLock"));
   };
 
+  const isResetModalReady = Boolean(
+    forgotPasswordLink &&
+    resetModal &&
+    resetEmail &&
+    resetNewPassword &&
+    resetConfirmPassword &&
+    resetSubmit &&
+    resetFlash
+  );
+
+  const setResetModalOpenState = (open) => {
+    if (!resetModal) return;
+    resetModal.classList.toggle("hidden", !open);
+    resetModal.classList.toggle("flex", open);
+    resetModal.setAttribute("aria-hidden", open ? "false" : "true");
+    resetModal.style.display = open ? "flex" : "none";
+  };
+
+  const updateResetSubmitState = () => {
+    if (!isResetModalReady) return;
+    const emailValue = resetEmail.value.trim();
+    const newPasswordValue = resetNewPassword.value;
+    const confirmPasswordValue = resetConfirmPassword.value;
+    const isReady =
+      isEmailValid(emailValue) &&
+      newPasswordValue.length >= 8 &&
+      confirmPasswordValue.length >= 8 &&
+      newPasswordValue === confirmPasswordValue;
+    resetSubmit.disabled = !isReady;
+  };
+
+  const closeResetModal = () => {
+    if (!resetModal) return;
+    if (resetModal.classList.contains("hidden") && resetModal.style.display !== "flex") return;
+
+    if (window.gsap) {
+      if (resetModalCard) {
+        gsap.to(resetModalCard, {
+          y: 12,
+          scale: 0.98,
+          autoAlpha: 0,
+          duration: 0.2,
+          ease: "power1.in",
+        });
+      }
+      gsap.to(resetModal, {
+        autoAlpha: 0,
+        duration: 0.2,
+        ease: "power1.in",
+        onComplete: () => {
+          setResetModalOpenState(false);
+          gsap.set(resetModal, { clearProps: "opacity,visibility" });
+          if (resetModalCard) gsap.set(resetModalCard, { clearProps: "opacity,transform" });
+        },
+      });
+      return;
+    }
+
+    setResetModalOpenState(false);
+  };
+
+  const openResetModal = () => {
+    if (!isResetModalReady) return;
+    setResetModalOpenState(true);
+    resetFlash.textContent = "";
+    resetFlash.className = "min-h-5 mt-3 text-sm font-semibold";
+    resetEmail.value = email.value.trim();
+    resetNewPassword.value = "";
+    resetConfirmPassword.value = "";
+    updateResetSubmitState();
+    resetEmail.focus();
+
+    if (!window.gsap) return;
+    gsap.fromTo(resetModal, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "power1.out" });
+    if (resetModalCard) {
+      gsap.fromTo(
+        resetModalCard,
+        { y: 18, scale: 0.96, autoAlpha: 0 },
+        { y: 0, scale: 1, autoAlpha: 1, duration: 0.3, ease: "power2.out" }
+      );
+    }
+  };
+
   email.addEventListener("input", updateButtonState);
   password.addEventListener("input", () => {
     updateButtonState();
@@ -202,6 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   setModalOpenState(false);
+  setResetModalOpenState(false);
 
   if (otpClose) {
     otpClose.addEventListener("click", closeOtpModal);
@@ -220,5 +314,52 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeOtpModal();
+    closeResetModal();
   });
+
+  if (isResetModalReady) {
+    [resetEmail, resetNewPassword, resetConfirmPassword].forEach((field) => {
+      field.addEventListener("input", updateResetSubmitState);
+      field.addEventListener("change", updateResetSubmitState);
+    });
+    updateResetSubmitState();
+
+    forgotPasswordLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      openResetModal();
+    });
+
+    if (resetClose) {
+      resetClose.addEventListener("click", closeResetModal);
+    }
+    if (resetCancel) {
+      resetCancel.addEventListener("click", closeResetModal);
+    }
+
+    resetSubmit.addEventListener("click", () => {
+      if (resetSubmit.disabled) return;
+      if (resetNewPassword.value !== resetConfirmPassword.value) {
+        resetFlash.textContent = "New password and confirmation do not match.";
+        resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-rose-900";
+        updateResetSubmitState();
+        return;
+      }
+
+      resetFlash.textContent = "Reset request submitted. Check your email for next steps.";
+      resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-fuchsia-900";
+      setTimeout(() => {
+        closeResetModal();
+      }, 650);
+    });
+
+    resetModal.addEventListener("click", (event) => {
+      if (resetModalCard && resetModalCard.contains(event.target)) return;
+      closeResetModal();
+    });
+
+    resetModal.addEventListener("mousedown", (event) => {
+      if (resetModalCard && resetModalCard.contains(event.target)) return;
+      closeResetModal();
+    });
+  }
 });

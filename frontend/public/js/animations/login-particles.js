@@ -1,8 +1,15 @@
 const initAuthParticles = () => {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const connection =
+    navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
+  const effectiveType = connection?.effectiveType || "";
+  const isDataSaver = Boolean(connection?.saveData);
+  const isVerySlowConnection =
+    effectiveType === "slow-2g" || effectiveType === "2g" || effectiveType === "3g";
 
   const scenes = Array.from(document.querySelectorAll("[data-auth-particles]"));
   if (!scenes.length) return;
+  if (isDataSaver || isVerySlowConnection) return;
 
   const motionScale = prefersReducedMotion ? 0.45 : 1;
   const config = {
@@ -12,7 +19,7 @@ const initAuthParticles = () => {
     maxSize: 2.3,
     minSpeed: 0.02 * motionScale,
     maxSpeed: 0.1 * motionScale,
-    linkDistance: 160,
+    linkDistance: prefersReducedMotion ? 120 : 160,
     trailScale: prefersReducedMotion ? 0.35 : 0.6,
   };
 

@@ -5,6 +5,7 @@ APP_DIR="${APP_DIR:-/var/www/auth}"
 BRANCH="${BRANCH:-main}"
 PM2_APP_NAME="${PM2_APP_NAME:-auth-app}"
 NODE_ENV="${NODE_ENV:-production}"
+FORCE_NO_STORE="${FORCE_NO_STORE:-false}"
 
 echo "[deploy] app dir: ${APP_DIR}"
 echo "[deploy] branch: ${BRANCH}"
@@ -48,7 +49,9 @@ npm run build
 ASSET_VERSION="$(git rev-parse --short HEAD)"
 export ASSET_VERSION
 export NODE_ENV
+export FORCE_NO_STORE
 echo "[deploy] asset version: ${ASSET_VERSION}"
+echo "[deploy] force no-store: ${FORCE_NO_STORE}"
 
 echo "[deploy] restarting process"
 if pm2 describe "${PM2_APP_NAME}" >/dev/null 2>&1; then
