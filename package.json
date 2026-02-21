@@ -13,7 +13,13 @@
     "build": "npm run build:frontend",
     "start": "npm --prefix ./backend run start",
     "start:proc": "npm run build:frontend && npm --prefix ./backend run start:proc",
+    "test": "npm run test:api && npm run test:e2e",
+    "test:all": "npm run test && npm run check:bundle-size && npm run perf:lighthouse",
+    "test:api": "npm --prefix ./backend run test",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "perf:lighthouse": "npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json",
+    "check:bundle-size": "node ./scripts/check-bundle-size.js",
     "check": "npm run format:check && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -26,6 +32,7 @@
     "*.{js,json,md,pug,css}": "prettier --write"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@prettier/plugin-pug": "^3.4.2",
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",

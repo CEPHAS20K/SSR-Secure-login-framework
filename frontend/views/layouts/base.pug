@@ -5,7 +5,6 @@ html(lang="en")
     const gsapPages = new Set(["landing", "login", "register", "admin-login", "error"]);
     const shouldLoadGsap = gsapPages.has(currentPage);
     const shouldPreloadLandingVisuals = currentPage === "landing";
-    const shouldPreloadAuthBackground = new Set(["landing", "login", "register", "admin-login"]).has(currentPage);
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
@@ -17,13 +16,6 @@ html(lang="en")
     link(rel="icon", type="image/png", href=assetPath("/images/logo.png"))
     link(rel="apple-touch-icon", href=assetPath("/images/logo.png"))
     link(rel="manifest", href=assetPath("/manifest.webmanifest"))
-    if shouldPreloadAuthBackground
-      link(
-        rel="preload",
-        as="image",
-        href=assetPath("/images/flat-mount.svg"),
-        type="image/svg+xml"
-      )
     if shouldPreloadLandingVisuals
       link(
         rel="preload",
@@ -41,13 +33,7 @@ html(lang="en")
           }
         } catch (error) {}
       })();
-    link(rel="preconnect", href="https://fonts.googleapis.com")
-    link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin)
-    link(
-      rel="stylesheet",
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cabin+Sketch:wght@400;700&family=Finger+Paint&family=Fira+Code:wght@400;500&family=Inter:wght@400;600;700&family=Irish+Grover&family=Schoolbell&display=swap"
-    )
-    link(rel="stylesheet", href="https://fonts.googleapis.com/icon?family=Material+Icons")
+    link(rel="stylesheet", href=assetPath("/css/fonts.css"))
     style.
       html,
       body {

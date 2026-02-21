@@ -15,28 +15,11 @@ const {
   notFoundHandler,
   internalServerErrorHandler,
 } = require("./middleware");
-
-const ENV_FILE = process.env.NODE_ENV === "production" ? ".env.proc" : ".env.dev";
-dotenv.config({ path: path.join(__dirname, ENV_FILE) });
-
-const app = express();
-const PORT = resolvePort(process.env.PORT, 3000);
-const HOST = process.env.HOST || "127.0.0.1";
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const LOG_LEVEL = process.env.LOG_LEVEL || (IS_PRODUCTION ? "info" : "debug");
-const FORCE_NO_STORE = resolveBoolean(process.env.FORCE_NO_STORE, !IS_PRODUCTION);
-const ADMIN_ENABLED = resolveBoolean(process.env.ADMIN_ENABLED, true);
-const ADMIN_INTERNAL_ONLY = resolveBoolean(process.env.ADMIN_INTERNAL_ONLY, true);
-const ADMIN_ALLOW_IPS = parseList(process.env.ADMIN_ALLOW_IPS);
+const { initSentry, captureSentryException } = require("./observability");
 
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
 const PUBLIC_DIR = path.join(FRONTEND_DIR, "public");
-const ASSET_VERSION = resolveAssetVersion({
-  envVersion: process.env.ASSET_VERSION,
-  publicDir: PUBLIC_DIR,
-  isProduction: IS_PRODUCTION,
-});
 
 const LONG_CACHE_EXTENSIONS = new Set([
   ".png",
@@ -53,122 +36,175 @@ const LONG_CACHE_EXTENSIONS = new Set([
 ]);
 const MID_CACHE_EXTENSIONS = new Set([".css", ".js", ".mjs"]);
 
-const logger = pino({
-  level: LOG_LEVEL,
-  redact: {
-    paths: ["req.headers.cookie", "req.headers.authorization"],
-    remove: true,
-  },
-});
+let isEnvLoaded = false;
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 25,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  skipSuccessfulRequests: false,
-  message: { error: "Too many authentication attempts. Try again in 15 minutes." },
-});
+function createApp(options = {}) {
+  loadEnvironment(options.envFile);
 
-const publicController = createPublicController({ logger });
-const adminController = createAdminController({ logger });
-const requireInternalAdminAccess = createAdminInternalAccessGuard({
-  enabled: ADMIN_INTERNAL_ONLY,
-  allowList: ADMIN_ALLOW_IPS,
-  logger,
-});
+  const env = options.env || process.env;
+  const config = {
+    PORT: resolvePort(env.PORT, 3000),
+    HOST: env.HOST || "127.0.0.1",
+    IS_PRODUCTION: env.NODE_ENV === "production",
+    LOG_LEVEL: env.LOG_LEVEL || (env.NODE_ENV === "production" ? "info" : "debug"),
+    FORCE_NO_STORE: resolveBoolean(env.FORCE_NO_STORE, env.NODE_ENV !== "production"),
+    ADMIN_ENABLED: resolveBoolean(env.ADMIN_ENABLED, true),
+    ADMIN_INTERNAL_ONLY: resolveBoolean(env.ADMIN_INTERNAL_ONLY, true),
+    ADMIN_ALLOW_IPS: parseList(env.ADMIN_ALLOW_IPS),
+    ASSET_VERSION: "",
+  };
 
-app.set("view engine", "pug");
-app.set("views", VIEWS_DIR);
-app.set("view cache", IS_PRODUCTION && !FORCE_NO_STORE);
-app.locals.assetVersion = ASSET_VERSION;
-app.locals.assetPath = createAssetPathResolver(ASSET_VERSION);
-app.locals.adminEnabled = ADMIN_ENABLED;
-app.locals.logger = logger;
+  config.ASSET_VERSION = resolveAssetVersion({
+    envVersion: env.ASSET_VERSION,
+    publicDir: PUBLIC_DIR,
+    isProduction: config.IS_PRODUCTION,
+  });
 
-if (IS_PRODUCTION) {
-  app.set("trust proxy", 1);
-}
+  const logger =
+    options.logger ||
+    pino({
+      level: config.LOG_LEVEL,
+      redact: {
+        paths: ["req.headers.cookie", "req.headers.authorization"],
+        remove: true,
+      },
+    });
 
-app.use(
-  pinoHttp({
+  const sentry = initSentry({ env, logger });
+  const app = express();
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 25,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    skipSuccessfulRequests: false,
+    message: { error: "Too many authentication attempts. Try again in 15 minutes." },
+  });
+
+  const publicController = createPublicController({ logger });
+  const adminController = createAdminController({ logger });
+  const requireInternalAdminAccess = createAdminInternalAccessGuard({
+    enabled: config.ADMIN_INTERNAL_ONLY,
+    allowList: config.ADMIN_ALLOW_IPS,
     logger,
-    customLogLevel(req, res, error) {
-      if (error || res.statusCode >= 500) return "error";
-      if (res.statusCode >= 400) return "warn";
-      return "info";
-    },
-  })
-);
-app.use(
-  helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
-  })
-);
-app.use(compression());
-app.use(cookieParser());
-
-app.use(
-  express.static(PUBLIC_DIR, {
-    etag: true,
-    lastModified: true,
-    setHeaders(res, filePath) {
-      if (!IS_PRODUCTION || FORCE_NO_STORE) {
-        res.setHeader("Cache-Control", "no-store");
-        return;
-      }
-
-      const ext = path.extname(filePath).toLowerCase();
-      if (LONG_CACHE_EXTENSIONS.has(ext)) {
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-        return;
-      }
-      if (MID_CACHE_EXTENSIONS.has(ext)) {
-        res.setHeader("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400");
-        return;
-      }
-      res.setHeader("Cache-Control", "public, max-age=3600, must-revalidate");
-    },
-  })
-);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use("/auth", authLimiter);
-
-registerPublicRoutes(app, {
-  publicController,
-});
-if (ADMIN_ENABLED) {
-  app.use("/admin", requireInternalAdminAccess);
-  registerAdminRoutes(app, {
-    adminController,
   });
-} else {
-  logger.info("Admin routes are disabled (set ADMIN_ENABLED=true to enable).");
-}
 
-if (process.env.NODE_ENV !== "production") {
-  app.get("/debug-500", (req, res, next) => {
-    next(new Error("Intentional test error for 500 page"));
-  });
-}
+  app.set("view engine", "pug");
+  app.set("views", VIEWS_DIR);
+  app.set("view cache", config.IS_PRODUCTION && !config.FORCE_NO_STORE);
+  app.locals.assetVersion = config.ASSET_VERSION;
+  app.locals.assetPath = createAssetPathResolver(config.ASSET_VERSION);
+  app.locals.adminEnabled = config.ADMIN_ENABLED;
+  app.locals.logger = logger;
 
-app.use(notFoundHandler);
-app.use(internalServerErrorHandler);
-
-const server = app.listen(PORT, HOST, () => {
-  logger.info({ host: HOST, port: PORT }, "Backend server running");
-});
-
-server.on("error", (error) => {
-  logger.error({ err: error }, "Server failed to start");
-  if (error.code === "EADDRINUSE" || error.code === "EPERM") {
-    logger.error("Update backend/.env.dev with a different PORT, then restart npm run dev.");
+  if (config.IS_PRODUCTION) {
+    app.set("trust proxy", 1);
   }
-  process.exit(1);
-});
+
+  app.use(
+    pinoHttp({
+      logger,
+      customLogLevel(req, res, error) {
+        if (error || res.statusCode >= 500) return "error";
+        if (res.statusCode >= 400) return "warn";
+        return "info";
+      },
+    })
+  );
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+  app.use(compression());
+  app.use(cookieParser());
+  app.use(
+    express.static(PUBLIC_DIR, {
+      etag: true,
+      lastModified: true,
+      setHeaders(res, filePath) {
+        if (!config.IS_PRODUCTION || config.FORCE_NO_STORE) {
+          res.setHeader("Cache-Control", "no-store");
+          return;
+        }
+
+        const ext = path.extname(filePath).toLowerCase();
+        if (LONG_CACHE_EXTENSIONS.has(ext)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+        if (MID_CACHE_EXTENSIONS.has(ext)) {
+          res.setHeader("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400");
+          return;
+        }
+        res.setHeader("Cache-Control", "public, max-age=3600, must-revalidate");
+      },
+    })
+  );
+
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use("/auth", authLimiter);
+
+  registerPublicRoutes(app, {
+    publicController,
+  });
+  if (config.ADMIN_ENABLED) {
+    app.use("/admin", requireInternalAdminAccess);
+    registerAdminRoutes(app, {
+      adminController,
+    });
+  } else {
+    logger.info("Admin routes are disabled (set ADMIN_ENABLED=true to enable).");
+  }
+
+  if (!config.IS_PRODUCTION) {
+    app.get("/debug-500", (req, res, next) => {
+      next(new Error("Intentional test error for 500 page"));
+    });
+  }
+
+  app.use(notFoundHandler);
+  app.use((error, req, res, next) => {
+    captureSentryException({
+      sentryClient: sentry.client,
+      error,
+      req,
+    });
+    internalServerErrorHandler(error, req, res, next);
+  });
+
+  return {
+    app,
+    logger,
+    config,
+    sentry,
+  };
+}
+
+function startServer(options = {}) {
+  const { app, logger, config } = createApp(options);
+  const server = app.listen(config.PORT, config.HOST, () => {
+    logger.info({ host: config.HOST, port: config.PORT }, "Backend server running");
+  });
+
+  server.on("error", (error) => {
+    logger.error({ err: error }, "Server failed to start");
+    if (error.code === "EADDRINUSE" || error.code === "EPERM") {
+      logger.error("Update backend/.env.dev with a different PORT, then restart npm run dev.");
+    }
+    process.exit(1);
+  });
+
+  return {
+    app,
+    server,
+    logger,
+    config,
+  };
+}
 
 function resolvePort(value, fallback) {
   const parsed = Number.parseInt(value, 10);
@@ -265,3 +301,24 @@ function parseList(value) {
     .map((item) => item.trim())
     .filter(Boolean);
 }
+
+function loadEnvironment(customEnvFile) {
+  if (isEnvLoaded) return;
+  const envFile =
+    typeof customEnvFile === "string" && customEnvFile.trim()
+      ? customEnvFile.trim()
+      : process.env.NODE_ENV === "production"
+        ? ".env.proc"
+        : ".env.dev";
+  dotenv.config({ path: path.join(__dirname, envFile) });
+  isEnvLoaded = true;
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = {
+  createApp,
+  startServer,
+};

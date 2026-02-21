@@ -32,32 +32,39 @@ block content
             class="bg-rose-100/90"
           )= errorMessage
 
-        form.mt-5.flex.flex-col.space-y-4(action="/admin/login", method="POST")
-          .space-y-2
-            label.block.text-sm.font-semibold.text-rose-900(for="username") Username
-            input#username.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
-              type="text",
-              name="username",
-              placeholder="admin",
-              required,
-              autocomplete="username",
-              class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-            )
+        #adminLoginFormShell.auth-form-shell.auth-form-loading.mt-5
+          .auth-form-skeleton(aria-hidden="true")
+            .auth-skeleton-line.w-24
+            .auth-skeleton-block.h-11
+            .auth-skeleton-line.w-24.mt-2
+            .auth-skeleton-block.h-11
+            .auth-skeleton-block.h-11.mt-3
+          form#adminLoginForm.flex.flex-col.space-y-4(action="/admin/login", method="POST")
+            .space-y-2
+              label.block.text-sm.font-semibold.text-rose-900(for="username") Username
+              input#username.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
+                type="text",
+                name="username",
+                placeholder="admin",
+                required,
+                autocomplete="username",
+                class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
+              )
 
-          .space-y-2
-            label.block.text-sm.font-semibold.text-rose-900(for="password") Password
-            input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
-              type="password",
-              name="password",
-              placeholder="••••••••",
-              required,
-              autocomplete="current-password",
-              class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-            )
+            .space-y-2
+              label.block.text-sm.font-semibold.text-rose-900(for="password") Password
+              input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
+                type="password",
+                name="password",
+                placeholder="••••••••",
+                required,
+                autocomplete="current-password",
+                class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
+              )
 
-          +appButton("Sign In", "primary", "submit")#adminLoginBtn.mt-1.w-full.py-3(
-            disabled
-          )
+            +appButton("Sign In", "primary", "submit")#adminLoginBtn.mt-1.w-full.py-3(
+              disabled
+            )
 
         .mt-5.flex.justify-center
           a.rounded-lg.border.px-4.py-2.text-sm.font-bold.text-rose-900.transition.bg-transparent(

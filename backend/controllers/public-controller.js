@@ -154,7 +154,11 @@ function createPublicController(options = {}) {
   }
 
   function health(req, res) {
-    res.status(200).json({ status: "ok" });
+    res.status(200).json({
+      status: "ok",
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
   }
 
   return {

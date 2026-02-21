@@ -9,7 +9,7 @@ module.exports = {
       },
       fontFamily: {
         body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["Playfair Display", "ui-serif", "Georgia", "serif"],
+        display: ["Schoolbell", "Cabin Sketch", "ui-serif", "Georgia", "serif"],
         headline: ["Bebas Neue", "Impact", "ui-sans-serif", "sans-serif"],
         mono: ["Fira Code", "ui-monospace", "SFMono-Regular", "monospace"],
       },

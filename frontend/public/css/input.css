@@ -85,6 +85,74 @@
     background-size: cover;
   }
 
+  .auth-form-shell {
+    position: relative;
+  }
+
+  .auth-form-shell.auth-form-loading form {
+    opacity: 0.16;
+    filter: blur(0.6px);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .auth-form-shell.auth-form-ready form {
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 220ms ease;
+  }
+
+  .auth-form-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+    padding: 0.45rem;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.22));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(1.5px);
+    pointer-events: none;
+  }
+
+  .auth-form-shell.auth-form-ready .auth-form-skeleton {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 220ms ease;
+  }
+
+  .auth-skeleton-line,
+  .auth-skeleton-block {
+    border-radius: 0.75rem;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 176, 107, 0.36) 0%,
+      rgba(255, 122, 39, 0.86) 45%,
+      rgba(255, 176, 107, 0.36) 100%
+    );
+    background-size: 220% 100%;
+    animation: auth-skeleton-shimmer 1.1s linear infinite;
+  }
+
+  .auth-skeleton-line {
+    height: 0.8rem;
+  }
+
+  .auth-skeleton-block {
+    height: 2.75rem;
+  }
+
+  @keyframes auth-skeleton-shimmer {
+    0% {
+      background-position: 220% 0;
+    }
+    100% {
+      background-position: -120% 0;
+    }
+  }
+
   .parallax-layer {
     will-change: transform;
     transform: translate3d(0, var(--parallax-shift, 0px), 0);

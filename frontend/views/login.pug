@@ -28,54 +28,70 @@ block content
             | Sign in
           p.mt-2.text-sm.font-semibold.text-rose-800 Enter your details to continue.
 
-        form#loginForm.flex.flex-col.space-y-4(action="/auth/login", method="POST", class="sm:space-y-5")
-          .login-field.space-y-2
-            label.block.text-sm.font-semibold.text-rose-900(for="email") Email
-            input#email.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950.outline-none.transition(
-              type="email",
-              name="email",
-              placeholder="you@example.com",
-              required,
-              class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-            )
-
-          .login-field.space-y-2
-            .flex.items-center.justify-between
-              label.block.text-sm.font-semibold.text-rose-900(for="password") Password
-              a#forgotPasswordLink.text-xs.font-bold.text-fuchsia-800.transition(
-                href="#",
-                class="hover:text-fuchsia-950"
-              ) Forgot?
-            .relative
-              input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.pr-16.text-sm.font-semibold.text-rose-950.outline-none.transition(
-                type="password",
-                name="password",
-                placeholder="••••••••",
+        #loginFormShell.auth-form-shell.auth-form-loading
+          .auth-form-skeleton(aria-hidden="true")
+            .auth-skeleton-line.w-24
+            .auth-skeleton-block.h-11
+            .auth-skeleton-line.w-24.mt-2
+            .auth-skeleton-block.h-11
+            .auth-skeleton-line.w-28.mt-2
+            .auth-skeleton-block.h-10
+            .auth-skeleton-block.h-11.mt-1
+          form#loginForm.flex.flex-col.space-y-4(action="/auth/login", method="POST", class="sm:space-y-5")
+            .login-field.space-y-2
+              label.block.text-sm.font-semibold.text-rose-900(for="email") Email
+              input#email.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950.outline-none.transition(
+                type="email",
+                name="email",
+                autocomplete="email",
+                placeholder="you@example.com",
                 required,
                 class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
-              button#togglePassword.absolute.right-3.rounded-md.px-2.py-1.text-xs.font-semibold.text-fuchsia-700.transition(
-                type="button",
-                class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100 hover:text-fuchsia-900"
-              ) Show
-            p#capsWarning.hidden.text-xs.font-semibold.text-rose-800 Caps Lock is on
 
-          #trustRow.login-field.flex.flex-col.items-start.gap-2(
-            class="sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-          )
-            label.flex.items-center.gap-2.text-xs.font-bold.text-rose-900
-              input#rememberMe.h-4.w-4.rounded.border-rose-300(type="checkbox", name="rememberMe")
-              | Remember me
-            label.flex.items-center.gap-2.text-xs.font-bold.text-rose-900
-              input#trustDevice.h-4.w-4.rounded.border-rose-300(
-                type="checkbox",
-                name="trustDevice"
-              )
-              | Trust device
+            .login-field.space-y-2
+              .flex.items-center.justify-between
+                label.block.text-sm.font-semibold.text-rose-900(for="password") Password
+                a#forgotPasswordLink.text-xs.font-bold.text-fuchsia-800.transition(
+                  href="#",
+                  class="hover:text-fuchsia-950"
+                ) Forgot?
+              .relative
+                input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.pr-16.text-sm.font-semibold.text-rose-950.outline-none.transition(
+                  type="password",
+                  name="password",
+                  autocomplete="current-password",
+                  placeholder="••••••••",
+                  required,
+                  class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                )
+                button#togglePassword.absolute.right-3.rounded-md.px-2.py-1.text-xs.font-semibold.text-fuchsia-700.transition(
+                  type="button",
+                  class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100 hover:text-fuchsia-900"
+                ) Show
+              p#capsWarning.hidden.text-xs.font-semibold.text-rose-800 Caps Lock is on
 
-          #loginFlash.min-h-5.text-sm.font-bold
+            #trustRow.login-field.flex.flex-col.items-start.gap-2(
+              class="sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            )
+              label.flex.items-center.gap-2.text-xs.font-bold.text-rose-900
+                input#rememberMe.h-4.w-4.rounded.border-rose-300(
+                  type="checkbox",
+                  name="rememberMe"
+                )
+                | Remember me
+              label.flex.items-center.gap-2.text-xs.font-bold.text-rose-900
+                input#trustDevice.h-4.w-4.rounded.border-rose-300(
+                  type="checkbox",
+                  name="trustDevice"
+                )
+                | Trust device
 
-          +appButton("Login", "primary", "submit")#loginBtn.login-field.py-3(disabled)
+            #loginFlash.min-h-5.text-sm.font-bold(aria-live="polite")
+
+            +appButton("Login", "primary", "submit")#loginBtn.login-field.py-3(
+              disabled
+            )
 
   #otpModal.fixed.inset-0.hidden.items-center.justify-center.p-3.backdrop-blur-sm(
     class="z-[80] bg-rose-950/55 sm:p-4"
@@ -93,6 +109,8 @@ block content
         ) Close
       input#otpInput.mt-4.w-full.rounded-xl.border.border-rose-200.px-3.text-rose-950(
         type="text",
+        autocomplete="one-time-code",
+        inputmode="numeric",
         maxlength="5",
         placeholder="65497",
         class="bg-white/60 py-2.5 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -147,7 +165,7 @@ block content
             placeholder="Repeat new password",
             class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
           )
-      #resetFlash.min-h-5.mt-3.text-sm.font-semibold
+      #resetFlash.min-h-5.mt-3.text-sm.font-semibold(aria-live="polite")
       .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
         +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
         +appButton("Cancel", "ghost", "button")#resetCancel.flex-1

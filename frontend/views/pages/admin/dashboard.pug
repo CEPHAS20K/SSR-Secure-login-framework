@@ -54,7 +54,15 @@ block content
               class="border-white/45 bg-white/55 hover:bg-white/75"
             )
               span.inline-flex.items-center(class="gap-1.5")
-                span.material-icons.text-sm.text-rose-700 search
+                svg.h-4.w-4.text-rose-700(
+                  viewBox="0 0 24 24",
+                  fill="none",
+                  stroke="currentColor",
+                  stroke-width="2",
+                  aria-hidden="true"
+                )
+                  circle(cx="11", cy="11", r="7")
+                  path(d="M21 21l-4.35-4.35")
                 span Search Users
             p.text-xs.font-semibold.text-rose-800 Find user by username or email and export profile data.
 
@@ -158,9 +166,16 @@ block content
               p.text-xs.font-semibold.text-rose-700 Select a user for details and actions.
             .mt-2.grid.gap-2(class="md:grid-cols-[1fr_auto]")
               .relative
-                span.material-icons.pointer-events-none.absolute.left-3(
+                svg.pointer-events-none.absolute.left-3.h-4.w-4(
+                  viewBox="0 0 24 24",
+                  fill="none",
+                  stroke="currentColor",
+                  stroke-width="2",
+                  aria-hidden="true",
                   class="top-1/2 -translate-y-1/2 text-rose-700/80"
-                ) search
+                )
+                  circle(cx="11", cy="11", r="7")
+                  path(d="M21 21l-4.35-4.35")
                 input#usersTableSearch.w-full.rounded-lg.border.py-2.pl-10.pr-3.text-sm.font-semibold.text-rose-900.outline-none.transition(
                   type="search",
                   placeholder="Search users by username or email...",
@@ -522,9 +537,16 @@ block content
         ) Close
       .mt-3
         .relative
-          span.material-icons.pointer-events-none.absolute.left-3(
+          svg.pointer-events-none.absolute.left-3.h-4.w-4(
+            viewBox="0 0 24 24",
+            fill="none",
+            stroke="currentColor",
+            stroke-width="2",
+            aria-hidden="true",
             class="top-1/2 -translate-y-1/2 text-rose-700/80"
-          ) search
+          )
+            circle(cx="11", cy="11", r="7")
+            path(d="M21 21l-4.35-4.35")
           input#userLookupInput.w-full.rounded-lg.border.py-2.pl-11.pr-3.text-sm.font-semibold.text-rose-900.outline-none.transition(
             type="search",
             placeholder="Search username or email...",

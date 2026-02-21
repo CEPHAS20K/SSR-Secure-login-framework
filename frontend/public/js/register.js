@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const otpSubmit = document.getElementById("registerOtpSubmit");
   const resendOtp = document.getElementById("registerResendOtp");
   const otpClose = document.getElementById("registerOtpClose");
+  const formShell = document.getElementById("registerFormShell");
+  const FORM_SKELETON_MIN_MS = 800;
 
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   let secondsLeft = OTP_COUNTDOWN_SECONDS;
@@ -41,6 +43,15 @@ document.addEventListener("DOMContentLoaded", () => {
   ) {
     return;
   }
+
+  const revealForm = () => {
+    if (!formShell) return;
+    window.setTimeout(() => {
+      formShell.classList.remove("auth-form-loading");
+      formShell.classList.add("auth-form-ready");
+    }, FORM_SKELETON_MIN_MS);
+  };
+  revealForm();
 
   const isEmailValid = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
   const passwordsMatch = () =>

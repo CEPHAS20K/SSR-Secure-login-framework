@@ -16,3 +16,7 @@ npm-debug.log*
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Test artifacts
+playwright-report/
+test-results/

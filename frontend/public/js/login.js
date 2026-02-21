@@ -23,12 +23,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetFlash = document.getElementById("resetFlash");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
+  const formShell = document.getElementById("loginFormShell");
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
+  const FORM_SKELETON_MIN_MS = 800;
   const rememberedEmail = localStorage.getItem("auth_email") || "";
   let resendSecondsLeft = OTP_COUNTDOWN_SECONDS;
   let resendTimer = null;
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
+
+  const revealForm = () => {
+    if (!formShell) return;
+    window.setTimeout(() => {
+      formShell.classList.remove("auth-form-loading");
+      formShell.classList.add("auth-form-ready");
+    }, FORM_SKELETON_MIN_MS);
+  };
+  revealForm();
 
   if (rememberedEmail) {
     email.value = rememberedEmail;
