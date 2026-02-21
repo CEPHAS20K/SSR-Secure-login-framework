@@ -1,0 +1,219 @@
+Auth Project Frontend - Full Technical Overview
+==============================================
+
+1) Frontend role in this project
+--------------------------------
+- The frontend is Server-Side Rendered (SSR) through Pug templates.
+- Express (backend) renders pages from frontend/views and serves static assets from frontend/public.
+- The frontend currently provides:
+  - Landing page
+  - User login page
+  - User register page
+  - Admin login page
+  - Admin dashboard UI shell
+  - Error pages (404 and 500)
+  - PWA/service worker + offline page
+
+
+2) Frontend stack
+-----------------
+- Templating: Pug
+- Styling: Tailwind CSS v4 + custom CSS layer in frontend/public/css/input.css
+- Animations: GSAP (self-hosted in frontend/public/vendor/gsap.min.js)
+- HTTP client on dashboard: Axios (self-hosted in frontend/public/vendor/axios.min.js)
+- Fonts: self-hosted @fontsource exports (no runtime Google Fonts dependency)
+- PWA: manifest + service worker
+
+
+3) Main folder structure
+------------------------
+- frontend/views/
+  - layouts/base.pug
+  - components/
+    - navbar.pug
+    - footer.pug
+    - button.pug
+  - landing.pug
+  - login.pug
+  - register.pug
+  - pages/admin/
+    - login.pug
+    - dashboard.pug
+  - 404.pug
+  - 500.pug
+- frontend/public/
+  - css/
+    - input.css (authoring source with utilities and overrides)
+    - output.css (built CSS)
+    - fonts.css (@font-face declarations)
+  - js/
+    - landing.js
+    - login.js
+    - register.js
+    - admin-login.js
+    - admin-dashboard.js
+    - animations.js
+    - animations/login-particles.js
+    - animations/navbar.js
+    - link-prefetch.js
+    - sw-register.js
+    - errors/404.js
+    - errors/404-particles.js
+  - images/ (land.svg, up.svg, off.svg, logo.png, etc.)
+  - fonts/ (self-hosted woff2 files)
+  - manifest.webmanifest
+  - sw.js
+  - offline.html
+
+
+4) Template/render flow
+-----------------------
+- Every page extends frontend/views/layouts/base.pug.
+- base.pug is the global shell:
+  - meta tags, favicon, manifest link
+  - output.css + fonts.css
+  - page transition overlay markup
+  - conditional preloads (landing visuals only)
+  - shared scripts:
+    - /js/animations/navbar.js
+    - /js/animations.js
+    - /js/link-prefetch.js
+    - /js/sw-register.js
+  - conditional GSAP script load by page type
+
+
+5) Core components
+------------------
+- navbar.pug:
+  - responsive desktop/mobile nav
+  - hides Home on landing page (showHome logic)
+  - route-aware Login/Register visibility
+  - nav links tagged for GSAP page transitions
+- footer.pug:
+  - multi-column footer links and product/access/admin shortcuts
+- button.pug:
+  - shared button mixin and variant palette (primary/secondary/ghost)
+
+
+6) Page-by-page behavior
+------------------------
+- landing.pug + landing.js:
+  - hero typing effect loops continuously on two lines
+  - parallax glow layers
+  - animated main hero SVG (land.svg)
+  - animated CTA SVG (up.svg)
+  - GSAP section reveal and hover micro-interactions
+- login.pug + login.js:
+  - form skeleton loading state before reveal
+  - local validation + login button enable/disable
+  - OTP modal with 5-minute resend timer
+  - forgot-password reset modal (email/new/confirm password)
+  - remember-email in localStorage
+- register.pug + register.js:
+  - 2-column responsive form grid
+  - skeleton loading state before reveal
+  - inline mismatch validation for password confirmation
+  - OTP modal with 5-minute resend timer and resend state
+  - submit button disabled until all required fields are valid
+- pages/admin/login.pug + admin-login.js:
+  - skeleton loading state
+  - submit disabled until username + password are filled
+  - return button to user login
+- pages/admin/dashboard.pug + admin-dashboard.js:
+  - glass-style admin UI with sections:
+    - overview metrics
+    - user management
+    - device monitoring
+    - risk/fraud
+    - logs
+    - governance/export center
+  - search dialogs, pagination controls, sorting, and bulk actions
+  - CSV/PDF export generation in browser
+  - brief in-memory API cache and pending-request dedupe
+  - injects initial dashboard JSON via script tag #adminInitialData
+- 404/500 pages:
+  - dedicated animated error scene + particles scripts
+
+
+7) Styling and theme system
+---------------------------
+- Tailwind config: frontend/tailwind.config.js
+  - content: Pug templates + JS files
+  - design tokens:
+    - primary #ba274b
+    - secondary #a62a95
+    - accent #ff7700
+  - font families (body/display/headline/mono)
+- input.css contains:
+  - custom keyframes (hero SVG float, shimmer, etc.)
+  - auth skeleton utilities
+  - card hover-shape morph effects
+  - auth background utility (.bg-auth-svg)
+  - additional readability and transparency overrides
+
+
+8) Fonts strategy (self-hosted)
+-------------------------------
+- frontend/package.json includes @fontsource packages.
+- npm script sync:fonts copies selected woff2 files into frontend/public/fonts.
+- fonts.css registers @font-face with font-display: swap.
+- Result: no Google Fonts runtime request and better cache control.
+
+
+9) PWA/offline/caching behavior (frontend side)
+-----------------------------------------------
+- Service worker registration: frontend/public/js/sw-register.js
+- Service worker: frontend/public/sw.js
+  - precaches offline shell assets
+  - navigation requests: network first, fallback to offline.html
+  - static assets: stale-while-revalidate
+  - bypasses caching for /admin/api/*, /api/*, /auth/*
+  - special handling for /health ping
+- offline.html:
+  - shows offline card + off.svg
+  - pings server every 5 seconds
+  - auto-redirects to "/" when network recovers
+
+
+10) Performance behavior
+------------------------
+- Landing hero image preloaded with fetchpriority="high".
+- Link intent prefetch on hover/focus/touch (skips constrained connections).
+- Skeleton UI on auth forms reduces perceived load time.
+- Self-hosted fonts and GSAP avoid third-party runtime fetches.
+- Asset URLs include version query string via backend assetPath helper.
+
+
+11) Frontend build and run commands
+-----------------------------------
+- From root:
+  - npm run dev (backend + frontend watcher)
+  - npm run dev:frontend
+  - npm run build:frontend
+- Frontend-only:
+  - npm --prefix ./frontend run dev
+  - npm --prefix ./frontend run build
+- Important:
+  - output.css is generated from input.css using Tailwind CLI.
+
+
+12) Known current functional state
+----------------------------------
+- UI and interactions are mostly client-simulated in login/register/admin flows.
+- Real auth backends and persistent data are not wired in frontend forms yet.
+- Admin dashboard expects API endpoints, but backend currently has admin APIs disabled/not implemented in the active route set.
+
+
+13) Where to edit when changing behavior
+----------------------------------------
+- Navbar layout/links: frontend/views/components/navbar.pug
+- Footer layout: frontend/views/components/footer.pug
+- Shared page shell/meta/scripts: frontend/views/layouts/base.pug
+- Landing interactions: frontend/public/js/landing.js
+- Login interactions/OTP/reset modal: frontend/public/js/login.js
+- Register interactions/OTP modal: frontend/public/js/register.js
+- Admin dashboard UI: frontend/views/pages/admin/dashboard.pug
+- Admin dashboard logic: frontend/public/js/admin-dashboard.js
+- PWA/offline behavior: frontend/public/sw.js and frontend/public/offline.html
+- Global style tuning/overrides: frontend/public/css/input.css
+

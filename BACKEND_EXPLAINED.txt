@@ -1,0 +1,278 @@
+Auth Project Backend - Full Technical Overview
+=============================================
+
+1) Backend role in this project
+-------------------------------
+- The backend is an Express 5 server that:
+  - renders SSR Pug pages from frontend/views
+  - serves static assets from frontend/public
+  - exposes public auth endpoints
+  - exposes admin routes (currently login/redirect oriented)
+  - provides security middleware, logging, caching headers, and error handling
+
+
+2) Backend stack
+----------------
+- Runtime: Node.js (CommonJS)
+- Server framework: Express 5
+- Templating engine: Pug
+- Validation: Zod
+- Security middleware: Helmet, rate limit, cookie parser
+- Compression: compression()
+- Logging: pino + pino-http
+- Observability: optional Sentry
+- Testing: Vitest + supertest
+
+
+3) Main folder structure
+------------------------
+- backend/app.js
+  - app factory, env/config resolution, middleware order, route registration
+- backend/routes/
+  - public-routes.js
+  - admin-routes.js
+  - index.js
+- backend/controllers/
+  - public-controller.js
+  - admin-controller.js
+  - index.js
+- backend/middleware/
+  - admin-access.js
+  - error-handlers.js
+  - index.js
+- backend/observability/
+  - sentry.js
+  - index.js
+- backend/tests/
+  - public-routes.test.js
+- backend/.env.dev
+- backend/.env.proc
+
+
+4) Boot lifecycle (app.js)
+--------------------------
+- Entry point: startServer() in backend/app.js (when file is run directly).
+- Main flow:
+  1. loadEnvironment() loads .env.dev or .env.proc
+  2. create config object (PORT, HOST, caching flags, admin flags)
+  3. initialize logger (pino)
+  4. initialize optional Sentry
+  5. create Express app
+  6. apply middleware chain
+  7. register public routes and admin routes
+  8. attach notFound + error handlers
+  9. listen on HOST:PORT
+
+- app.js exports:
+  - createApp(options)
+  - startServer(options)
+
+
+5) Environment/config behavior
+------------------------------
+- NODE_ENV controls production/development behavior.
+- Key flags used by app.js:
+  - PORT (default 3000)
+  - HOST (default 127.0.0.1)
+  - FORCE_NO_STORE (default true in non-production)
+  - ADMIN_ENABLED (default true)
+  - ADMIN_INTERNAL_ONLY (default true)
+  - ADMIN_ALLOW_IPS (comma-separated explicit allowlist)
+  - ASSET_VERSION (optional explicit asset version)
+  - SENTRY_DSN / SENTRY_TRACES_SAMPLE_RATE (optional observability)
+
+- Helper functions in app.js:
+  - resolvePort()
+  - resolveBoolean()
+  - parseList()
+  - resolveAssetVersion()
+  - createAssetPathResolver()
+  - getLatestAssetMtime()
+
+
+6) Middleware order and responsibilities
+----------------------------------------
+Current order in app.js:
+- pino-http:
+  - structured request logs
+  - custom log level from response status / errors
+- helmet:
+  - baseline hardening (CSP explicitly disabled in current config)
+- compression:
+  - gzip response compression for compressible payloads
+- cookieParser:
+  - cookie parsing support
+- express.static(PUBLIC_DIR):
+  - serves frontend/public files
+  - production caching policy by extension:
+    - long cache (images/fonts): 1 year immutable
+    - medium cache (css/js): 7 days + stale-while-revalidate
+    - other static: 1 hour must-revalidate
+  - dev/no-store mode when non-production or FORCE_NO_STORE=true
+- express.json()
+- express.urlencoded({ extended: false })
+- auth limiter on /auth:
+  - 15-minute window, 25 max attempts
+
+
+7) Routing map
+--------------
+Public routes (backend/routes/public-routes.js):
+- GET /
+  - render landing page
+- GET /login
+  - render login page (no-store headers)
+- GET /register
+  - render register page (no-store headers)
+- POST /auth/login
+  - validate payload, currently returns 501 (not configured)
+- POST /auth/register
+  - validate payload, currently returns 501 (not configured)
+- GET /health
+  - JSON health payload
+
+Admin routes (backend/routes/admin-routes.js):
+- GET /admin/login
+  - render admin login page
+- POST /admin/login
+  - currently redirects with "not configured" error
+- GET /admin
+  - redirect to /admin/login
+- GET /admin/dashboard
+  - redirect back to admin login with disabled message
+- POST /admin/logout
+- GET /admin/logout
+  - redirects to /admin/login
+
+
+8) Controllers
+--------------
+public-controller.js:
+- Uses Zod schemas for login/register payload validation.
+- loginPayloadSchema:
+  - email + password constraints
+- registerPayloadSchema:
+  - username, email, password, confirmPassword, gender
+  - password/confirmPassword equality check via superRefine
+- login() and register():
+  - return 400 for invalid payloads
+  - currently return 501 AUTH_NOT_CONFIGURED for valid payloads
+- renderLanding/renderLogin/renderRegister:
+  - render SSR pages with page metadata
+- health():
+  - returns status + uptime + timestamp
+
+admin-controller.js:
+- renderAdminLogin():
+  - renders admin login with optional error message from query
+- loginAdmin():
+  - logs attempt, redirects with "not configured"
+- redirectAdminHome(), redirectAdminDashboard(), logoutAdmin():
+  - redirect-only behavior
+
+
+9) Admin internal access protection
+-----------------------------------
+- middleware/admin-access.js exports createAdminInternalAccessGuard().
+- Applied globally to /admin when ADMIN_ENABLED=true and ADMIN_INTERNAL_ONLY=true.
+- Allowed IP logic:
+  - private/internal IPv4 ranges
+  - private/link-local IPv6 ranges
+  - loopback
+  - explicit allowList from ADMIN_ALLOW_IPS
+- For blocked requests:
+  - returns 404 intentionally (not 403) to hide admin surface
+  - content negotiation for HTML/JSON/text response
+
+
+10) Error handling
+------------------
+- middleware/error-handlers.js:
+  - notFoundHandler()
+  - internalServerErrorHandler()
+- Behavior:
+  - HTML requests render 404.pug or 500.pug
+  - JSON requests return JSON error payload
+  - fallback plain text for non-HTML/JSON clients
+
+
+11) Observability
+-----------------
+- observability/sentry.js:
+  - initSentry() initializes only when SENTRY_DSN exists
+  - captureSentryException() captures errors with request context/tags
+- app.js wraps internalServerErrorHandler with Sentry capture call.
+- Logging uses redaction for sensitive headers like cookies/auth.
+
+
+12) SSR integration with frontend
+---------------------------------
+- app.js sets:
+  - view engine: pug
+  - views path: frontend/views
+- app.locals:
+  - assetVersion
+  - assetPath(path): appends ?v=... for cache busting
+  - adminEnabled
+- Static file root:
+  - frontend/public
+
+
+13) Testing
+-----------
+- API tests are in backend/tests/public-routes.test.js using Vitest + supertest.
+- Coverage currently includes:
+  - landing route
+  - health endpoint
+  - login/register validation and 501 behavior
+  - admin route enabled/disabled behavior
+
+Run tests:
+- npm run test:api (from project root)
+- or npm --prefix ./backend run test
+
+
+14) Security posture currently implemented
+------------------------------------------
+- Helmet baseline hardening
+- Auth rate limiting on /auth routes
+- Input validation via Zod for auth payloads
+- Hidden admin route strategy via internal IP guard + 404 response
+- Structured logging with sensitive header redaction
+- No-store headers on auth page renders
+
+
+15) Current limitations / what is intentionally not wired yet
+--------------------------------------------------------------
+- No real database persistence in active auth endpoints.
+- No session store / JWT issuance in current login/register controller logic.
+- No real OTP verification backend yet (frontend currently simulates OTP dialogs).
+- Admin dashboard data APIs are not active in current route/controller set.
+
+
+16) Where to extend next (real implementation path)
+---------------------------------------------------
+1. Replace 501 stubs in public-controller login/register with real auth service calls.
+2. Add database layer (PostgreSQL) for users, credentials, audit tables.
+3. Add Redis-backed session/cache/rate-limit storage.
+4. Implement OTP and password reset server workflows.
+5. Add admin API endpoints used by admin-dashboard.js:
+   - dashboard stats
+   - users pagination/search/sort
+   - devices and timeline
+   - exports and governance actions
+6. Tighten Helmet CSP after finalizing inline script/style usage.
+7. Add auth middleware for protected user/admin sessions.
+
+
+17) Key commands
+----------------
+- Dev:
+  - npm --prefix ./backend run dev
+- Prod-like:
+  - npm --prefix ./backend run start:proc
+- Lint:
+  - npm --prefix ./backend run lint
+- Test:
+  - npm --prefix ./backend run test
+
