@@ -7,6 +7,9 @@ Server-rendered auth project with landing, login/register flows, admin login gat
 - Frontend deep dive: `FRONTEND_EXPLAINED.txt`
 - Backend deep dive: `BACKEND_EXPLAINED.txt`
 - System UML: `docs/architecture.md`
+- Diagram source: `docs/diagrams/architecture-diagrams.js`
+
+<!-- BEGIN AUTO UML -->
 
 ## System UML
 
@@ -138,6 +141,8 @@ S-->>C: delivery result
 C-->>B: success/error JSON
 ```
 
+<!-- END AUTO UML -->
+
 ## Quick Start
 
 From project root:
@@ -156,6 +161,7 @@ npm run dev
 - `npm run build`: build frontend CSS.
 - `npm run start`: start backend in development mode.
 - `npm run start:proc`: build frontend + start backend in production mode.
+- `npm run docs:generate-uml`: regenerate `docs/architecture.md` and the README UML section.
 
 ## Testing
 

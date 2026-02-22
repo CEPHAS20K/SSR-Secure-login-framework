@@ -24,6 +24,7 @@
     "lint:frontend": "npm --prefix ./backend exec eslint -- --config ./frontend/eslint.config.js \"./frontend/public/js/**/*.js\"",
     "perf:lighthouse": "npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json",
     "check:bundle-size": "node ./scripts/check-bundle-size.js",
+    "docs:generate-uml": "node ./scripts/generate-architecture-diagrams.js",
     "optimize:svg": "node ./scripts/minify-svg.js frontend/public/images/land.svg frontend/public/images/up.svg frontend/public/images/off.svg",
     "check": "npm run format:check && npm run lint && npm run build",
     "format": "prettier --write .",
