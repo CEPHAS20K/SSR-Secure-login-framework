@@ -6,6 +6,7 @@ Server-rendered auth project with landing, login/register flows, admin login gat
 
 - Frontend deep dive: `FRONTEND_EXPLAINED.txt`
 - Backend deep dive: `BACKEND_EXPLAINED.txt`
+- System UML: `docs/architecture.md`
 
 ## Quick Start
 
