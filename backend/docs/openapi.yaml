@@ -21,6 +21,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /version:
+    get:
+      tags: [System]
+      summary: App version information
+      description: Returns app/version metadata for clients and diagnostics.
+      responses:
+        '200':
+          description: Version payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
   /auth/login:
     post:
       tags: [Auth]
@@ -199,7 +211,7 @@ components:
           example: AUTH_NOT_CONFIGURED
     HealthResponse:
       type: object
-      required: [status, uptimeSeconds, timestamp]
+      required: [status, uptimeSeconds, timestamp, version]
       properties:
         status:
           type: string
@@ -212,3 +224,19 @@ components:
           type: string
           format: date-time
           example: 2026-02-21T11:58:00.000Z
+        version:
+          type: string
+          example: 1.0.0
+    VersionResponse:
+      type: object
+      required: [app, version, assetVersion]
+      properties:
+        app:
+          type: string
+          example: Secure Storage Vault
+        version:
+          type: string
+          example: 1.0.0
+        assetVersion:
+          type: string
+          example: a1b2c3d

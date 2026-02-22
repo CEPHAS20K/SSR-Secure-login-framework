@@ -57,11 +57,18 @@ function createApp(options = {}) {
     ADMIN_ALLOW_IPS: parseList(env.ADMIN_ALLOW_IPS),
     API_DOCS_ENABLED: resolveBoolean(env.API_DOCS_ENABLED, true),
     ASSET_VERSION: "",
+    APP_VERSION: "",
   };
 
   config.ASSET_VERSION = resolveAssetVersion({
     envVersion: env.ASSET_VERSION,
     publicDir: PUBLIC_DIR,
+    isProduction: config.IS_PRODUCTION,
+  });
+  config.APP_VERSION = resolveAppVersion({
+    envVersion: env.APP_VERSION,
+    npmVersion: env.npm_package_version,
+    assetVersion: config.ASSET_VERSION,
     isProduction: config.IS_PRODUCTION,
   });
 
@@ -87,7 +94,11 @@ function createApp(options = {}) {
     message: { error: "Too many authentication attempts. Try again in 15 minutes." },
   });
 
-  const publicController = createPublicController({ logger });
+  const publicController = createPublicController({
+    logger,
+    appVersion: config.APP_VERSION,
+    assetVersion: config.ASSET_VERSION,
+  });
   const adminController = createAdminController({ logger });
   const requireInternalAdminAccess = createAdminInternalAccessGuard({
     enabled: config.ADMIN_INTERNAL_ONLY,
@@ -99,6 +110,7 @@ function createApp(options = {}) {
   app.set("views", VIEWS_DIR);
   app.set("view cache", config.IS_PRODUCTION && !config.FORCE_NO_STORE);
   app.locals.assetVersion = config.ASSET_VERSION;
+  app.locals.appVersion = config.APP_VERSION;
   app.locals.assetPath = createAssetPathResolver(config.ASSET_VERSION);
   app.locals.adminEnabled = config.ADMIN_ENABLED;
   app.locals.logger = logger;
@@ -117,6 +129,10 @@ function createApp(options = {}) {
       },
     })
   );
+  app.use((req, res, next) => {
+    res.setHeader("X-App-Version", config.APP_VERSION);
+    next();
+  });
   app.use(
     helmet({
       contentSecurityPolicy: false,
@@ -268,6 +284,22 @@ function resolveAssetVersion(options = {}) {
   }
 
   return String(Date.now());
+}
+
+function resolveAppVersion(options = {}) {
+  const { envVersion, npmVersion, assetVersion, isProduction } = options;
+
+  if (envVersion && String(envVersion).trim()) {
+    return String(envVersion).trim();
+  }
+  if (npmVersion && String(npmVersion).trim()) {
+    return String(npmVersion).trim();
+  }
+  if (isProduction && assetVersion && String(assetVersion).trim()) {
+    return String(assetVersion).trim();
+  }
+
+  return "dev";
 }
 
 function createAssetPathResolver(version) {

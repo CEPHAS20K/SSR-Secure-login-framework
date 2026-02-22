@@ -78,7 +78,7 @@ const safeNoStoreHeaders = {
 };
 
 function createPublicController(options = {}) {
-  const { logger = console } = options;
+  const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
 
   function renderLanding(req, res) {
     res.render("landing", {
@@ -158,6 +158,15 @@ function createPublicController(options = {}) {
       status: "ok",
       uptimeSeconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
+      version: appVersion,
+    });
+  }
+
+  function getVersion(req, res) {
+    res.status(200).json({
+      app: "Secure Storage Vault",
+      version: appVersion,
+      assetVersion,
     });
   }
 
@@ -168,6 +177,7 @@ function createPublicController(options = {}) {
     login,
     register,
     health,
+    getVersion,
   };
 }
 

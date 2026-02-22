@@ -9,6 +9,7 @@ function registerPublicRoutes(app, options = {}) {
   app.post("/auth/login", publicController.login);
   app.post("/auth/register", publicController.register);
   app.get("/health", publicController.health);
+  app.get("/version", publicController.getVersion);
 }
 
 module.exports = {

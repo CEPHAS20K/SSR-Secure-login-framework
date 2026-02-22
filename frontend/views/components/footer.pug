@@ -46,3 +46,7 @@ mixin appFooter
         = new Date().getFullYear()
         |
         | Secure Storage Vault. All rights reserved.
+      if appVersion
+        p.mt-1.text-center.font-black.text-rose-900.text-lg Version
+          = " "
+          = appVersion

@@ -47,10 +47,13 @@ echo "[deploy] building frontend assets"
 npm run build
 
 ASSET_VERSION="$(git rev-parse --short HEAD)"
+APP_VERSION="${APP_VERSION:-${ASSET_VERSION}}"
 export ASSET_VERSION
+export APP_VERSION
 export NODE_ENV
 export FORCE_NO_STORE
 echo "[deploy] asset version: ${ASSET_VERSION}"
+echo "[deploy] app version: ${APP_VERSION}"
 echo "[deploy] force no-store: ${FORCE_NO_STORE}"
 
 echo "[deploy] restarting process"

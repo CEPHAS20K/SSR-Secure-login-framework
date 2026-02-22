@@ -11,6 +11,7 @@ function buildTestApp(overrides = {}) {
       HOST: "127.0.0.1",
       PORT: "3999",
       FORCE_NO_STORE: "true",
+      APP_VERSION: "test-v1",
       ADMIN_ENABLED: "true",
       ADMIN_INTERNAL_ONLY: "false",
       ...overrides,
@@ -112,6 +113,17 @@ describe("public routes", () => {
       expect(response.body.status).toBe("ok");
       expect(typeof response.body.uptimeSeconds).toBe("number");
       expect(typeof response.body.timestamp).toBe("string");
+      expect(response.body.version).toBe("test-v1");
+    });
+  });
+
+  it("returns version payload for UI/API versioning", async () => {
+    await withTestClient({}, async (client) => {
+      const response = await client.request.get("/version").expect(200);
+      expect(response.headers["content-type"]).toContain("application/json");
+      expect(response.body.app).toBe("Secure Storage Vault");
+      expect(response.body.version).toBe("test-v1");
+      expect(typeof response.body.assetVersion).toBe("string");
     });
   });
 

@@ -91,6 +91,11 @@ CI fails when performance or bundle-size budgets regress.
   - `status`
   - `uptimeSeconds`
   - `timestamp`
+  - `version`
+- `GET /version` returns:
+  - `app`
+  - `version`
+  - `assetVersion`
 - `GET /api-docs` serves Swagger UI API documentation.
 - `GET /api-docs.json` serves the raw OpenAPI JSON document.
 
@@ -107,6 +112,11 @@ If `SENTRY_DSN` is not set, the app runs normally without Sentry.
 
 Development env file: `backend/.env.dev`  
 Production env file: `backend/.env.proc`
+
+Versioning envs:
+
+- `APP_VERSION`: public application version shown in UI/footer and API responses.
+- `ASSET_VERSION`: static asset cache-busting version appended to asset URLs.
 
 ## Docker Services (PostgreSQL + Redis)
 
