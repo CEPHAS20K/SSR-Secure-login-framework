@@ -189,7 +189,7 @@ function createApp(options = {}) {
       swaggerUi.serve,
       swaggerUi.setup(openApiDocument, {
         explorer: true,
-        customSiteTitle: "Auth API Docs",
+        customSiteTitle: "Secure Storage Vault API Docs",
       })
     );
   }
@@ -348,7 +348,7 @@ function loadOpenApiDocument(filePath, options = {}) {
     return {
       openapi: "3.0.3",
       info: {
-        title: "Auth API",
+        title: "Secure Storage Vault API",
         version: "1.0.0",
       },
       paths: {},

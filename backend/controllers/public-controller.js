@@ -82,7 +82,7 @@ function createPublicController(options = {}) {
 
   function renderLanding(req, res) {
     res.render("landing", {
-      title: "Auth Secure",
+      title: "Secure Storage Vault",
       activePage: "landing",
       page: "landing",
     });

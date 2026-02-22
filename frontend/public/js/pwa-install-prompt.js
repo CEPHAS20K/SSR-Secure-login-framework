@@ -40,7 +40,7 @@
     window.setTimeout(() => {
       if (promptShown || isDismissed() || isRunningStandalone()) return;
       promptShown = true;
-      const wantsHelp = window.confirm("Install Auth Secure? Tap OK to see how.");
+      const wantsHelp = window.confirm("Install Secure Storage Vault? Tap OK to see how.");
       if (wantsHelp) {
         window.alert("To install: tap Share, then Add to Home Screen.");
       } else {
@@ -60,7 +60,7 @@
 
       promptShown = true;
       const acceptedPrePrompt = window.confirm(
-        "Install Auth Secure for faster access and offline support?"
+        "Install Secure Storage Vault for faster access and offline support?"
       );
       if (!acceptedPrePrompt) {
         dismissForDays(DISMISS_DAYS);

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Auth API
+  title: Secure Storage Vault API
   version: 1.0.0
   description: |
     API contracts for the SSR auth backend.

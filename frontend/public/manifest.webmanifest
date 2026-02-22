@@ -1,7 +1,7 @@
 {
-  "name": "Auth Secure",
-  "short_name": "AuthSecure",
-  "description": "Secure authentication portal and admin access.",
+  "name": "Secure Storage Vault",
+  "short_name": "SecureVault",
+  "description": "Encrypted storage vault with secure user and admin access.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
