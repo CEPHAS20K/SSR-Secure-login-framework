@@ -4,8 +4,11 @@ Server-rendered auth project with landing, login/register flows, admin login gat
 
 ## Architecture Guides
 
-- Frontend deep dive: `FRONTEND_EXPLAINED.txt`
-- Backend deep dive: `BACKEND_EXPLAINED.txt`
+- Frontend deep dive: `docs/guides/FRONTEND_EXPLAINED.txt`
+- Backend deep dive: `docs/guides/BACKEND_EXPLAINED.txt`
+- Env setup guide: `docs/guides/ENV_SETUP.txt`
+- Deployment guide: `docs/guides/DEPLOYMENT.md`
+- Home server runbook: `docs/guides/HOME_SERVER_DOCKER_CADDY_CLOUDFLARE_RUNBOOK.txt`
 - System UML: `docs/architecture.md`
 - Diagram source: `docs/diagrams/architecture-diagrams.js`
 
@@ -161,6 +164,7 @@ npm run dev
 - `npm run build`: build frontend CSS.
 - `npm run start`: start backend in development mode.
 - `npm run start:proc`: build frontend + start backend in production mode.
+- `npm run demo:video`: auto-record a walkthrough video (landing/login/register/admin) to `artifacts/demo-videos/`.
 - `npm run docs:generate-uml`: regenerate `docs/architecture.md` and the README UML section.
 
 ## Testing
