@@ -12,7 +12,7 @@ html(lang="en")
     meta(name="mobile-web-app-capable", content="yes")
     meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
     meta(name="apple-mobile-web-app-title", content="Auth Secure")
-    title= title || "App"
+    title Auth Secure
     link(rel="icon", type="image/png", href=assetPath("/images/logo.png"))
     link(rel="apple-touch-icon", href=assetPath("/images/logo.png"))
     link(rel="manifest", href=assetPath("/manifest.webmanifest"))
@@ -77,3 +77,4 @@ html(lang="en")
     script(src=assetPath("/js/animations.js"), defer)
     script(src=assetPath("/js/link-prefetch.js"), defer)
     script(src=assetPath("/js/sw-register.js"), defer)
+    script(src=assetPath("/js/pwa-install-prompt.js"), defer)

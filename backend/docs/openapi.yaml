@@ -1,0 +1,214 @@
+openapi: 3.0.3
+info:
+  title: Auth API
+  version: 1.0.0
+  description: |
+    API contracts for the SSR auth backend.
+    Current auth endpoints return `501 AUTH_NOT_CONFIGURED` until database/auth services are connected.
+servers:
+  - url: http://127.0.0.1:3000
+    description: Local development
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Returns process health and uptime metadata.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      description: Validates login payload and returns a setup-mode response until auth backend is wired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid:
+                value:
+                  email: user@example.com
+                  password: password123
+      responses:
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Auth backend is not configured yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthNotConfiguredResponse'
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      description: Validates registration payload and returns a setup-mode response until auth backend is wired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid:
+                value:
+                  username: test-user
+                  email: user@example.com
+                  password: password123
+                  confirmPassword: password123
+                  gender: male
+      responses:
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Auth backend is not configured yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthNotConfiguredResponse'
+  /admin/login:
+    get:
+      tags: [Admin]
+      summary: Render admin login page
+      responses:
+        '200':
+          description: HTML admin login page
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin]
+      summary: Submit admin login (placeholder)
+      description: Redirects back to admin login with an error message while backend APIs are not configured.
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '303':
+          description: Redirect back to `/admin/login` with setup error
+  /admin:
+    get:
+      tags: [Admin]
+      summary: Redirect admin root
+      responses:
+        '302':
+          description: Redirect to `/admin/login`
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Redirect admin dashboard (placeholder)
+      responses:
+        '302':
+          description: Redirect to `/admin/login` with disabled notice
+  /admin/logout:
+    get:
+      tags: [Admin]
+      summary: Admin logout redirect
+      responses:
+        '302':
+          description: Redirect to `/admin/login`
+    post:
+      tags: [Admin]
+      summary: Admin logout redirect
+      responses:
+        '302':
+          description: Redirect to `/admin/login`
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          example: password123
+    RegisterRequest:
+      type: object
+      required: [username, email, password, confirmPassword, gender]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 60
+          example: test-user
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          example: password123
+        confirmPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+          example: password123
+        gender:
+          type: string
+          enum: [male, female, other]
+          example: male
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: Provide a valid email address.
+    AuthNotConfiguredResponse:
+      type: object
+      required: [error, code]
+      properties:
+        error:
+          type: string
+          example: Authentication backend is not configured yet. Connect your database and auth service.
+        code:
+          type: string
+          example: AUTH_NOT_CONFIGURED
+    HealthResponse:
+      type: object
+      required: [status, uptimeSeconds, timestamp]
+      properties:
+        status:
+          type: string
+          example: ok
+        uptimeSeconds:
+          type: integer
+          minimum: 0
+          example: 174
+        timestamp:
+          type: string
+          format: date-time
+          example: 2026-02-21T11:58:00.000Z

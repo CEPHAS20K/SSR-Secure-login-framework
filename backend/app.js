@@ -8,6 +8,8 @@ const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const pino = require("pino");
 const pinoHttp = require("pino-http");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
 const { createAdminController, createPublicController } = require("./controllers");
 const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
 const {
@@ -21,6 +23,7 @@ const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
 const PUBLIC_DIR = path.join(FRONTEND_DIR, "public");
 const ZOD_VENDOR_DIR = path.join(__dirname, "node_modules", "zod");
+const OPENAPI_DOC_PATH = path.join(__dirname, "docs", "openapi.yaml");
 
 const LONG_CACHE_EXTENSIONS = new Set([
   ".png",
@@ -52,6 +55,7 @@ function createApp(options = {}) {
     ADMIN_ENABLED: resolveBoolean(env.ADMIN_ENABLED, true),
     ADMIN_INTERNAL_ONLY: resolveBoolean(env.ADMIN_INTERNAL_ONLY, true),
     ADMIN_ALLOW_IPS: parseList(env.ADMIN_ALLOW_IPS),
+    API_DOCS_ENABLED: resolveBoolean(env.API_DOCS_ENABLED, true),
     ASSET_VERSION: "",
   };
 
@@ -173,6 +177,21 @@ function createApp(options = {}) {
     });
   } else {
     logger.info("Admin routes are disabled (set ADMIN_ENABLED=true to enable).");
+  }
+
+  if (config.API_DOCS_ENABLED) {
+    const openApiDocument = loadOpenApiDocument(OPENAPI_DOC_PATH, { logger });
+    app.get("/api-docs.json", (req, res) => {
+      res.status(200).json(openApiDocument);
+    });
+    app.use(
+      "/api-docs",
+      swaggerUi.serve,
+      swaggerUi.setup(openApiDocument, {
+        explorer: true,
+        customSiteTitle: "Auth API Docs",
+      })
+    );
   }
 
   if (!config.IS_PRODUCTION) {
@@ -315,6 +334,26 @@ function parseList(value) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function loadOpenApiDocument(filePath, options = {}) {
+  const { logger = console } = options;
+  try {
+    return YAML.load(filePath);
+  } catch (error) {
+    if (typeof logger.error === "function") {
+      logger.error({ err: error, filePath }, "Unable to load OpenAPI document");
+    }
+
+    return {
+      openapi: "3.0.3",
+      info: {
+        title: "Auth API",
+        version: "1.0.0",
+      },
+      paths: {},
+    };
+  }
 }
 
 function loadEnvironment(customEnvFile) {

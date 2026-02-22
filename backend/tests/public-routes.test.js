@@ -115,6 +115,31 @@ describe("public routes", () => {
     });
   });
 
+  it("serves Swagger UI and raw OpenAPI document", async () => {
+    await withTestClient({}, async (client) => {
+      await client.request.get("/api-docs").expect(301);
+      const uiResponse = await client.request.get("/api-docs/").expect(200);
+      expect(uiResponse.headers["content-type"]).toContain("text/html");
+
+      const jsonResponse = await client.request.get("/api-docs.json").expect(200);
+      expect(jsonResponse.headers["content-type"]).toContain("application/json");
+      expect(jsonResponse.body.openapi).toBe("3.0.3");
+      expect(jsonResponse.body.paths).toBeTypeOf("object");
+    });
+  });
+
+  it("returns 404 for docs routes when API docs are disabled", async () => {
+    await withTestClient(
+      {
+        API_DOCS_ENABLED: "false",
+      },
+      async (client) => {
+        await client.request.get("/api-docs").expect(404);
+        await client.request.get("/api-docs.json").expect(404);
+      }
+    );
+  });
+
   it("rejects invalid login payloads", async () => {
     await withTestClient({}, async (client) => {
       const response = await client.request.post("/auth/login").send({
