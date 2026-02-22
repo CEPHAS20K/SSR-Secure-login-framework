@@ -2,7 +2,6 @@ extends ./layouts/base
 
 block content
   #errorScene.relative.flex.min-h-dvh.items-center.justify-center.overflow-hidden.bg-auth-svg.px-4.py-10
-    canvas#errorParticles.pointer-events-none.absolute.inset-0.z-0
     .pointer-events-none.absolute.inset-0.z-0(class="bg-slate-900/20")
     #errorOrbLeft.pointer-events-none.absolute.left-2.top-20.h-24.w-24.rounded-full.blur-2xl.z-0.bg-fuchsia-300(
       class="sm:left-12 sm:h-32 sm:w-32"
@@ -39,5 +38,4 @@ block content
           class="py-2.5 hover:bg-fuchsia-200 border-fuchsia-200/80"
         ) Go to Register
 
-  script(src=assetPath("/js/errors/404-particles.js"), defer)
   script(src=assetPath("/js/errors/404.js"), defer)

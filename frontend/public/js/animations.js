@@ -66,12 +66,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (document.querySelector("#loginCard")) {
-    const loginParticles = document.getElementById("loginParticles");
     const targets = ["#loginCard", "#loginTitle", ".login-field", "#loginBtn"];
     gsap.set(targets, { autoAlpha: 0, y: fromNavTransition ? 28 : 18 });
-    if (loginParticles) {
-      gsap.set(loginParticles, { autoAlpha: 0.68 });
-    }
 
     gsap
       .timeline({ defaults: { ease: "power3.out" } })
@@ -84,17 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .to("#loginTitle", { autoAlpha: 1, y: 0, duration: 0.24 }, "-=0.15")
       .to(".login-field", { autoAlpha: 1, y: 0, duration: 0.24, stagger: 0.05 }, "-=0.1")
       .to("#loginBtn", { autoAlpha: 1, y: 0, duration: 0.2 }, "-=0.08");
-
-    if (loginParticles) {
-      gsap.to(loginParticles, {
-        autoAlpha: 0.9,
-        duration: 1.8,
-        delay: 0.4,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-      });
-    }
     return;
   }
 

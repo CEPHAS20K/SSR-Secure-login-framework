@@ -7,7 +7,6 @@ include ./components/form-controls
 block content
   +appNavbar(activePage || "login")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
-    canvas#loginParticles.pointer-events-none.absolute.inset-0.z-0(data-auth-particles)
     .pointer-events-none.absolute.-left-28.-top-28.h-72.w-72.rounded-full.blur-3xl.hidden(
       class="bg-orange-200/45 sm:block"
     )
@@ -156,5 +155,4 @@ block content
     .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
       +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
       +appButton("Cancel", "ghost", "button")#resetCancel.flex-1
-  script(src=assetPath("/js/animations/login-particles.js"), defer)
   script(src=assetPath("/js/pages/login.js"), type="module")

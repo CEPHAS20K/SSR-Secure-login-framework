@@ -7,7 +7,6 @@ include ../../components/form-controls
 block content
   +appNavbar(activePage || "admin")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
-    canvas#adminLoginParticles.pointer-events-none.absolute.inset-0.z-0(data-auth-particles)
     .pointer-events-none.absolute.-left-24.top-10.hidden.h-64.w-64.rounded-full.blur-3xl(
       class="bg-fuchsia-200/35 sm:block"
     )
@@ -72,5 +71,4 @@ block content
             style="font-family: 'Finger Paint', cursive"
           ) Return to User Login
 
-  script(src=assetPath("/js/animations/login-particles.js"), defer)
   script(src=assetPath("/js/pages/admin/login.js"), type="module")

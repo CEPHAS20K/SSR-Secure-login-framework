@@ -7,7 +7,6 @@ include ./components/form-controls
 block content
   +appNavbar(activePage || "register")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
-    canvas#registerParticles.pointer-events-none.absolute.inset-0.z-0(data-auth-particles)
     .pointer-events-none.absolute.-left-24.top-8.hidden.h-56.w-56.rounded-full.blur-3xl(
       class="bg-fuchsia-200/30 sm:block"
     )
@@ -143,5 +142,4 @@ block content
       +appButton("Submit", "primary", "button")#registerOtpSubmit.flex-1(disabled)
       +appButton("Resend (05:00)", "ghost", "button")#registerResendOtp.flex-1(disabled)
 
-  script(src=assetPath("/js/animations/login-particles.js"), defer)
   script(src=assetPath("/js/pages/register.js"), type="module")
