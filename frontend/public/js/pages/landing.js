@@ -3,6 +3,8 @@ const initLandingPage = () => {
   if (!landingPage) return;
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isCompactViewport = window.matchMedia("(max-width: 1023px)").matches;
+  const shouldUseHeavyMotion = !prefersReducedMotion && !isCompactViewport;
   const parallaxLayers = Array.from(landingPage.querySelectorAll("[data-parallax-speed]"));
   const sectionLinks = Array.from(landingPage.querySelectorAll('a[href^="#"]'));
   const heroVisual = document.getElementById("landingHeroVisual");
@@ -29,7 +31,7 @@ const initLandingPage = () => {
     if (!heroVisual || !heroSvg || typeof window.gsap === "undefined") return;
     const gsap = window.gsap;
 
-    if (prefersReducedMotion) {
+    if (!shouldUseHeavyMotion) {
       gsap.set(heroVisual, { opacity: 1, y: 0, x: 0 });
       gsap.set(heroSvg, {
         opacity: 0.88,
@@ -115,7 +117,7 @@ const initLandingPage = () => {
     const fullWordPause = 1900;
     const fullDeletePause = 500;
 
-    if (prefersReducedMotion) {
+    if (!shouldUseHeavyMotion) {
       heroTitleLines.forEach((line, index) => {
         line.textContent = lineValues[index] || "";
       });
@@ -231,7 +233,7 @@ const initLandingPage = () => {
     if (!heroCtaSvg || typeof window.gsap === "undefined") return;
     const gsap = window.gsap;
 
-    if (prefersReducedMotion) {
+    if (!shouldUseHeavyMotion) {
       gsap.set(heroCtaSvg, { y: 0, x: 0, rotate: 0, filter: "brightness(1)" });
       return;
     }
@@ -275,7 +277,7 @@ const initLandingPage = () => {
     );
     if (!sectionCards.length) return;
 
-    if (prefersReducedMotion) {
+    if (!shouldUseHeavyMotion) {
       gsap.set(sectionCards, {
         autoAlpha: 1,
         x: 0,
@@ -390,7 +392,7 @@ const initLandingPage = () => {
   animateHeroCtaVisual();
   animateAdvancedSections();
 
-  if (!parallaxLayers.length || prefersReducedMotion) return;
+  if (!parallaxLayers.length || !shouldUseHeavyMotion) return;
 
   for (const layer of parallaxLayers) {
     layer.dataset.baseTransform = layer.dataset.baseTransform || "";

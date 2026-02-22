@@ -364,12 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
     otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 5);
     updateOtpSubmitState();
   });
-  otpInput.addEventListener("paste", (event) => {
-    event.preventDefault();
-    const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 5);
-    otpInput.value = pasted;
-    updateOtpSubmitState();
-  });
   updateOtpSubmitState();
 
   otpSubmit.addEventListener("click", () => {
