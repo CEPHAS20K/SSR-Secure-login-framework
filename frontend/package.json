@@ -11,7 +11,8 @@
     "prebuild": "npm run sync:gsap && npm run sync:fonts",
     "build": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --minify",
     "tw:watch": "npm run dev",
-    "tw:build": "npm run build"
+    "tw:build": "npm run build",
+    "docs:generate-uml": "node ../scripts/generate-architecture-diagrams.js"
   },
   "keywords": [],
   "author": "",

@@ -12,6 +12,7 @@
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,json,md}\"",
+    "docs:generate-uml": "node ../scripts/generate-architecture-diagrams.js",
     "test": "vitest run --globals --passWithNoTests",
     "test:watch": "vitest --globals --passWithNoTests"
   },
