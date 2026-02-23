@@ -5,6 +5,7 @@ const initLandingPage = () => {
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const isCompactViewport = window.matchMedia("(max-width: 1023px)").matches;
   const shouldUseHeavyMotion = !prefersReducedMotion && !isCompactViewport;
+  const shouldAnimateTitleTyping = !prefersReducedMotion;
   const parallaxLayers = Array.from(landingPage.querySelectorAll("[data-parallax-speed]"));
   const sectionLinks = Array.from(landingPage.querySelectorAll('a[href^="#"]'));
   const heroVisual = document.getElementById("landingHeroVisual");
@@ -117,7 +118,7 @@ const initLandingPage = () => {
     const fullWordPause = 1900;
     const fullDeletePause = 500;
 
-    if (!shouldUseHeavyMotion) {
+    if (!shouldAnimateTitleTyping) {
       heroTitleLines.forEach((line, index) => {
         line.textContent = lineValues[index] || "";
       });
@@ -156,11 +157,23 @@ const initLandingPage = () => {
     let isDeleting = false;
     let timeoutId = null;
 
+    const clearScheduled = () => {
+      if (!timeoutId) return;
+      window.clearTimeout(timeoutId);
+      timeoutId = null;
+    };
+
     const schedule = (delay) => {
+      clearScheduled();
       timeoutId = window.setTimeout(step, delay);
     };
 
     const step = () => {
+      if (document.visibilityState !== "visible") {
+        schedule(650);
+        return;
+      }
+
       const currentLine = heroTitleLines[lineIndex];
       const currentValue = lineValues[lineIndex] || "";
       if (!currentLine) {
@@ -226,6 +239,13 @@ const initLandingPage = () => {
       schedule(fullDeletePause);
     };
 
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      if (timeoutId) return;
+      schedule(160);
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
     schedule(160);
   };
 

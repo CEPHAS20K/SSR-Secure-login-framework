@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "name": "minScore",
+    "expected": 0.85,
+    "actual": 0.8,
+    "values": [0.77, 0.8],
+    "operator": ">=",
+    "passed": false,
+    "auditProperty": "performance",
+    "auditId": "categories",
+    "level": "error",
+    "url": "http://192.168.100.8:8080/"
+  },
+  {
+    "name": "minScore",
+    "expected": 0.89,
+    "actual": 0.76,
+    "values": [0.76, 0.76],
+    "operator": ">=",
+    "passed": false,
+    "auditProperty": "best-practices",
+    "auditId": "categories",
+    "level": "error",
+    "url": "http://192.168.100.8:8080/"
+  },
+  {
+    "name": "minScore",
+    "expected": 0.89,
+    "actual": 0.76,
+    "values": [0.76, 0.76],
+    "operator": ">=",
+    "passed": false,
+    "auditProperty": "best-practices",
+    "auditId": "categories",
+    "level": "error",
+    "url": "http://192.168.100.8:8080/login"
+  },
+  {
+    "name": "minScore",
+    "expected": 0.89,
+    "actual": 0.76,
+    "values": [0.76, 0.76],
+    "operator": ">=",
+    "passed": false,
+    "auditProperty": "best-practices",
+    "auditId": "categories",
+    "level": "error",
+    "url": "http://192.168.100.8:8080/register"
+  }
+]

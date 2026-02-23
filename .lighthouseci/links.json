@@ -1,5 +1,5 @@
 {
-  "http://127.0.0.1:8080/": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1771812108866-8406.report.html",
-  "http://127.0.0.1:8080/login": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1771812110712-70345.report.html",
-  "http://127.0.0.1:8080/register": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1771812112247-19001.report.html"
+  "http://192.168.100.8:8080/": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1771821678481-88795.report.html",
+  "http://192.168.100.8:8080/login": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1771821680068-5482.report.html",
+  "http://192.168.100.8:8080/register": "https://storage.googleapis.com/lighthouse-infrastructure.appspot.com/reports/1771821681585-92137.report.html"
 }

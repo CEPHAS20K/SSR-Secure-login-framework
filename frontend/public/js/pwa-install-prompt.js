@@ -33,6 +33,7 @@
     });
 
     maybePromptIosFallback();
+    maybePromptInsecureContextHelp();
   }
 
   function maybePromptIosFallback() {
@@ -49,7 +50,37 @@
     }, PROMPT_DELAY_MS);
   }
 
+  function maybePromptInsecureContextHelp() {
+    if (isInstallPromptCapableContext()) return;
+
+    window.setTimeout(() => {
+      if (promptShown || isDismissed() || isRunningStandalone()) return;
+      promptShown = true;
+
+      const wantsHelp = window.confirm(
+        "Install prompt is limited on this network address. Tap OK to see setup steps."
+      );
+      if (!wantsHelp) {
+        dismissForDays(DISMISS_DAYS);
+        return;
+      }
+
+      const secureHint = "Open the app over HTTPS to enable native install prompts.";
+      if (isIosSafari()) {
+        window.alert(
+          `${secureHint}\n\nOn iPhone/iPad Safari: Share -> Add to Home Screen (when served over HTTPS).`
+        );
+        return;
+      }
+
+      window.alert(
+        `${secureHint}\n\nOn Android Chrome: open the HTTPS URL, then use Install app / Add to Home screen.`
+      );
+    }, PROMPT_DELAY_MS);
+  }
+
   async function maybePromptInstall() {
+    if (!isInstallPromptCapableContext()) return;
     if (!deferredPromptEvent || promptShown) return;
     if (document.visibilityState !== "visible") return;
     if (await isInstalledAppContext()) return;
@@ -114,10 +145,19 @@
 })();
 
 function isLikelyMobile() {
-  if (typeof window.matchMedia === "function") {
-    return window.matchMedia("(max-width: 900px)").matches;
-  }
-  return false;
+  const ua = window.navigator.userAgent || "";
+  const uaMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  const coarsePointer =
+    typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+  const narrowViewport =
+    typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1100px)").matches;
+  return uaMobile || coarsePointer || narrowViewport;
+}
+
+function isInstallPromptCapableContext() {
+  if (window.isSecureContext) return true;
+  const hostname = String(window.location.hostname || "").toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
 function isRunningStandalone() {

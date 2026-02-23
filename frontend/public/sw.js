@@ -1,11 +1,13 @@
 "use strict";
 
-const SW_VERSION = "v13";
+const SW_VERSION = "v14";
 const ASSET_CACHE = `auth-assets-${SW_VERSION}`;
 const OFFLINE_FALLBACK_URL = "/offline.html";
 const PRECACHE_ASSETS = [
   OFFLINE_FALLBACK_URL,
   "/manifest.webmanifest",
+  "/images/icon-192.png",
+  "/images/icon-512.png",
   "/images/favicon-32.png",
   "/images/favicon-16.png",
   "/images/off.svg",

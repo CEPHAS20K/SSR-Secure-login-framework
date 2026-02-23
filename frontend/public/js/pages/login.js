@@ -5,11 +5,7 @@ import {
   otpSchema,
   resetAccountSchema,
 } from "../lib/auth-schemas.js";
-import {
-  bindCapsLockWarning,
-  getIssueMessageForPath,
-  setInlineFieldState,
-} from "../lib/auth-form-ux.js";
+import { bindCapsLockWarning } from "../lib/auth-form-ux.js";
 import { createModalFocusTrap } from "../lib/modal-a11y.js";
 import { showToast } from "../lib/toast.js";
 
@@ -58,16 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetNewPassword = document.getElementById("resetNewPassword");
   const resetConfirmPassword = document.getElementById("resetConfirmPassword");
   const resetSubmit = document.getElementById("resetSubmit");
-  const resetEmailError = document.getElementById("resetEmailError");
-  const resetPasswordError = document.getElementById("resetPasswordError");
-  const resetConfirmError = document.getElementById("resetConfirmError");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
   const formShell = document.getElementById("loginFormShell");
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   const FORM_SKELETON_MIN_MS = 220;
   const rememberedEmail = safeReadStorage("auth_email");
-  const touchedResetFields = new Set();
   let resendSecondsLeft = OTP_COUNTDOWN_SECONDS;
   let resendTimer = null;
 
@@ -244,39 +236,16 @@ document.addEventListener("DOMContentLoaded", () => {
     resetModal.style.display = open ? "flex" : "none";
   };
 
-  const shouldShowResetError = (fieldName, inputNode, showAll) => {
-    if (showAll) return true;
-    if (touchedResetFields.has(fieldName)) return true;
-    return Boolean(String(inputNode?.value || "").trim());
-  };
-
-  const updateResetSubmitState = (options = {}) => {
+  const updateResetSubmitState = () => {
     if (!isResetModalReady) return;
-    const showErrors = Boolean(options.showErrors);
     const parse = resetAccountSchema.safeParse({
       email: resetEmail.value.trim(),
       newPassword: resetNewPassword.value,
       confirmPassword: resetConfirmPassword.value,
     });
-    resetSubmit.disabled = !parse.success;
-
-    const resetEmailMessage = shouldShowResetError("email", resetEmail, showErrors)
-      ? getIssueMessageForPath(parse, "email")
-      : "";
-    const resetPasswordMessage = shouldShowResetError("newPassword", resetNewPassword, showErrors)
-      ? getIssueMessageForPath(parse, "newPassword")
-      : "";
-    const resetConfirmMessage = shouldShowResetError(
-      "confirmPassword",
-      resetConfirmPassword,
-      showErrors
-    )
-      ? getIssueMessageForPath(parse, "confirmPassword")
-      : "";
-
-    setInlineFieldState(resetEmail, resetEmailError, resetEmailMessage);
-    setInlineFieldState(resetNewPassword, resetPasswordError, resetPasswordMessage);
-    setInlineFieldState(resetConfirmPassword, resetConfirmError, resetConfirmMessage);
+    // Keep submit action available and surface validation via toast (Notyf).
+    resetSubmit.disabled = false;
+    return parse;
   };
 
   const closeResetModal = () => {
@@ -317,8 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resetEmail.value = email.value.trim();
     resetNewPassword.value = "";
     resetConfirmPassword.value = "";
-    touchedResetFields.clear();
-    updateResetSubmitState({ showErrors: false });
+    updateResetSubmitState();
 
     if (!window.gsap) {
       resetFocusTrap.activate({ initialFocus: resetEmail });
@@ -440,22 +408,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setResetModalOpenState(false);
   if (isResetModalReady) {
-    [resetEmail, resetNewPassword, resetConfirmPassword].forEach((field) => {
-      const fieldKeyById = {
-        resetEmail: "email",
-        resetNewPassword: "newPassword",
-        resetConfirmPassword: "confirmPassword",
-      };
-      field.addEventListener("input", () => {
-        touchedResetFields.add(fieldKeyById[field.id] || field.id);
-        updateResetSubmitState();
-      });
-      field.addEventListener("blur", () => {
-        touchedResetFields.add(fieldKeyById[field.id] || field.id);
-        updateResetSubmitState();
-      });
-      field.addEventListener("change", updateResetSubmitState);
-    });
     updateResetSubmitState();
 
     forgotPasswordLink.addEventListener("click", (event) => {
@@ -474,7 +426,6 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmPassword: resetConfirmPassword.value,
       });
       if (!parse.success) {
-        updateResetSubmitState({ showErrors: true });
         notify(firstSchemaError(parse), "error", "Validation error");
         return;
       }
@@ -496,6 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
         notify(error.message || "Unable to submit reset request right now.", "error", "Reset");
       } finally {
         resetSubmit.textContent = "Submit Reset";
+        resetSubmit.disabled = false;
         updateResetSubmitState();
       }
     });
