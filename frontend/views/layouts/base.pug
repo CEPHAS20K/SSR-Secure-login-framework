@@ -5,6 +5,15 @@ html(lang="en")
     const gsapPages = new Set(["landing", "login", "register", "admin-login", "error"]);
     const shouldLoadGsap = gsapPages.has(currentPage);
     const shouldPreloadLandingVisuals = currentPage === "landing";
+    const preloadFontHrefs = ["/fonts/inter-latin-400.woff2"];
+
+    if (currentPage === "landing") {
+      preloadFontHrefs.push("/fonts/cabin-sketch-latin-700.woff2", "/fonts/schoolbell-latin-400.woff2");
+    } else if (currentPage === "login" || currentPage === "register" || currentPage === "admin-login") {
+      preloadFontHrefs.push("/fonts/finger-paint-latin-400.woff2", "/fonts/schoolbell-latin-400.woff2");
+    } else if (currentPage === "admin-dashboard") {
+      preloadFontHrefs.push("/fonts/bebas-neue-latin-400.woff2");
+    }
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1.0")
@@ -13,8 +22,9 @@ html(lang="en")
     meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
     meta(name="apple-mobile-web-app-title", content="Secure Storage Vault")
     title Secure Storage Vault
-    link(rel="icon", type="image/png", href=assetPath("/images/logo.png"))
-    link(rel="apple-touch-icon", href=assetPath("/images/logo.png"))
+    link(rel="icon", type="image/png", sizes="32x32", href=assetPath("/images/favicon-32.png"))
+    link(rel="icon", type="image/png", sizes="16x16", href=assetPath("/images/favicon-16.png"))
+    link(rel="apple-touch-icon", sizes="32x32", href=assetPath("/images/favicon-32.png"))
     link(rel="manifest", href=assetPath("/manifest.webmanifest"))
     if shouldPreloadLandingVisuals
       link(
@@ -24,6 +34,8 @@ html(lang="en")
         type="image/svg+xml",
         fetchpriority="high"
       )
+    each fontHref in preloadFontHrefs
+      link(rel="preload", as="font", type="font/woff2", href=fontHref, crossorigin="anonymous")
     script.
       (function () {
         try {
@@ -33,6 +45,7 @@ html(lang="en")
         } catch (error) {}
       })();
     link(rel="stylesheet", href=assetPath("/css/fonts.css"))
+    link(rel="stylesheet", href=assetPath("/vendor/notyf.min.css"))
     style.
       html,
       body {
@@ -68,10 +81,18 @@ html(lang="en")
   body.min-h-screen.bg-slate-100.font-body.text-slate-900(data-page=page || "")
     #pageTransitionOverlay
       #pageTransitionStroke
+    #appToastRegion.pointer-events-none.fixed.inset-x-0.top-16.mx-auto.flex.w-full.max-w-md.flex-col.gap-2.px-3(
+      class="z-[90]",
+      aria-live="polite",
+      aria-atomic="false"
+    )
+    script(src=assetPath("/vendor/notyf.min.js"))
     main
       block content
     if shouldLoadGsap
       script(src=assetPath("/vendor/gsap.min.js"), defer)
+    if rumEnabled
+      script(src=assetPath("/js/web-vitals-rum.js"), type="module")
     script(src=assetPath("/js/animations/navbar.js"), defer)
     script(src=assetPath("/js/animations.js"), defer)
     script(src=assetPath("/js/link-prefetch.js"), defer)

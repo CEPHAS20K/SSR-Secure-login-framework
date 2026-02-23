@@ -38,6 +38,7 @@ const LONG_CACHE_EXTENSIONS = new Set([
   ".ttf",
   ".eot",
 ]);
+const FONT_EXTENSIONS = new Set([".woff", ".woff2", ".ttf", ".eot"]);
 const MID_CACHE_EXTENSIONS = new Set([".css", ".js", ".mjs"]);
 
 let isEnvLoaded = false;
@@ -56,9 +57,11 @@ function createApp(options = {}) {
     ADMIN_INTERNAL_ONLY: resolveBoolean(env.ADMIN_INTERNAL_ONLY, true),
     ADMIN_ALLOW_IPS: parseList(env.ADMIN_ALLOW_IPS),
     API_DOCS_ENABLED: resolveBoolean(env.API_DOCS_ENABLED, true),
+    RUM_ENABLED: false,
     ASSET_VERSION: "",
     APP_VERSION: "",
   };
+  config.RUM_ENABLED = resolveBoolean(env.RUM_ENABLED, config.IS_PRODUCTION);
 
   config.ASSET_VERSION = resolveAssetVersion({
     envVersion: env.ASSET_VERSION,
@@ -113,6 +116,7 @@ function createApp(options = {}) {
   app.locals.appVersion = config.APP_VERSION;
   app.locals.assetPath = createAssetPathResolver(config.ASSET_VERSION);
   app.locals.adminEnabled = config.ADMIN_ENABLED;
+  app.locals.rumEnabled = config.RUM_ENABLED;
   app.locals.logger = logger;
 
   if (config.IS_PRODUCTION) {
@@ -146,12 +150,16 @@ function createApp(options = {}) {
       etag: true,
       lastModified: true,
       setHeaders(res, filePath) {
+        const ext = path.extname(filePath).toLowerCase();
         if (!config.IS_PRODUCTION || config.FORCE_NO_STORE) {
+          if (FONT_EXTENSIONS.has(ext)) {
+            res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=3600");
+            return;
+          }
           res.setHeader("Cache-Control", "no-store");
           return;
         }
 
-        const ext = path.extname(filePath).toLowerCase();
         if (LONG_CACHE_EXTENSIONS.has(ext)) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
           return;
@@ -236,23 +244,81 @@ function createApp(options = {}) {
 
 function startServer(options = {}) {
   const { app, logger, config } = createApp(options);
-  const server = app.listen(config.PORT, config.HOST, () => {
-    logger.info({ host: config.HOST, port: config.PORT }, "Backend server running");
-  });
+  const maxPortRetries =
+    typeof options.maxPortRetries === "number"
+      ? Math.max(0, options.maxPortRetries)
+      : config.IS_PRODUCTION
+        ? 0
+        : 10;
 
-  server.on("error", (error) => {
+  let activeServer = null;
+
+  const listenWithRetry = (port, attemptsLeft) =>
+    new Promise((resolve, reject) => {
+      const server = app.listen(port, config.HOST);
+      let settled = false;
+
+      const finalize = () => {
+        server.off("listening", onListening);
+        server.off("error", onError);
+      };
+
+      const onListening = () => {
+        if (settled) return;
+        settled = true;
+        finalize();
+        config.PORT = port;
+        logger.info({ host: config.HOST, port: config.PORT }, "Backend server running");
+        resolve(server);
+      };
+
+      const onError = (error) => {
+        if (settled) return;
+        settled = true;
+        finalize();
+
+        if (error.code === "EADDRINUSE" && attemptsLeft > 0 && !config.IS_PRODUCTION) {
+          const nextPort = port + 1;
+          logger.warn(
+            { host: config.HOST, port, nextPort },
+            "Port in use. Retrying backend start on next port."
+          );
+          listenWithRetry(nextPort, attemptsLeft - 1)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
+        reject(error);
+      };
+
+      server.once("listening", onListening);
+      server.once("error", onError);
+    });
+
+  const started = listenWithRetry(config.PORT, maxPortRetries).catch((error) => {
     logger.error({ err: error }, "Server failed to start");
     if (error.code === "EADDRINUSE" || error.code === "EPERM") {
       logger.error("Update backend/.env.dev with a different PORT, then restart npm run dev.");
     }
     process.exit(1);
+    return null;
+  });
+  started.then((server) => {
+    activeServer = server;
   });
 
   return {
     app,
-    server,
     logger,
     config,
+    get server() {
+      return activeServer;
+    },
+    ready: started,
+    getServer() {
+      return activeServer;
+    },
   };
 }
 

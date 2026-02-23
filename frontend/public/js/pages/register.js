@@ -1,6 +1,7 @@
 import { createApiClient } from "../lib/api-client.js";
 import { firstSchemaError, otpSchema, registerSchema } from "../lib/auth-schemas.js";
 import { createModalFocusTrap } from "../lib/modal-a11y.js";
+import { showToast } from "../lib/toast.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registerForm");
@@ -10,11 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const regPasswordConfirm = document.getElementById("regPasswordConfirm");
   const toggleRegPassword = document.getElementById("toggleRegPassword");
   const toggleRegPasswordConfirm = document.getElementById("toggleRegPasswordConfirm");
-  const passwordMismatch = document.getElementById("passwordMismatch");
   const gender = document.getElementById("gender");
   const agreeTerms = document.getElementById("agreeTerms");
   const registerBtn = document.getElementById("registerBtn");
-  const registerFlash = document.getElementById("registerFlash");
   const otpModal = document.getElementById("registerOtpModal");
   const modalCard = otpModal ? otpModal.querySelector(".otp-card") : null;
   const otpInput = document.getElementById("registerOtpInput");
@@ -22,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resendOtp = document.getElementById("registerResendOtp");
   const otpClose = document.getElementById("registerOtpClose");
   const formShell = document.getElementById("registerFormShell");
+  const capsWarning = document.getElementById("registerCapsWarning");
   const FORM_SKELETON_MIN_MS = 220;
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   let secondsLeft = OTP_COUNTDOWN_SECONDS;
@@ -38,7 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
     !gender ||
     !agreeTerms ||
     !registerBtn ||
-    !registerFlash ||
     !otpModal ||
     !otpInput ||
     !otpSubmit ||
@@ -58,6 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
     onEscape: () => closeOtpModal(),
   });
 
+  const notify = (message, tone = "info", title = "Status") => {
+    if (!message) return;
+    showToast(message, { tone, title });
+  };
+
   const revealForm = () => {
     if (!formShell) return;
     window.setTimeout(() => {
@@ -66,16 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, FORM_SKELETON_MIN_MS);
   };
   revealForm();
-
-  const setFlash = (message, tone = "info") => {
-    const tones = {
-      info: "min-h-5 text-sm font-semibold text-rose-900",
-      success: "min-h-5 text-sm font-semibold text-fuchsia-900",
-      error: "min-h-5 text-sm font-semibold text-rose-900",
-    };
-    registerFlash.className = tones[tone] || tones.info;
-    registerFlash.textContent = message;
-  };
 
   const getFormPayload = () => ({
     username: username.value.trim(),
@@ -90,30 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const mismatch =
       regPasswordConfirm.value.length > 0 && regPassword.value !== regPasswordConfirm.value;
     regPasswordConfirm.setCustomValidity(mismatch ? "Passwords must match." : "");
-    if (passwordMismatch) {
-      passwordMismatch.classList.toggle("invisible", !mismatch);
-      passwordMismatch.setAttribute("aria-hidden", mismatch ? "false" : "true");
-    }
-
-    const matchInputClasses = ["border-rose-200", "focus:border-primary", "focus:ring-primary"];
-    const mismatchInputClasses = [
-      "border-rose-400",
-      "focus:border-rose-500",
-      "focus:ring-rose-300",
-    ];
-
-    if (mismatch) {
-      regPasswordConfirm.classList.remove(...matchInputClasses);
-      regPasswordConfirm.classList.add(...mismatchInputClasses);
-    } else {
-      regPasswordConfirm.classList.remove(...mismatchInputClasses);
-      regPasswordConfirm.classList.add(...matchInputClasses);
-    }
   };
 
   const updateRegisterButton = () => {
-    const parse = registerSchema.safeParse(getFormPayload());
-    registerBtn.disabled = !parse.success;
+    const formPayload = getFormPayload();
+    const coreFieldParse = registerSchema.safeParse({
+      ...formPayload,
+      gender: "male",
+      agreeTerms: true,
+    });
+    registerBtn.disabled = !coreFieldParse.success;
   };
 
   const updateOtpSubmitState = () => {
@@ -239,17 +219,42 @@ document.addEventListener("DOMContentLoaded", () => {
     togglePasswordField(regPasswordConfirm, toggleRegPasswordConfirm)
   );
 
-  [username, regEmail, regPassword, regPasswordConfirm, gender].forEach((field) => {
-    field.addEventListener("input", () => {
+  const updateCapsWarning = (event) => {
+    if (!capsWarning || typeof event?.getModifierState !== "function") return;
+    const active = Boolean(event.getModifierState("CapsLock"));
+    capsWarning.classList.toggle("hidden", !active);
+    capsWarning.setAttribute("aria-hidden", active ? "false" : "true");
+  };
+
+  const hideCapsWarning = () => {
+    if (!capsWarning) return;
+    capsWarning.classList.add("hidden");
+    capsWarning.setAttribute("aria-hidden", "true");
+  };
+  regPassword.addEventListener("keydown", updateCapsWarning);
+  regPassword.addEventListener("keyup", updateCapsWarning);
+  regPassword.addEventListener("blur", hideCapsWarning);
+
+  const fieldBindings = [username, regEmail, regPassword, regPasswordConfirm, gender];
+
+  fieldBindings.forEach((input) => {
+    input.addEventListener("input", () => {
       setMismatchState();
       updateRegisterButton();
     });
-    field.addEventListener("change", () => {
+    input.addEventListener("change", () => {
+      setMismatchState();
+      updateRegisterButton();
+    });
+    input.addEventListener("blur", () => {
       setMismatchState();
       updateRegisterButton();
     });
   });
-  agreeTerms.addEventListener("change", updateRegisterButton);
+
+  agreeTerms.addEventListener("change", () => {
+    updateRegisterButton();
+  });
 
   setMismatchState();
   updateRegisterButton();
@@ -264,14 +269,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const parse = registerSchema.safeParse(getFormPayload());
     updateRegisterButton();
     if (!parse.success) {
-      setFlash(firstSchemaError(parse), "error");
+      const firstIssuePath = parse.error?.issues?.[0]?.path?.[0];
+      if (firstIssuePath === "gender") {
+        notify("Please select your gender before continuing.", "error", "Validation warning");
+        return;
+      }
+      if (firstIssuePath === "agreeTerms") {
+        notify(
+          "Please accept terms and privacy policy to continue.",
+          "error",
+          "Validation warning"
+        );
+        return;
+      }
+      notify(firstSchemaError(parse), "error", "Validation error");
       return;
     }
 
     const originalText = registerBtn.textContent;
     registerBtn.disabled = true;
     registerBtn.textContent = "Creating...";
-    setFlash("");
     try {
       await apiClient.request("/auth/register", {
         method: "POST",
@@ -284,13 +301,13 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         timeoutMs: 5200,
       });
-      setFlash("Account details accepted. Verify OTP to continue.", "success");
+      notify("Account details accepted. Verify OTP to continue.", "success", "Register");
     } catch (error) {
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
-        setFlash(error.message || "Unable to register right now.", "error");
+        notify(error.message || "Unable to register right now.", "error", "Register failed");
         return;
       }
-      setFlash("Auth backend is in setup mode. Continuing with OTP demo flow.", "info");
+      notify("Auth backend is in setup mode. Continuing with OTP demo flow.", "info", "Demo mode");
     } finally {
       registerBtn.textContent = originalText;
       updateRegisterButton();
@@ -308,16 +325,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (otpSubmit.disabled) return;
     const parse = otpSchema.safeParse(otpInput.value.trim());
     if (!parse.success) {
-      setFlash(firstSchemaError(parse, "Invalid OTP format."), "error");
+      notify(firstSchemaError(parse, "Invalid OTP format."), "error", "OTP");
       return;
     }
-    setFlash("Account verified with OTP.", "success");
+    notify("Account verified with OTP.", "success", "OTP");
     closeOtpModal();
   });
 
   resendOtp.addEventListener("click", () => {
     if (secondsLeft > 0) return;
-    setFlash("OTP resent successfully.", "info");
+    notify("OTP resent successfully.", "info", "OTP");
     startTimer();
   });
 

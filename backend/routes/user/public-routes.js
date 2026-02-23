@@ -8,6 +8,7 @@ function registerPublicRoutes(app, options = {}) {
   app.get("/register", publicController.renderRegister);
   app.post("/auth/login", publicController.login);
   app.post("/auth/register", publicController.register);
+  app.post("/api/rum", publicController.ingestRumMetric);
   app.get("/health", publicController.health);
   app.get("/version", publicController.getVersion);
 }

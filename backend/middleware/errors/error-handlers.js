@@ -2,7 +2,7 @@
 
 function notFoundHandler(req, res) {
   if (req.accepts("html")) {
-    res.status(404).render("404", { title: "404 Not Found", page: "error" });
+    res.status(404).render("errors/404", { title: "404 Not Found", page: "error" });
     return;
   }
 
@@ -27,7 +27,7 @@ function internalServerErrorHandler(error, req, res, next) {
   }
 
   if (req.accepts("html")) {
-    res.status(500).render("500", { title: "500 Server Error", page: "error" });
+    res.status(500).render("errors/500", { title: "500 Server Error", page: "error" });
     return;
   }
 

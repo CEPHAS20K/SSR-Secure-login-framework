@@ -10,8 +10,14 @@
   "theme_color": "#ff7700",
   "icons": [
     {
-      "src": "/images/logo.png",
-      "sizes": "192x192",
+      "src": "/images/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/favicon-16.png",
+      "sizes": "16x16",
       "type": "image/png",
       "purpose": "any"
     }

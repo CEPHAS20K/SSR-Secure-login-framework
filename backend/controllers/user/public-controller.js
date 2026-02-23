@@ -73,15 +73,47 @@ const authNotConfiguredResponse = {
 };
 
 const acceptedGenders = new Set(["male", "female", "other"]);
+const acceptedRumMetrics = new Set(["LCP", "CLS", "INP", "FIELD_ACTIVE_MS"]);
 const safeNoStoreHeaders = {
   "Cache-Control": "no-store",
 };
+const rumMetricSchema = z.object({
+  name: z
+    .string({
+      error: "Metric name is required.",
+    })
+    .trim()
+    .min(1)
+    .max(16),
+  value: z
+    .number({
+      error: "Metric value is required.",
+    })
+    .finite()
+    .nonnegative()
+    .max(600000),
+  path: z
+    .string({
+      error: "Path is required.",
+    })
+    .trim()
+    .min(1)
+    .max(400),
+  page: z.string().trim().max(80).optional().default(""),
+  connectionType: z.string().trim().max(32).optional().default(""),
+  fieldName: z.string().trim().max(120).optional().default(""),
+  timestamp: z
+    .string({
+      error: "Timestamp is required.",
+    })
+    .datetime({ offset: true }),
+});
 
 function createPublicController(options = {}) {
   const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
 
   function renderLanding(req, res) {
-    res.render("landing", {
+    res.render("pages/user/landing", {
       title: "Secure Storage Vault",
       activePage: "landing",
       page: "landing",
@@ -90,7 +122,7 @@ function createPublicController(options = {}) {
 
   function renderLogin(req, res) {
     res.set(safeNoStoreHeaders);
-    res.render("login", {
+    res.render("pages/user/login", {
       title: "Login",
       activePage: "login",
       page: "login",
@@ -99,7 +131,7 @@ function createPublicController(options = {}) {
 
   function renderRegister(req, res) {
     res.set(safeNoStoreHeaders);
-    res.render("register", {
+    res.render("pages/user/register", {
       title: "Register",
       activePage: "register",
       page: "register",
@@ -170,12 +202,47 @@ function createPublicController(options = {}) {
     });
   }
 
+  function ingestRumMetric(req, res) {
+    const parsedPayload = rumMetricSchema.safeParse(req.body || {});
+    if (!parsedPayload.success) {
+      res.status(400).json({ error: "Invalid RUM payload." });
+      return;
+    }
+
+    const metric = parsedPayload.data;
+    if (!acceptedRumMetrics.has(metric.name)) {
+      res.status(400).json({ error: "Unsupported metric name." });
+      return;
+    }
+
+    if (typeof logger.info === "function") {
+      logger.info(
+        {
+          route: "/api/rum",
+          metric: metric.name,
+          value: metric.value,
+          path: metric.path,
+          page: metric.page,
+          fieldName: metric.fieldName,
+          connectionType: metric.connectionType,
+          timestamp: metric.timestamp,
+          userAgent: req.get("user-agent") || "",
+          ip: req.ip || req.socket?.remoteAddress || "",
+        },
+        "Frontend web vital received"
+      );
+    }
+
+    res.status(202).json({ accepted: true });
+  }
+
   return {
     renderLanding,
     renderLogin,
     renderRegister,
     login,
     register,
+    ingestRumMetric,
     health,
     getVersion,
   };

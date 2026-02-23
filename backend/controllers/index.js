@@ -1,7 +1,7 @@
 "use strict";
 
-const { createPublicController } = require("./public-controller");
-const { createAdminController } = require("./admin-controller");
+const { createPublicController } = require("./user/public-controller");
+const { createAdminController } = require("./admin/admin-controller");
 
 module.exports = {
   createAdminController,

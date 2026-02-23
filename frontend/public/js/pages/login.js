@@ -5,14 +5,43 @@ import {
   otpSchema,
   resetAccountSchema,
 } from "../lib/auth-schemas.js";
+import {
+  bindCapsLockWarning,
+  getIssueMessageForPath,
+  setInlineFieldState,
+} from "../lib/auth-form-ux.js";
 import { createModalFocusTrap } from "../lib/modal-a11y.js";
+import { showToast } from "../lib/toast.js";
+
+function safeReadStorage(key) {
+  try {
+    return window.localStorage.getItem(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+function safeWriteStorage(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage failures so login UX still works.
+  }
+}
+
+function safeRemoveStorage(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures so login UX still works.
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
   const email = document.getElementById("email");
   const password = document.getElementById("password");
   const loginBtn = document.getElementById("loginBtn");
-  const flash = document.getElementById("loginFlash");
   const modal = document.getElementById("otpModal");
   const modalCard = modal ? modal.querySelector(".otp-card") : null;
   const togglePassword = document.getElementById("togglePassword");
@@ -29,13 +58,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetNewPassword = document.getElementById("resetNewPassword");
   const resetConfirmPassword = document.getElementById("resetConfirmPassword");
   const resetSubmit = document.getElementById("resetSubmit");
-  const resetFlash = document.getElementById("resetFlash");
+  const resetEmailError = document.getElementById("resetEmailError");
+  const resetPasswordError = document.getElementById("resetPasswordError");
+  const resetConfirmError = document.getElementById("resetConfirmError");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
   const formShell = document.getElementById("loginFormShell");
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   const FORM_SKELETON_MIN_MS = 220;
-  const rememberedEmail = localStorage.getItem("auth_email") || "";
+  const rememberedEmail = safeReadStorage("auth_email");
+  const touchedResetFields = new Set();
   let resendSecondsLeft = OTP_COUNTDOWN_SECONDS;
   let resendTimer = null;
 
@@ -56,6 +88,11 @@ document.addEventListener("DOMContentLoaded", () => {
     onEscape: () => closeResetModal(),
   });
 
+  const notify = (message, tone = "info", title = "Status") => {
+    if (!message) return;
+    showToast(message, { tone, title });
+  };
+
   const revealForm = () => {
     if (!formShell) return;
     window.setTimeout(() => {
@@ -69,17 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
     email.value = rememberedEmail;
     if (rememberMe) rememberMe.checked = true;
   }
-
-  const setFlash = (message, tone = "info") => {
-    if (!flash) return;
-    const tones = {
-      info: "min-h-5 text-sm font-bold text-rose-900",
-      success: "min-h-5 text-sm font-bold text-fuchsia-900",
-      error: "min-h-5 text-sm font-bold text-rose-900",
-    };
-    flash.className = tones[tone] || tones.info;
-    flash.textContent = message;
-  };
 
   const updateButtonState = () => {
     const parse = loginSchema.safeParse({
@@ -201,19 +227,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
   };
 
-  const updateCapsLockWarning = (event) => {
-    if (!capsWarning || typeof event.getModifierState !== "function") return;
-    capsWarning.classList.toggle("hidden", !event.getModifierState("CapsLock"));
-  };
-
   const isResetModalReady = Boolean(
     forgotPasswordLink &&
     resetModal &&
     resetEmail &&
     resetNewPassword &&
     resetConfirmPassword &&
-    resetSubmit &&
-    resetFlash
+    resetSubmit
   );
 
   const setResetModalOpenState = (open) => {
@@ -224,14 +244,39 @@ document.addEventListener("DOMContentLoaded", () => {
     resetModal.style.display = open ? "flex" : "none";
   };
 
-  const updateResetSubmitState = () => {
+  const shouldShowResetError = (fieldName, inputNode, showAll) => {
+    if (showAll) return true;
+    if (touchedResetFields.has(fieldName)) return true;
+    return Boolean(String(inputNode?.value || "").trim());
+  };
+
+  const updateResetSubmitState = (options = {}) => {
     if (!isResetModalReady) return;
+    const showErrors = Boolean(options.showErrors);
     const parse = resetAccountSchema.safeParse({
       email: resetEmail.value.trim(),
       newPassword: resetNewPassword.value,
       confirmPassword: resetConfirmPassword.value,
     });
     resetSubmit.disabled = !parse.success;
+
+    const resetEmailMessage = shouldShowResetError("email", resetEmail, showErrors)
+      ? getIssueMessageForPath(parse, "email")
+      : "";
+    const resetPasswordMessage = shouldShowResetError("newPassword", resetNewPassword, showErrors)
+      ? getIssueMessageForPath(parse, "newPassword")
+      : "";
+    const resetConfirmMessage = shouldShowResetError(
+      "confirmPassword",
+      resetConfirmPassword,
+      showErrors
+    )
+      ? getIssueMessageForPath(parse, "confirmPassword")
+      : "";
+
+    setInlineFieldState(resetEmail, resetEmailError, resetEmailMessage);
+    setInlineFieldState(resetNewPassword, resetPasswordError, resetPasswordMessage);
+    setInlineFieldState(resetConfirmPassword, resetConfirmError, resetConfirmMessage);
   };
 
   const closeResetModal = () => {
@@ -269,12 +314,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const openResetModal = () => {
     if (!isResetModalReady) return;
     setResetModalOpenState(true);
-    resetFlash.textContent = "";
-    resetFlash.className = "min-h-5 mt-3 text-sm font-semibold";
     resetEmail.value = email.value.trim();
     resetNewPassword.value = "";
     resetConfirmPassword.value = "";
-    updateResetSubmitState();
+    touchedResetFields.clear();
+    updateResetSubmitState({ showErrors: false });
 
     if (!window.gsap) {
       resetFocusTrap.activate({ initialFocus: resetEmail });
@@ -298,13 +342,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  bindCapsLockWarning(password, capsWarning);
+
   email.addEventListener("input", updateButtonState);
   password.addEventListener("input", updateButtonState);
-  password.addEventListener("keydown", updateCapsLockWarning);
-  password.addEventListener("keyup", updateCapsLockWarning);
-  password.addEventListener("blur", () => {
-    if (capsWarning) capsWarning.classList.add("hidden");
-  });
+  email.addEventListener("blur", updateButtonState);
+  password.addEventListener("blur", updateButtonState);
   updateButtonState();
 
   togglePassword.addEventListener("click", () => {
@@ -321,22 +364,22 @@ document.addEventListener("DOMContentLoaded", () => {
       password: password.value,
     });
     if (!parse.success) {
-      setFlash(firstSchemaError(parse), "error");
+      updateButtonState();
+      notify(firstSchemaError(parse), "error", "Validation error");
       return;
     }
 
     if (rememberMe) {
       if (rememberMe.checked) {
-        localStorage.setItem("auth_email", parse.data.email);
+        safeWriteStorage("auth_email", parse.data.email);
       } else {
-        localStorage.removeItem("auth_email");
+        safeRemoveStorage("auth_email");
       }
     }
 
     const originalText = loginBtn.textContent;
     loginBtn.disabled = true;
     loginBtn.textContent = "Checking...";
-    setFlash("");
 
     try {
       await apiClient.request("/auth/login", {
@@ -345,13 +388,13 @@ document.addEventListener("DOMContentLoaded", () => {
         retries: 1,
         timeoutMs: 5200,
       });
-      setFlash("Credentials accepted. Enter OTP to continue.", "success");
+      notify("Credentials accepted. Enter OTP to continue.", "success", "Login");
     } catch (error) {
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
-        setFlash(error.message || "Unable to sign in right now.", "error");
+        notify(error.message || "Unable to sign in right now.", "error", "Login failed");
         return;
       }
-      setFlash("Auth backend is in setup mode. Continuing with OTP demo flow.", "info");
+      notify("Auth backend is in setup mode. Continuing with OTP demo flow.", "info", "Demo mode");
     } finally {
       loginBtn.textContent = originalText;
       updateButtonState();
@@ -370,17 +413,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (otpSubmit.disabled) return;
     const parse = otpSchema.safeParse(otpInput.value.trim());
     if (!parse.success) {
-      setFlash(firstSchemaError(parse, "Invalid OTP format."), "error");
+      notify(firstSchemaError(parse, "Invalid OTP format."), "error", "OTP");
       return;
     }
-    setFlash("OTP submitted.", "success");
+    notify("OTP submitted.", "success", "OTP");
     closeOtpModal();
   });
 
   updateResendState();
   resendOtp.addEventListener("click", () => {
     if (resendSecondsLeft > 0) return;
-    setFlash("OTP resent successfully.", "info");
+    notify("OTP resent successfully.", "info", "OTP");
     startResendTimer();
   });
 
@@ -398,7 +441,19 @@ document.addEventListener("DOMContentLoaded", () => {
   setResetModalOpenState(false);
   if (isResetModalReady) {
     [resetEmail, resetNewPassword, resetConfirmPassword].forEach((field) => {
-      field.addEventListener("input", updateResetSubmitState);
+      const fieldKeyById = {
+        resetEmail: "email",
+        resetNewPassword: "newPassword",
+        resetConfirmPassword: "confirmPassword",
+      };
+      field.addEventListener("input", () => {
+        touchedResetFields.add(fieldKeyById[field.id] || field.id);
+        updateResetSubmitState();
+      });
+      field.addEventListener("blur", () => {
+        touchedResetFields.add(fieldKeyById[field.id] || field.id);
+        updateResetSubmitState();
+      });
       field.addEventListener("change", updateResetSubmitState);
     });
     updateResetSubmitState();
@@ -419,9 +474,8 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmPassword: resetConfirmPassword.value,
       });
       if (!parse.success) {
-        resetFlash.textContent = firstSchemaError(parse);
-        resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-rose-900";
-        updateResetSubmitState();
+        updateResetSubmitState({ showErrors: true });
+        notify(firstSchemaError(parse), "error", "Validation error");
         return;
       }
 
@@ -434,14 +488,12 @@ document.addEventListener("DOMContentLoaded", () => {
           retries: 0,
           timeoutMs: 3000,
         });
-        resetFlash.textContent = "Reset request submitted. Check your email for next steps.";
-        resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-fuchsia-900";
+        notify("Reset request submitted. Check your email for next steps.", "success", "Reset");
         setTimeout(() => {
           closeResetModal();
         }, 650);
       } catch (error) {
-        resetFlash.textContent = error.message || "Unable to submit reset request right now.";
-        resetFlash.className = "min-h-5 mt-3 text-sm font-semibold text-rose-900";
+        notify(error.message || "Unable to submit reset request right now.", "error", "Reset");
       } finally {
         resetSubmit.textContent = "Submit Reset";
         updateResetSubmitState();

@@ -3,8 +3,11 @@ extends ../../layouts/base
 include ../../components/navbar
 include ../../components/button
 include ../../components/form-controls
+include ../../components/ui-shells
 
 block content
+  -
+    const adminServerError = typeof errorMessage === "string" ? errorMessage : "";
   +appNavbar(activePage || "admin")
   #authView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
     .pointer-events-none.absolute.-left-24.top-10.hidden.h-64.w-64.rounded-full.blur-3xl(
@@ -17,20 +20,9 @@ block content
     .mx-auto.flex.w-full.max-w-3xl.items-center.justify-center.px-4.pt-24.pb-6(
       class="min-h-[calc(100dvh-6rem)] sm:min-h-[calc(100dvh-7rem)] sm:pt-28 sm:pb-8 md:px-6"
     )
-      section#adminLoginCard.w-full.max-w-md.rounded-3xl.border.p-6.text-rose-950.shadow-2xl.backdrop-blur-2xl.font-semibold(
-        class="border-white/40 bg-white/25 sm:p-8"
-      )
-        .text-center
-          h1.mt-2.font-headline.leading-none.text-rose-900.tracking-wide.text-3xl(
-            class="sm:text-5xl",
-            style="font-family: 'Finger Paint', cursive"
-          )
-            | Admin Login
-
-        if errorMessage
-          #adminFlash.mt-4.rounded-xl.border.p-3.text-sm.font-semibold.text-rose-900.border-rose-300(
-            class="bg-rose-100/90"
-          )= errorMessage
+      +authGlassCard("adminLoginCard", "max-w-md rounded-3xl p-6 sm:p-8")
+        +authSectionTitle("Admin Login", "", "adminLoginTitle", "text-center", "mt-2 font-headline leading-none text-rose-900 tracking-wide text-3xl sm:text-5xl", "mt-2 text-sm font-semibold text-rose-800", "font-family: 'Finger Paint', cursive")
+        input#adminServerError(type="hidden", value=adminServerError)
 
         #adminLoginFormShell.auth-form-shell.auth-form-loading.mt-5
           .auth-form-skeleton(aria-hidden="true")
@@ -39,7 +31,7 @@ block content
             .auth-skeleton-line.w-24.mt-2
             .auth-skeleton-block.h-11
             .auth-skeleton-block.h-11.mt-3
-          form#adminLoginForm.flex.flex-col.space-y-4(action="/admin/login", method="POST")
+          form#adminLoginForm.flex.flex-col(action="/admin/login", method="POST", class="space-y-1.5")
             +authFieldShell("username", "Username", "space-y-2")
               input#username.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
                 type="text",
@@ -49,6 +41,9 @@ block content
                 autocomplete="username",
                 class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
+              p#adminUsernameError.invisible.min-h-4.text-xs.font-semibold.text-rose-900(
+                aria-hidden="true"
+              )
 
             +authFieldShell("password", "Password", "space-y-2")
               input#password.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950(
@@ -57,12 +52,19 @@ block content
                 placeholder="••••••••",
                 required,
                 autocomplete="current-password",
+                aria-describedby="adminCapsWarning adminPasswordError",
                 class="bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
+              p#adminCapsWarning.hidden.text-xs.font-semibold.text-rose-900(
+                aria-live="polite",
+                aria-hidden="true"
+              ) Caps Lock is on
+              p#adminPasswordError.hidden.text-xs.font-semibold.text-rose-900(aria-hidden="true")
 
-            +appButton("Sign In", "primary", "submit")#adminLoginBtn.mt-1.w-full.py-3(
-              disabled
-            )
+            .flex.justify-center
+              +appButton("Sign In", "primary", "submit")#adminLoginBtn.py-3.px-8.min-w-36(
+                disabled
+              )
 
         .mt-5.flex.justify-center
           a.rounded-lg.border.px-4.py-2.text-sm.font-bold.text-rose-900.transition.bg-transparent(

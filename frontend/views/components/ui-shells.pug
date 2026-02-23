@@ -1,0 +1,32 @@
+mixin authGlassCard(cardId, extraClass)
+  -
+    const baseClass = "w-full rounded-2xl border text-rose-950 shadow-2xl backdrop-blur-2xl font-semibold border-white/40 bg-white/25";
+    const resolvedClass = `${baseClass} ${extraClass || ""}`.trim();
+  section(id=cardId, class=resolvedClass)
+    block
+
+mixin authSectionTitle(titleText, subtitleText, titleId, wrapperClass, titleClass, subtitleClass, titleStyle)
+  -
+    const resolvedWrapperClass = wrapperClass || "mb-6 text-center";
+    const resolvedTitleClass = titleClass || "font-headline leading-none text-rose-900 tracking-wide text-3xl sm:text-5xl";
+    const resolvedSubtitleClass = subtitleClass || "mt-2 text-sm font-semibold text-rose-800";
+  div(class=resolvedWrapperClass)
+    h1(id=titleId, class=resolvedTitleClass, style=titleStyle || "")
+      | #{ titleText }
+    if subtitleText
+      p(class=resolvedSubtitleClass)= subtitleText
+
+mixin authModalHeader(titleText, subtitleText, closeId, titleClass, closeLabel)
+  -
+    const resolvedTitleClass = titleClass || "text-lg font-black text-rose-900";
+    const resolvedCloseLabel = closeLabel || "Close";
+  .mb-2.flex.items-start.justify-between
+    .pr-3
+      h3(class=resolvedTitleClass)= titleText
+      if subtitleText
+        p.mt-1.text-sm.font-semibold.text-rose-800= subtitleText
+    button.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+      id=closeId,
+      type="button",
+      class="hover:bg-fuchsia-100"
+    )= resolvedCloseLabel

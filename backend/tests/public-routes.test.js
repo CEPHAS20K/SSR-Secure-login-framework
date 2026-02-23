@@ -127,6 +127,34 @@ describe("public routes", () => {
     });
   });
 
+  it("accepts frontend RUM metric payloads", async () => {
+    await withTestClient({}, async (client) => {
+      const response = await client.request.post("/api/rum").send({
+        name: "LCP",
+        value: 1890.44,
+        path: "/login",
+        page: "login",
+        connectionType: "4g",
+        timestamp: new Date().toISOString(),
+      });
+
+      expect(response.status).toBe(202);
+      expect(response.body.accepted).toBe(true);
+    });
+  });
+
+  it("rejects invalid RUM metric payloads", async () => {
+    await withTestClient({}, async (client) => {
+      const response = await client.request.post("/api/rum").send({
+        name: "BAD_METRIC",
+        value: "fast",
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBeTypeOf("string");
+    });
+  });
+
   it("serves Swagger UI and raw OpenAPI document", async () => {
     await withTestClient({}, async (client) => {
       await client.request.get("/api-docs").expect(301);

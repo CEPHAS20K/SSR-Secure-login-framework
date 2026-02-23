@@ -20,3 +20,4 @@ npm-debug.log*
 # Test artifacts
 playwright-report/
 test-results/
+.lighthouseci/

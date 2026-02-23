@@ -78,8 +78,9 @@
   }
 
   .bg-auth-svg {
+    --flat-mount-uri: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAwIDkwMCI+PHBhdGggZmlsbD0iI2Y3MCIgZD0iTTAgMGgxNjAwdjkwMEgweiIvPjxwYXRoIGZpbGw9IiNiYTI3NGIiIGQ9Ik05NTcgNDUwIDUzOSA5MDBoODU3eiIvPjxwYXRoIGZpbGw9IiNhNzBhMTYiIGQ9Im05NTcgNDUwLTg0LjEgNDUwSDEzOTZ6Ii8+PHBhdGggZmlsbD0iI2M5MGIzMSIgZD0ibS02MCA5MDAgNDU4LTIzOCA0MTggMjM4eiIvPjxwYXRoIGZpbGw9IiM5ZjFiM2YiIGQ9Im0zMzcgOTAwIDYxLTIzOCA0MTggMjM4eiIvPjxwYXRoIGZpbGw9IiNhMDQ2OTIiIGQ9Im0xMjAzIDU0NiAzNDkgMzU0SDg3NnoiLz48cGF0aCBmaWxsPSIjOWUxYTRkIiBkPSJtMTIwMyA1NDYgMzQ5IDM1NGgtMzkweiIvPjxwYXRoIGZpbGw9IiNiNDI5N2UiIGQ9Im02NDEgNjk1IDI0NSAyMDVIMzY3eiIvPjxwYXRoIGZpbGw9IiM3ZDM0N2IiIGQ9Im01ODcgOTAwIDU0LTIwNSAyNDUgMjA1eiIvPjxwYXRoIGZpbGw9IiNhNjJhOTUiIGQ9Im0xNzEwIDkwMC0zMDktMjY4LTMwNSAyNjh6Ii8+PHBhdGggZmlsbD0iIzk0MDg2ZiIgZD0ibTE3MTAgOTAwLTMwOS0yNjgtMzYgMjY4eiIvPjxwYXRoIGZpbGw9IiM5NTJlYWQiIGQ9Ik0xMjEwIDkwMCA5NzEgNjg3IDcyNSA5MDB6Ii8+PHBhdGggZmlsbD0iIzczMzk5ZSIgZD0iTTk0MyA5MDBoMjY3TDk3MSA2ODd6Ii8+PC9zdmc+");
     background-color: #ff7700;
-    background-image: url("/images/flat-mount.svg");
+    background-image: var(--flat-mount-uri);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
@@ -384,8 +385,49 @@ html[data-theme="dark"] .auth-glass-card textarea {
 }
 
 @layer components {
-  button[type="submit"] {
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
     font-family: "Finger Paint", cursive;
+  }
+
+  .notyf {
+    z-index: 95 !important;
+  }
+
+  .notyf__toast {
+    border-radius: 0.85rem !important;
+    box-shadow: 0 14px 28px rgba(23, 12, 7, 0.22) !important;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    margin-top: 0.35rem;
+  }
+
+  .notyf__wrapper {
+    padding: 0.7rem 0.9rem !important;
+  }
+
+  .notyf__message {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25rem !important;
+    color: #fff !important;
+  }
+
+  .notyf__dismiss-btn {
+    opacity: 0.92 !important;
+    transform: scale(0.92);
+  }
+
+  .notyf__dismiss-btn:hover {
+    opacity: 1 !important;
+  }
+
+  @media (min-width: 640px) {
+    .notyf {
+      margin-top: 3.6rem;
+    }
   }
 
   .theme-toggle-btn {
@@ -438,7 +480,7 @@ html[data-theme="dark"] .auth-glass-card textarea {
       radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.16), transparent 45%),
       radial-gradient(circle at 80% 10%, rgba(132, 204, 22, 0.12), transparent 50%),
       radial-gradient(circle at 55% 75%, rgba(148, 163, 184, 0.16), transparent 55%),
-      url("/images/flat-mount.svg");
+      var(--flat-mount-uri);
     background-blend-mode: screen, screen, screen, normal;
   }
 

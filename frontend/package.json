@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "sync:fonts": "mkdir -p ./public/fonts && cp ./node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2 ./public/fonts/inter-latin-400.woff2 && cp ./node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2 ./public/fonts/inter-latin-600.woff2 && cp ./node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2 ./public/fonts/inter-latin-700.woff2 && cp ./node_modules/@fontsource/bebas-neue/files/bebas-neue-latin-400-normal.woff2 ./public/fonts/bebas-neue-latin-400.woff2 && cp ./node_modules/@fontsource/fira-code/files/fira-code-latin-400-normal.woff2 ./public/fonts/fira-code-latin-400.woff2 && cp ./node_modules/@fontsource/fira-code/files/fira-code-latin-500-normal.woff2 ./public/fonts/fira-code-latin-500.woff2 && cp ./node_modules/@fontsource/finger-paint/files/finger-paint-latin-400-normal.woff2 ./public/fonts/finger-paint-latin-400.woff2 && cp ./node_modules/@fontsource/cabin-sketch/files/cabin-sketch-latin-400-normal.woff2 ./public/fonts/cabin-sketch-latin-400.woff2 && cp ./node_modules/@fontsource/cabin-sketch/files/cabin-sketch-latin-700-normal.woff2 ./public/fonts/cabin-sketch-latin-700.woff2 && cp ./node_modules/@fontsource/schoolbell/files/schoolbell-latin-400-normal.woff2 ./public/fonts/schoolbell-latin-400.woff2",
+    "sync:fonts": "mkdir -p ./public/fonts && cp ./node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2 ./public/fonts/inter-latin-400.woff2",
     "sync:gsap": "mkdir -p ./public/vendor && cp ./node_modules/gsap/dist/gsap.min.js ./public/vendor/gsap.min.js",
-    "predev": "npm run sync:gsap && npm run sync:fonts",
+    "sync:notyf": "mkdir -p ./public/vendor && if [ -f ./node_modules/notyf/notyf.min.js ]; then cp ./node_modules/notyf/notyf.min.js ./public/vendor/notyf.min.js; fi && if [ -f ./node_modules/notyf/notyf.min.css ]; then cp ./node_modules/notyf/notyf.min.css ./public/vendor/notyf.min.css; fi",
+    "predev": "npm run sync:gsap && npm run sync:fonts && npm run sync:notyf",
     "dev": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --watch=always",
-    "prebuild": "npm run sync:gsap && npm run sync:fonts",
+    "prebuild": "npm run sync:gsap && npm run sync:fonts && npm run sync:notyf",
     "build": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --minify",
     "tw:watch": "npm run dev",
     "tw:build": "npm run build",
@@ -25,11 +26,7 @@
     "tailwindcss": "^4.1.18"
   },
   "dependencies": {
-    "@fontsource/bebas-neue": "^5.2.7",
-    "@fontsource/cabin-sketch": "^5.2.8",
-    "@fontsource/finger-paint": "^5.2.8",
-    "@fontsource/fira-code": "^5.2.7",
     "@fontsource/inter": "^5.2.8",
-    "@fontsource/schoolbell": "^5.2.7"
+    "notyf": "^3.10.0"
   }
 }

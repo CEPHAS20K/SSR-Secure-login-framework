@@ -1,22 +1,86 @@
+/* Inter body text */
 @font-face {
   font-family: "Inter";
-  src: url("/fonts/inter-latin-400.woff2") format("woff2");
+  src:
+    local("Inter Regular"),
+    local("Inter-Regular"),
+    url("/fonts/inter-latin-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  src:
+    local("Inter SemiBold"),
+    local("Inter-SemiBold"),
+    url("/fonts/inter-latin-600.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  src:
+    local("Inter Bold"),
+    local("Inter-Bold"),
+    url("/fonts/inter-latin-700.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Decorative fonts used in UI */
+@font-face {
+  font-family: "Schoolbell";
+  src:
+    local("Schoolbell Regular"),
+    local("Schoolbell-Regular"),
+    url("/fonts/schoolbell-latin-400.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Inter";
-  src: url("/fonts/inter-latin-600.woff2") format("woff2");
+  font-family: "Finger Paint";
+  src:
+    local("Finger Paint Regular"),
+    local("FingerPaint-Regular"),
+    url("/fonts/finger-paint-latin-400.woff2") format("woff2");
   font-style: normal;
-  font-weight: 600;
+  font-weight: 400;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Inter";
-  src: url("/fonts/inter-latin-700.woff2") format("woff2");
+  font-family: "Cabin Sketch";
+  src:
+    local("Cabin Sketch Regular"),
+    local("CabinSketch-Regular"),
+    url("/fonts/cabin-sketch-latin-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cabin Sketch";
+  src:
+    local("Cabin Sketch Bold"),
+    local("CabinSketch-Bold"),
+    url("/fonts/cabin-sketch-latin-700.woff2") format("woff2");
   font-style: normal;
   font-weight: 700;
   font-display: swap;
@@ -24,55 +88,10 @@
 
 @font-face {
   font-family: "Bebas Neue";
-  src: url("/fonts/bebas-neue-latin-400.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Fira Code";
-  src: url("/fonts/fira-code-latin-400.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Fira Code";
-  src: url("/fonts/fira-code-latin-500.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Finger Paint";
-  src: url("/fonts/finger-paint-latin-400.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Cabin Sketch";
-  src: url("/fonts/cabin-sketch-latin-400.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Cabin Sketch";
-  src: url("/fonts/cabin-sketch-latin-700.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Schoolbell";
-  src: url("/fonts/schoolbell-latin-400.woff2") format("woff2");
+  src:
+    local("Bebas Neue"),
+    local("BebasNeue-Regular"),
+    url("/fonts/bebas-neue-latin-400.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;

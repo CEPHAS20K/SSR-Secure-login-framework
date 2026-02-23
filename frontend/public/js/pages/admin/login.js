@@ -1,14 +1,20 @@
 import { createApiClient } from "../../lib/api-client.js";
 import { adminLoginSchema } from "../../lib/auth-schemas.js";
+import { getIssueMessageForPath } from "../../lib/auth-form-ux.js";
+import { showToast } from "../../lib/toast.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("adminLoginForm");
   const usernameInput = document.getElementById("username");
   const passwordInput = document.getElementById("password");
   const submitButton = document.getElementById("adminLoginBtn");
-  const flashNode = document.getElementById("adminFlash");
+  const usernameError = document.getElementById("adminUsernameError");
+  const passwordError = document.getElementById("adminPasswordError");
+  const capsWarning = document.getElementById("adminCapsWarning");
+  const serverErrorInput = document.getElementById("adminServerError");
   const formShell = document.getElementById("adminLoginFormShell");
   const FORM_SKELETON_MIN_MS = 220;
+  const touched = new Set();
 
   if (!form || !usernameInput || !passwordInput || !submitButton) return;
 
@@ -20,6 +26,20 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   });
 
+  const notify = (message, tone = "info", title = "Admin") => {
+    if (!message) return;
+    showToast(message, { tone, title });
+  };
+
+  const setFieldState = (input, errorNode, message) => {
+    if (!input || !errorNode) return;
+    const hasError = Boolean(message);
+    input.setAttribute("aria-invalid", hasError ? "true" : "false");
+    errorNode.textContent = message || "";
+    errorNode.classList.toggle("hidden", !hasError);
+    errorNode.setAttribute("aria-hidden", hasError ? "false" : "true");
+  };
+
   const revealForm = () => {
     if (!formShell) return;
     window.setTimeout(() => {
@@ -29,36 +49,69 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   revealForm();
 
-  const setFlash = (message, tone = "info") => {
-    if (!flashNode) return;
-    if (!message) {
-      flashNode.textContent = "";
-      return;
-    }
-    const tones = {
-      info: "mt-4 rounded-xl border border-fuchsia-200 bg-fuchsia-100/90 p-3 text-sm font-semibold text-fuchsia-900",
-      error:
-        "mt-4 rounded-xl border border-rose-300 bg-rose-100/90 p-3 text-sm font-semibold text-rose-900",
-      success:
-        "mt-4 rounded-xl border border-emerald-300 bg-emerald-100/90 p-3 text-sm font-semibold text-emerald-900",
-    };
-    flashNode.className = tones[tone] || tones.info;
-    flashNode.textContent = message;
+  const shouldShowError = (fieldName, inputNode, showAll) => {
+    if (showAll) return true;
+    if (touched.has(fieldName)) return true;
+    return Boolean(String(inputNode?.value || "").trim());
   };
 
-  const updateButtonState = () => {
+  const updateButtonState = (options = {}) => {
+    const showErrors = Boolean(options.showErrors);
     const parse = adminLoginSchema.safeParse({
       username: usernameInput.value.trim(),
       password: passwordInput.value,
     });
     submitButton.disabled = !parse.success;
+
+    const usernameMessage = shouldShowError("username", usernameInput, showErrors)
+      ? getIssueMessageForPath(parse, "username")
+      : "";
+    const passwordMessage = shouldShowError("password", passwordInput, showErrors)
+      ? getIssueMessageForPath(parse, "password")
+      : "";
+
+    setFieldState(usernameInput, usernameError, usernameMessage);
+    setFieldState(passwordInput, passwordError, passwordMessage);
   };
 
-  usernameInput.addEventListener("input", updateButtonState);
-  passwordInput.addEventListener("input", updateButtonState);
-  usernameInput.addEventListener("change", updateButtonState);
-  passwordInput.addEventListener("change", updateButtonState);
+  const updateCapsWarning = (event) => {
+    if (!capsWarning || typeof event?.getModifierState !== "function") return;
+    const active = Boolean(event.getModifierState("CapsLock"));
+    capsWarning.classList.toggle("hidden", !active);
+    capsWarning.setAttribute("aria-hidden", active ? "false" : "true");
+  };
+
+  const hideCapsWarning = () => {
+    if (!capsWarning) return;
+    capsWarning.classList.add("hidden");
+    capsWarning.setAttribute("aria-hidden", "true");
+  };
+  passwordInput.addEventListener("keydown", updateCapsWarning);
+  passwordInput.addEventListener("keyup", updateCapsWarning);
+  passwordInput.addEventListener("blur", hideCapsWarning);
+
+  usernameInput.addEventListener("input", () => {
+    touched.add("username");
+    updateButtonState();
+  });
+  passwordInput.addEventListener("input", () => {
+    touched.add("password");
+    updateButtonState();
+  });
+  usernameInput.addEventListener("blur", () => {
+    touched.add("username");
+    updateButtonState();
+  });
+  passwordInput.addEventListener("blur", () => {
+    touched.add("password");
+    updateButtonState();
+  });
   updateButtonState();
+
+  const serverErrorMessage = String(serverErrorInput?.value || "").trim();
+  if (serverErrorMessage) {
+    notify(serverErrorMessage, "error", "Admin login");
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -67,14 +120,14 @@ document.addEventListener("DOMContentLoaded", () => {
       password: passwordInput.value,
     });
     if (!parse.success) {
-      setFlash(parse.error?.issues?.[0]?.message || "Enter both username and password.", "error");
+      updateButtonState({ showErrors: true });
+      notify(parse.error?.issues?.[0]?.message || "Enter both username and password.", "error");
       return;
     }
 
     submitButton.disabled = true;
     const originalText = submitButton.textContent;
     submitButton.textContent = "Checking...";
-    setFlash("", "info");
 
     try {
       await apiClient.request("/health", {
@@ -83,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       form.submit();
     } catch (error) {
-      setFlash(error.message || "Unable to verify admin endpoint right now.", "error");
+      notify(error.message || "Unable to verify admin endpoint right now.", "error", "Admin login");
       submitButton.textContent = originalText;
       updateButtonState();
     }

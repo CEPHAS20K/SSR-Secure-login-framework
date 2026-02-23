@@ -155,6 +155,14 @@ npm run setup
 npm run dev
 ```
 
+## Important Notes
+
+- Do not commit secrets: keep `backend/.env.dev` and `backend/.env.proc` local/server-only.
+- `frontend/public/css/output.css` is generated. Edit `frontend/public/css/input.css` and run `npm run build:frontend`.
+- Frontend RUM is enabled by default: `frontend/public/js/web-vitals-rum.js` sends `LCP`, `CLS`, `INP`, `FIELD_ACTIVE_MS` to `POST /api/rum`.
+- Admin exposure is controlled server-side: use `ADMIN_ENABLED`, `ADMIN_INTERNAL_ONLY`, and `ADMIN_ALLOW_IPS` in env.
+- Static assets are versioned via `assetPath(...)?v=...`; bump `ASSET_VERSION` (or `APP_VERSION`) on deploy to force fresh client assets.
+
 ## Main Commands
 
 - `npm run setup`: install root, backend, and frontend dependencies.
@@ -244,6 +252,7 @@ CI fails when performance or bundle-size budgets regress.
   - `app`
   - `version`
   - `assetVersion`
+- `POST /api/rum` accepts frontend Web Vitals + field activity metrics (`LCP`, `CLS`, `INP`, `FIELD_ACTIVE_MS`) for structured logging.
 - `GET /api-docs` serves Swagger UI API documentation.
 - `GET /api-docs.json` serves the raw OpenAPI JSON document.
 

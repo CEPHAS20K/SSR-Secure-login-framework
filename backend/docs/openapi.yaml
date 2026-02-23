@@ -94,6 +94,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthNotConfiguredResponse'
+  /api/rum:
+    post:
+      tags: [System]
+      summary: Ingest frontend web-vitals metric
+      description: Receives browser RUM metrics (LCP, CLS, INP, FIELD_ACTIVE_MS) for logging and diagnostics.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RumMetricRequest'
+      responses:
+        '202':
+          description: Metric accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted]
+                properties:
+                  accepted:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /admin/login:
     get:
       tags: [Admin]
@@ -192,6 +221,34 @@ components:
           type: string
           enum: [male, female, other]
           example: male
+    RumMetricRequest:
+      type: object
+      required: [name, value, path, timestamp]
+      properties:
+        name:
+          type: string
+          enum: [LCP, CLS, INP, FIELD_ACTIVE_MS]
+          example: LCP
+        value:
+          type: number
+          minimum: 0
+          example: 1842.42
+        path:
+          type: string
+          example: /login
+        page:
+          type: string
+          example: login
+        connectionType:
+          type: string
+          example: 4g
+        fieldName:
+          type: string
+          example: password
+        timestamp:
+          type: string
+          format: date-time
+          example: 2026-02-23T06:10:00.000Z
     ErrorResponse:
       type: object
       required: [error]

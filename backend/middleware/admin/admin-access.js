@@ -45,7 +45,7 @@ function createAdminInternalAccessGuard(options = {}) {
     }
 
     if (req.accepts("html")) {
-      res.status(404).render("404", { title: "404 Not Found", page: "error" });
+      res.status(404).render("errors/404", { title: "404 Not Found", page: "error" });
       return;
     }
     if (req.accepts("json")) {
