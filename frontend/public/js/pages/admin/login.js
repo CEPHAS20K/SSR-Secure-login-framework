@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const submitButton = document.getElementById("adminLoginBtn");
   const flashNode = document.getElementById("adminFlash");
   const formShell = document.getElementById("adminLoginFormShell");
-  const FORM_SKELETON_MIN_MS = 800;
+  const FORM_SKELETON_MIN_MS = 220;
 
   if (!form || !usernameInput || !passwordInput || !submitButton) return;
 

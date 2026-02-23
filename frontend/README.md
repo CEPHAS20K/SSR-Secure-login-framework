@@ -26,3 +26,15 @@ npm run demo:video
 Output directory:
 
 - `../artifacts/demo-videos/`
+
+Speed controls:
+
+```bash
+DEMO_SPEED_MULTIPLIER=2.2 npm run demo:video
+DEMO_SPEED_MULTIPLIER=1.2 npm run demo:video
+```
+
+Notes:
+
+- Default speed is `1.6`.
+- Install ffmpeg for MP4 export: `sudo apt update && sudo apt install -y ffmpeg`

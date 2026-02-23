@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.documentElement.clientWidth || 0
     );
     const transitionTimeline = gsap
-      .timeline({ defaults: { ease: "power3.inOut" }, onComplete: navigate })
+      .timeline({ defaults: { ease: "power1.out" }, onComplete: navigate })
       .set(pageOverlay, {
         visibility: "visible",
         autoAlpha: 1,
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
         {
           autoAlpha: 1,
           x: Math.max(viewportWidth - 2, 0),
-          duration: 0.34,
+          duration: 0.16,
         },
         0
       );
@@ -82,12 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
         pageOverlay,
         {
           clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-          duration: 0.34,
+          duration: 0.16,
         },
         0
       )
-      .to(authView, { y: -6, scale: 0.996, autoAlpha: 0.96, duration: 0.34 }, 0)
-      .to(navbar, { y: -4, autoAlpha: 0.94, duration: 0.34 }, 0);
+      .to(authView, { autoAlpha: 0.985, duration: 0.16 }, 0)
+      .to(navbar, { autoAlpha: 0.96, duration: 0.16 }, 0);
   };
 
   transitionLinks.forEach((link) => {

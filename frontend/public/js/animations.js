@@ -26,12 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const transitionTimeline = gsap
-        .timeline({ defaults: { ease: "power3.inOut" } })
+        .timeline({ defaults: { ease: "power1.out" } })
         .to(
           pageOverlay,
           {
             clipPath: "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)",
-            duration: 0.34,
+            duration: 0.16,
           },
           0
         )
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
             {
               x: viewportWidth + 18,
               autoAlpha: 0,
-              duration: 0.34,
+              duration: 0.16,
             },
             0
           )
@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (document.querySelector("#loginCard")) {
     const targets = ["#loginCard", "#loginTitle", ".login-field", "#loginBtn"];
-    gsap.set(targets, { autoAlpha: 0, y: fromNavTransition ? 28 : 18 });
+    gsap.set(targets, { autoAlpha: 0, y: fromNavTransition ? 10 : 14 });
 
     gsap
       .timeline({ defaults: { ease: "power3.out" } })
@@ -75,11 +75,20 @@ document.addEventListener("DOMContentLoaded", () => {
         autoAlpha: 1,
         y: 0,
         scale: 1,
-        duration: fromNavTransition ? 0.38 : 0.3,
+        duration: fromNavTransition ? 0.16 : 0.24,
       })
-      .to("#loginTitle", { autoAlpha: 1, y: 0, duration: 0.24 }, "-=0.15")
-      .to(".login-field", { autoAlpha: 1, y: 0, duration: 0.24, stagger: 0.05 }, "-=0.1")
-      .to("#loginBtn", { autoAlpha: 1, y: 0, duration: 0.2 }, "-=0.08");
+      .to("#loginTitle", { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.14 : 0.2 }, "-=0.08")
+      .to(
+        ".login-field",
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: fromNavTransition ? 0.12 : 0.2,
+          stagger: fromNavTransition ? 0.02 : 0.04,
+        },
+        "-=0.06"
+      )
+      .to("#loginBtn", { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.1 : 0.16 }, "-=0.06");
     return;
   }
 
@@ -89,13 +98,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     gsap.set(card, {
       autoAlpha: 0,
-      y: fromNavTransition ? 54 : 30,
-      rotateX: fromNavTransition ? 12 : 6,
+      y: fromNavTransition ? 20 : 24,
+      rotateX: fromNavTransition ? 4 : 5,
       transformOrigin: "50% 100%",
     });
-    gsap.set("#registerTitle", { autoAlpha: 0, y: 18 });
-    gsap.set(fields, { autoAlpha: 0, x: (index) => (index % 2 === 0 ? -20 : 20) });
-    gsap.set("#registerBtn", { autoAlpha: 0, y: 12 });
+    gsap.set("#registerTitle", { autoAlpha: 0, y: fromNavTransition ? 8 : 14 });
+    gsap.set(fields, {
+      autoAlpha: 0,
+      x: (index) => (index % 2 === 0 ? (fromNavTransition ? -8 : -16) : fromNavTransition ? 8 : 16),
+    });
+    gsap.set("#registerBtn", { autoAlpha: 0, y: fromNavTransition ? 6 : 10 });
 
     gsap
       .timeline({ defaults: { ease: "power3.out" } })
@@ -103,11 +115,28 @@ document.addEventListener("DOMContentLoaded", () => {
         autoAlpha: 1,
         y: 0,
         rotateX: 0,
-        duration: fromNavTransition ? 0.45 : 0.34,
+        duration: fromNavTransition ? 0.18 : 0.28,
       })
-      .to("#registerTitle", { autoAlpha: 1, y: 0, duration: 0.22 }, "-=0.24")
-      .to(fields, { autoAlpha: 1, x: 0, duration: 0.24, stagger: 0.05 }, "-=0.12")
-      .to("#registerBtn", { autoAlpha: 1, y: 0, duration: 0.18 }, "-=0.1");
+      .to(
+        "#registerTitle",
+        { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.12 : 0.18 },
+        "-=0.1"
+      )
+      .to(
+        fields,
+        {
+          autoAlpha: 1,
+          x: 0,
+          duration: fromNavTransition ? 0.12 : 0.2,
+          stagger: fromNavTransition ? 0.02 : 0.04,
+        },
+        "-=0.08"
+      )
+      .to(
+        "#registerBtn",
+        { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.1 : 0.14 },
+        "-=0.06"
+      );
     return;
   }
 

@@ -165,7 +165,14 @@ npm run dev
 - `npm run start`: start backend in development mode.
 - `npm run start:proc`: build frontend + start backend in production mode.
 - `npm run demo:video`: auto-record a walkthrough video (landing/login/register/admin) to `artifacts/demo-videos/`.
+- `DEMO_SPEED_MULTIPLIER=2.2 npm run demo:video`: slower walkthrough recording.
+- `DEMO_SPEED_MULTIPLIER=1.2 npm run demo:video`: faster walkthrough recording.
 - `npm run docs:generate-uml`: regenerate `docs/architecture.md` and the README UML section.
+
+Demo video notes:
+
+- Default speed is `DEMO_SPEED_MULTIPLIER=1.6`.
+- Install ffmpeg for automatic MP4 output: `sudo apt update && sudo apt install -y ffmpeg`
 
 ## Testing
 
@@ -174,7 +181,7 @@ npm run dev
 - `npm run test`: runs API + E2E tests.
 - `npm run test:all`: runs API + E2E + bundle budget + Lighthouse checks.
 - `npm run lint`: frontend JavaScript lint checks.
-- `npm run optimize:svg`: minify landing/auth SVG assets (`land.svg`, `up.svg`, `off.svg`).
+- `npm run optimize:svg`: run SVGO (`--multipass`) on all files in `frontend/public/images` using `svgo.config.js`.
 
 ### Testing Guide For Next Developer
 

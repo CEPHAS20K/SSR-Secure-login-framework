@@ -248,6 +248,9 @@
   .pointer-events-none {
     pointer-events: none;
   }
+  .invisible {
+    visibility: hidden;
+  }
   .visible {
     visibility: visible;
   }
@@ -381,6 +384,9 @@
   }
   .z-\[81\] {
     z-index: 81;
+  }
+  .m-60 {
+    margin: calc(var(--spacing) * 60);
   }
   .mx-auto {
     margin-inline: auto;
@@ -1225,6 +1231,9 @@
     font-size: var(--text-xs);
     line-height: var(--tw-leading, var(--text-xs--line-height));
   }
+  .text-\[10px\] {
+    font-size: 10px;
+  }
   .text-\[11px\] {
     font-size: 11px;
   }
@@ -1316,6 +1325,12 @@
   }
   .text-rose-900 {
     color: var(--color-rose-900);
+  }
+  .text-rose-900\/80 {
+    color: color-mix(in srgb, oklch(41% 0.159 10.272) 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-rose-900) 80%, transparent);
+    }
   }
   .text-rose-900\/90 {
     color: color-mix(in srgb, oklch(41% 0.159 10.272) 90%, transparent);

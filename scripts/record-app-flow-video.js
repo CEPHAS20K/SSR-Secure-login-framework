@@ -17,9 +17,11 @@ const HEALTH_URL = `${BASE_URL}/health`;
 const STARTUP_TIMEOUT_MS = Number.parseInt(process.env.DEMO_STARTUP_TIMEOUT_MS || "90000", 10);
 const HEADED = process.env.DEMO_HEADED === "1";
 const ROOT_DIR = path.resolve(__dirname, "..");
+const DEMO_SPEED_MULTIPLIER = resolvePositiveFloat(process.env.DEMO_SPEED_MULTIPLIER, 1.6);
 
 async function main() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  process.stdout.write(`[demo-video] speed multiplier: ${DEMO_SPEED_MULTIPLIER}x\n`);
 
   const server = await ensureServer();
   try {
@@ -139,55 +141,55 @@ async function recordVideo() {
 
 async function walkthrough(page) {
   await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
-  await sleep(1200);
+  await pause(1200);
 
   await page.locator('a[href="/login"]').first().click();
   await page.waitForURL("**/login");
-  await sleep(800);
+  await pause(800);
 
   await page.fill("#email", "demo.user@example.com");
-  await sleep(250);
+  await pause(250);
   await page.fill("#password", "StrongPass123!");
-  await sleep(250);
+  await pause(250);
   await page.click("#forgotPasswordLink");
-  await page.waitForTimeout(400);
+  await pause(400);
   await page.fill("#resetEmail", "demo.user@example.com");
   await page.fill("#resetNewPassword", "StrongPass123!");
   await page.fill("#resetConfirmPassword", "StrongPass123!");
-  await sleep(600);
+  await pause(600);
   await page.click("#resetClose");
-  await sleep(600);
+  await pause(600);
 
   await page.click("#loginBtn");
   await page.waitForSelector("#otpModal", { state: "visible" });
-  await sleep(600);
+  await pause(600);
   await page.fill("#otpInput", "12345");
-  await sleep(600);
+  await pause(600);
   await page.click("#otpClose");
-  await sleep(600);
+  await pause(600);
 
   await page.goto(`${BASE_URL}/register`, { waitUntil: "networkidle" });
-  await sleep(800);
+  await pause(800);
   await page.fill("#username", "demo-user");
   await page.fill("#regEmail", "demo-user@example.com");
   await page.fill("#regPassword", "StrongPass123!");
   await page.fill("#regPasswordConfirm", "StrongPass123!");
   await page.selectOption("#gender", "male");
   await page.check("#agreeTerms");
-  await sleep(700);
+  await pause(700);
   await page.click("#registerBtn");
   await page.waitForSelector("#registerOtpModal", { state: "visible" });
-  await sleep(700);
+  await pause(700);
   await page.fill("#registerOtpInput", "12345");
-  await sleep(500);
+  await pause(500);
   await page.click("#registerOtpClose");
-  await sleep(600);
+  await pause(600);
 
   await page.goto(`${BASE_URL}/admin/login`, { waitUntil: "networkidle" });
-  await sleep(800);
+  await pause(800);
   await page.fill("#username", "admin");
   await page.fill("#password", "admin-pass");
-  await sleep(900);
+  await pause(900);
 }
 
 async function isHealthy() {
@@ -215,6 +217,16 @@ async function stopServer(child) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pause(ms) {
+  return sleep(Math.max(0, Math.round(ms * DEMO_SPEED_MULTIPLIER)));
+}
+
+function resolvePositiveFloat(value, fallback) {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
 }
 
 function ensureWebmOutputPath(filePath) {

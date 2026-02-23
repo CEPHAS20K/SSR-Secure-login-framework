@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resendOtp = document.getElementById("registerResendOtp");
   const otpClose = document.getElementById("registerOtpClose");
   const formShell = document.getElementById("registerFormShell");
-  const FORM_SKELETON_MIN_MS = 800;
+  const FORM_SKELETON_MIN_MS = 220;
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   let secondsLeft = OTP_COUNTDOWN_SECONDS;
   let timer = null;
@@ -91,7 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
       regPasswordConfirm.value.length > 0 && regPassword.value !== regPasswordConfirm.value;
     regPasswordConfirm.setCustomValidity(mismatch ? "Passwords must match." : "");
     if (passwordMismatch) {
-      passwordMismatch.classList.toggle("hidden", !mismatch);
+      passwordMismatch.classList.toggle("invisible", !mismatch);
+      passwordMismatch.setAttribute("aria-hidden", mismatch ? "false" : "true");
     }
 
     const matchInputClasses = ["border-rose-200", "focus:border-primary", "focus:ring-primary"];

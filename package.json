@@ -26,7 +26,7 @@
     "check:bundle-size": "node ./scripts/check-bundle-size.js",
     "demo:video": "node ./scripts/record-app-flow-video.js",
     "docs:generate-uml": "node ./scripts/generate-architecture-diagrams.js",
-    "optimize:svg": "node ./scripts/minify-svg.js frontend/public/images/land.svg frontend/public/images/up.svg frontend/public/images/off.svg",
+    "optimize:svg": "svgo --config=./svgo.config.js --multipass -rf ./frontend/public/images",
     "check": "npm run format:check && npm run lint && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -44,6 +44,7 @@
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "svgo": "^4.0.0"
   }
 }
