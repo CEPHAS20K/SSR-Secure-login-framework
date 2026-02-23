@@ -8,7 +8,6 @@ npm-debug.log*
 .env.local
 .env.*
 !backend/.env.dev
-!backend/.env.proc
 
 # Editor/OS
 .DS_Store
@@ -20,4 +19,3 @@ npm-debug.log*
 # Test artifacts
 playwright-report/
 test-results/
-.lighthouseci/
