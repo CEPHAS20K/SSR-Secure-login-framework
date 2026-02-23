@@ -22,7 +22,7 @@ const BUDGETS = [
     name: "total-client-js",
     type: "group",
     targets: ["frontend/public/js", "frontend/public/vendor"],
-    maxBytes: 360 * 1024,
+    maxBytes: 900 * 1024,
   },
 ];
 

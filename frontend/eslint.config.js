@@ -5,7 +5,6 @@ module.exports = [
       "public/js/errors/**",
       "public/js/sw-register.js",
       "public/sw.js",
-      "public/js/lib/axios.min.js",
     ],
   },
   {

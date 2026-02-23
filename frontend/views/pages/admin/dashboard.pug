@@ -634,5 +634,4 @@ block content
       )
 
   script#adminInitialData(type="application/json") !{ JSON.stringify(dashboardData || {}) }
-  script(src=assetPath("/vendor/axios.min.js"), defer)
   script(src=assetPath("/js/pages/admin/dashboard.js"), type="module")
