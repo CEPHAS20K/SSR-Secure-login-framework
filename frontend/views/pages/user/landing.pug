@@ -25,37 +25,43 @@ block content
         class="min-h-[82dvh] md:grid-cols-[1.1fr_0.9fr] md:px-6 sm:pt-32"
       )
         .space-y-4
-          p#hero-note.inline-flex.items-center.rounded-full.border.px-3.py-1.text-xs.font-bold.uppercase.text-rose-800(
-            class="tracking-[0.16em] border-white/45 bg-white/45"
+          p#hero-note.inline-flex.items-center.rounded-full.border.px-3.py-1.text-s.font-bold.uppercase.text-rose-890(
+            class="tracking-[0.16em] border-white/45 bg-white/45",
+            style="font-family: 'Schoolbell', cursive"
           ) Zero-Knowledge Encrypted Vault
           h1#hero-title.font-headline.text-4xl.leading-none(class="sm:text-5xl")
             span.font-mono.tracking-normal.font-black(
               data-typing-line="0",
               class="text-[#ff7700]",
-              style="font-family: 'Cabin Sketch', cursive"
+              style="font-family: 'Finger Paint', cursive"
             ) Designed to ensure,
             br
             span.font-mono.tracking-normal.font-black(
               data-typing-line="1",
               class="text-[#ff7700]",
-              style="font-family: 'Cabin Sketch', cursive"
+              style="font-family: 'Finger Paint', cursive"
             ) Complete privacy
             span#heroTitleCaret.inline-block.align-top.opacity-75.font-mono.font-black(
               class="text-[#ff7700]",
-              style="font-family: 'Cabin Sketch', cursive"
+              style="font-family: 'Finger Paint', cursive"
             ) 
-          p#hero-copy.max-w-xl.text-base.font-semibold(class="text-rose-900/90")
+          p#hero-copy.max-w-xl.text-base.font-semibold.text-3xl(
+            class="text-rose-900/90",
+            style="font-family: 'Schoolbell', cursive"
+          )
             | A secure, end-to-end encrypted vault that allows users to safely store and protect their personal information.
           .flex.flex-wrap.gap-3
-            a.rounded-xl.bg-primary.px-5.py-2.text-sm.font-bold.text-white.transition(
+            a.rounded-xl.bg-primary.px-5.py-2.text-l.font-bold.text-white.transition(
               data-nav-link="cta-login",
               href="/login",
-              class="hover:bg-secondary"
+              class="hover:bg-secondary",
+              style="font-family: 'Schoolbell', cursive"
             ) Get Started
-            a.rounded-xl.border.px-5.py-2.text-sm.font-bold.text-rose-900.transition(
+            a.rounded-xl.border.px-5.py-2.text-l.font-bold.text-rose-900.transition(
               data-nav-link="cta-admin",
               href="/admin/login",
-              class="border-white/45 bg-white/55 hover:bg-white/75"
+              class="border-white/45 bg-white/55 hover:bg-white/75",
+              style="font-family: 'Schoolbell', cursive"
             ) Admin Login
         #landingHeroVisual.relative.overflow-hidden.rounded-3xl.bg-transparent.h-96(class="sm:h-112")
           img#landingHeroSvg.relative.z-10.h-full.w-full.object-contain.landing-svg-float.opacity-72.mix-blend-normal.brightness-110.saturate-125.contrast-110(
@@ -70,7 +76,7 @@ block content
           )
       section#heroCta.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.pb-6(class="md:px-6")
         .grid.items-center.gap-8(class="md:grid-cols-[1.1fr_0.9fr] md:gap-12")
-          .flex.w-full.items-center.justify-center(class="md:justify-end")
+          .flex.w-full.items-center.justify-center(class="md:justify-center")
             img#heroCtaSvg.up-svg-float.h-auto.w-full.object-contain.max-w-2xl(
               src=assetPath("/images/up.svg"),
               alt="Secure access illustration",
@@ -90,15 +96,17 @@ block content
               style="font-family: 'Cabin Sketch', cursive"
             ) A zero-trust, end-to-end encrypted personal vault built to securely store sensitive data with full user ownership.
             .mt-5.flex.flex-wrap.justify-center.gap-3
-              a.rounded-xl.bg-primary.px-5.py-2.text-sm.font-bold.text-white.transition(
+              a.rounded-xl.bg-primary.px-5.py-2.text-l.font-bold.text-white.transition(
                 data-nav-link="footer-login",
                 href="/login",
-                class="hover:bg-secondary"
+                class="hover:bg-secondary",
+                style="font-family: 'Schoolbell', cursive"
               ) Open User Login
-              a.rounded-xl.border.px-5.py-2.text-sm.font-bold.text-rose-900.transition(
+              a.rounded-xl.border.px-5.py-2.text-l.font-bold.text-rose-900.transition(
                 data-nav-link="footer-register",
                 href="/register",
-                class="border-white/45 bg-white/60 hover:bg-white/80"
+                class="border-white/45 bg-white/60 hover:bg-white/80",
+                style="font-family: 'Schoolbell', cursive"
               ) Create Account
 
       +appFooter
