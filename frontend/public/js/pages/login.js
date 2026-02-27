@@ -75,9 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const apiClient = createApiClient({
     retries: 1,
     timeoutMs: 5500,
-    onUnauthorized: () => {
-      window.location.href = "/login";
-    },
+    onUnauthorized: () => {},
   });
 
   const otpFocusTrap = createModalFocusTrap(modal, {
