@@ -179,9 +179,14 @@ function createPublicController(options = {}) {
           return;
         }
 
-        const risk = await computeRiskScore(client, user.id, ip, fingerprint);
-        const requiresWebAuthn = risk.score >= 85;
-        const requiresOtp = risk.score >= 55;
+        const risk = await assessRisk({
+          client,
+          userId: user.id,
+          ip,
+          fingerprint,
+          headers: req.headers || {},
+        });
+        const { requiresOtp, requiresWebAuthn } = risk;
 
         if (!requiresOtp && !requiresWebAuthn) {
           const sessionToken = await issueSession(client, user.id, fingerprint);
@@ -448,45 +453,6 @@ function createPublicController(options = {}) {
     res.status(501).json({ error: "WebAuthn login not implemented yet." });
   }
 
-  async function computeRiskScore(client, userId, ip, fingerprint) {
-    let score = 30;
-    const reasons = [];
-
-    const failures = await client.query(
-      `SELECT COUNT(*)::int AS failures FROM login_attempts WHERE user_id=$1 AND success=false AND created_at > now() - interval '1 hour'`,
-      [userId]
-    );
-    const failureCount = failures.rows[0]?.failures || 0;
-    if (failureCount > 0) {
-      const add = Math.min(40, failureCount * 10);
-      score += add;
-      reasons.push(`Recent failed logins: +${add}`);
-    }
-
-    const trustedRow = fingerprint
-      ? await client.query(
-          `SELECT trusted FROM trusted_devices WHERE user_id=$1 AND fingerprint=$2`,
-          [userId, fingerprint]
-        )
-      : { rowCount: 0 };
-    const trustedDevice = trustedRow.rowCount > 0 && trustedRow.rows[0].trusted === true;
-    if (!trustedDevice) {
-      score += 15;
-      reasons.push("Untrusted device: +15");
-    }
-
-    if (ip) {
-      const ipChange = await client.query(`SELECT last_login_ip FROM users WHERE id=$1`, [userId]);
-      const lastIp = ipChange.rows[0]?.last_login_ip;
-      if (lastIp && String(lastIp) !== String(ip)) {
-        score += 10;
-        reasons.push("IP change: +10");
-      }
-    }
-
-    return { score: Math.min(score, 100), reasons, trustedDevice };
-  }
-
   async function issueSession(client, userId, fingerprint) {
     const token = crypto.randomBytes(32).toString("base64url");
     const expires = new Date(Date.now() + SESSION_TTL_MS);
@@ -499,7 +465,7 @@ function createPublicController(options = {}) {
     );
     await client.query(`UPDATE users SET last_login=now(), last_login_ip=$2 WHERE id=$1`, [
       userId,
-      fingerprint || null,
+      null,
     ]);
     return token;
   }
