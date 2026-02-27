@@ -2,6 +2,7 @@
 
 const { z } = require("zod");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const { pool } = require("../../database/pool");
 const { redis } = require("../../services/redis-client");
 const { sendOtpEmail } = require("../../services/mailer");
@@ -116,7 +117,9 @@ const rumMetricSchema = z.object({
 
 function createPublicController(options = {}) {
   const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
-  const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+  const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
 
   function renderLanding(req, res) {
     res.render("pages/user/landing", {
@@ -145,22 +148,90 @@ function createPublicController(options = {}) {
   }
 
   function login(req, res) {
-    const parsedPayload = loginPayloadSchema.safeParse(req.body || {});
-    if (!parsedPayload.success) {
-      const firstIssue = parsedPayload.error.issues[0];
-      res.status(400).json({ error: firstIssue?.message || "Invalid login payload." });
-      return;
-    }
+    (async () => {
+      const parsedPayload = loginPayloadSchema.safeParse(req.body || {});
+      if (!parsedPayload.success) {
+        const firstIssue = parsedPayload.error.issues[0];
+        res.status(400).json({ error: firstIssue?.message || "Invalid login payload." });
+        return;
+      }
 
-    const { email } = parsedPayload.data;
-    if (typeof logger.warn === "function") {
-      logger.warn(
-        { route: "/auth/login", email },
-        "Login attempted but auth backend is not configured"
-      );
-    }
+      const client = await pool.connect();
+      const ip = req.ip || req.socket?.remoteAddress || null;
+      const fingerprint = req.body?.fingerprint || null;
+      try {
+        const userQuery = await client.query(
+          `SELECT id, password_hash, last_login_ip FROM users WHERE lower(email)=lower($1)`,
+          [parsedPayload.data.email]
+        );
+        if (userQuery.rowCount === 0) {
+          res.status(401).json({ error: "Invalid credentials." });
+          return;
+        }
+        const user = userQuery.rows[0];
+        const passwordOk = await bcrypt.compare(parsedPayload.data.password, user.password_hash);
+        await client.query(
+          `INSERT INTO login_attempts (user_id, ip, success, created_at) VALUES ($1,$2,$3,now())`,
+          [user.id, ip, passwordOk]
+        );
+        if (!passwordOk) {
+          res.status(401).json({ error: "Invalid credentials." });
+          return;
+        }
 
-    res.status(501).json(authNotConfiguredResponse);
+        const risk = await computeRiskScore(client, user.id, ip, fingerprint);
+        const requiresWebAuthn = risk.score >= 85;
+        const requiresOtp = risk.score >= 55;
+
+        if (!requiresOtp && !requiresWebAuthn) {
+          const sessionToken = await issueSession(client, user.id, fingerprint);
+          res.status(200).json({
+            sessionToken,
+            userId: user.id,
+            risk: risk.score,
+            trusted: risk.trustedDevice,
+          });
+          return;
+        }
+
+        if (requiresOtp) {
+          const { otp, otpHash, expiresAt } = await generateOtp();
+          await client.query(
+            `
+            INSERT INTO otp_tokens (user_id, otp_hash, expires_at)
+            VALUES ($1,$2,$3)
+            ON CONFLICT (user_id) DO UPDATE
+              SET otp_hash=EXCLUDED.otp_hash, expires_at=EXCLUDED.expires_at, created_at=now()
+          `,
+            [user.id, otpHash, expiresAt]
+          );
+          try {
+            await redis.setex(`otp:user:${user.id}`, Math.floor(OTP_TTL_MS / 1000), otpHash);
+          } catch (error) {
+            logger.warn({ err: error }, "Failed to cache OTP in redis");
+          }
+          try {
+            await sendOtpEmail(parsedPayload.data.email, otp);
+          } catch (error) {
+            logger.warn({ err: error }, "Failed to send OTP email");
+            logger.info({ email: parsedPayload.data.email, otp }, "Dev OTP (email fallback)");
+          }
+        }
+
+        res.status(200).json({
+          userId: user.id,
+          requiresOtp,
+          requiresWebAuthn,
+          risk: risk.score,
+          reasons: risk.reasons,
+        });
+      } catch (error) {
+        logger.error({ err: error }, "Login failed");
+        res.status(500).json({ error: "Login failed. Try again." });
+      } finally {
+        client.release();
+      }
+    })();
   }
 
   function register(req, res) {
@@ -179,7 +250,6 @@ function createPublicController(options = {}) {
       }
 
       const client = await pool.connect();
-      const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
 
       try {
         const existing = await client.query(
@@ -300,12 +370,158 @@ function createPublicController(options = {}) {
     res.status(202).json({ accepted: true });
   }
 
+  async function verifyOtp(req, res) {
+    const userId = String(req.body?.userId || "").trim();
+    const otp = String(req.body?.otp || "").trim();
+    const fingerprint = req.body?.fingerprint || null;
+    const trustDevice = Boolean(req.body?.trustDevice);
+    if (!userId || !otp) {
+      res.status(400).json({ error: "userId and otp are required." });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      const otpHash =
+        (await redis.get(`otp:user:${userId}`)) ||
+        (await (async () => {
+          const otpRow = await client.query(
+            `SELECT otp_hash FROM otp_tokens WHERE user_id=$1 AND expires_at > now()`,
+            [userId]
+          );
+          return otpRow.rows[0]?.otp_hash || null;
+        })());
+
+      if (!otpHash) {
+        res.status(400).json({ error: "OTP expired or not found." });
+        return;
+      }
+
+      const ok = await bcrypt.compare(otp, otpHash);
+      if (!ok) {
+        res.status(400).json({ error: "Invalid OTP." });
+        return;
+      }
+
+      const sessionToken = await issueSession(client, userId, fingerprint);
+
+      if (trustDevice && fingerprint) {
+        await client.query(
+          `
+          INSERT INTO trusted_devices (user_id, fingerprint, trusted, last_seen)
+          VALUES ($1,$2,true,now())
+          ON CONFLICT (fingerprint) DO UPDATE SET trusted=true, last_seen=now(), user_id=$1
+        `,
+          [userId, fingerprint]
+        );
+      }
+
+      await redis.del(`otp:user:${userId}`);
+      await client.query(`DELETE FROM otp_tokens WHERE user_id=$1`, [userId]);
+
+      res.status(200).json({
+        sessionToken,
+        userId,
+        message: "OTP verified.",
+      });
+    } catch (error) {
+      logger.error({ err: error }, "OTP verification failed");
+      res.status(500).json({ error: "OTP verification failed." });
+    } finally {
+      client.release();
+    }
+  }
+
+  async function beginWebAuthnRegistration(req, res) {
+    res.status(501).json({ error: "WebAuthn registration not implemented yet." });
+  }
+
+  async function finishWebAuthnRegistration(req, res) {
+    res.status(501).json({ error: "WebAuthn registration not implemented yet." });
+  }
+
+  async function beginWebAuthnLogin(req, res) {
+    res.status(501).json({ error: "WebAuthn login not implemented yet." });
+  }
+
+  async function finishWebAuthnLogin(req, res) {
+    res.status(501).json({ error: "WebAuthn login not implemented yet." });
+  }
+
+  async function computeRiskScore(client, userId, ip, fingerprint) {
+    let score = 30;
+    const reasons = [];
+
+    const failures = await client.query(
+      `SELECT COUNT(*)::int AS failures FROM login_attempts WHERE user_id=$1 AND success=false AND created_at > now() - interval '1 hour'`,
+      [userId]
+    );
+    const failureCount = failures.rows[0]?.failures || 0;
+    if (failureCount > 0) {
+      const add = Math.min(40, failureCount * 10);
+      score += add;
+      reasons.push(`Recent failed logins: +${add}`);
+    }
+
+    const trustedRow = fingerprint
+      ? await client.query(
+          `SELECT trusted FROM trusted_devices WHERE user_id=$1 AND fingerprint=$2`,
+          [userId, fingerprint]
+        )
+      : { rowCount: 0 };
+    const trustedDevice = trustedRow.rowCount > 0 && trustedRow.rows[0].trusted === true;
+    if (!trustedDevice) {
+      score += 15;
+      reasons.push("Untrusted device: +15");
+    }
+
+    if (ip) {
+      const ipChange = await client.query(`SELECT last_login_ip FROM users WHERE id=$1`, [userId]);
+      const lastIp = ipChange.rows[0]?.last_login_ip;
+      if (lastIp && String(lastIp) !== String(ip)) {
+        score += 10;
+        reasons.push("IP change: +10");
+      }
+    }
+
+    return { score: Math.min(score, 100), reasons, trustedDevice };
+  }
+
+  async function issueSession(client, userId, fingerprint) {
+    const token = crypto.randomBytes(32).toString("base64url");
+    const expires = new Date(Date.now() + SESSION_TTL_MS);
+    await client.query(
+      `
+      INSERT INTO sessions (user_id, session_token, device_fingerprint, expires_at, created_at)
+      VALUES ($1,$2,$3,$4,now())
+    `,
+      [userId, token, fingerprint, expires]
+    );
+    await client.query(`UPDATE users SET last_login=now(), last_login_ip=$2 WHERE id=$1`, [
+      userId,
+      fingerprint || null,
+    ]);
+    return token;
+  }
+
+  async function generateOtp() {
+    const otp = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 5);
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+    return { otp, otpHash, expiresAt };
+  }
+
   return {
     renderLanding,
     renderLogin,
     renderRegister,
     login,
     register,
+    verifyOtp,
+    beginWebAuthnRegistration,
+    finishWebAuthnRegistration,
+    beginWebAuthnLogin,
+    finishWebAuthnLogin,
     ingestRumMetric,
     health,
     getVersion,
