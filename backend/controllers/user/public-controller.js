@@ -4,6 +4,7 @@ const { z } = require("zod");
 const bcrypt = require("bcrypt");
 const { pool } = require("../../database/pool");
 const { redis } = require("../../services/redis-client");
+const { sendOtpEmail } = require("../../services/mailer");
 
 const loginPayloadSchema = z.object({
   email: z
@@ -226,8 +227,13 @@ function createPublicController(options = {}) {
           logger.warn({ err: error }, "Failed to cache OTP in redis");
         }
 
-        // TODO: integrate real email service. For now, log the OTP for dev.
-        logger.info({ email: parsedPayload.data.email, otp }, "Dev OTP generated (not emailed)");
+        try {
+          await sendOtpEmail(parsedPayload.data.email, otp);
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to send OTP email");
+          // For dev visibility, log OTP if email fails
+          logger.info({ email: parsedPayload.data.email, otp }, "Dev OTP (email fallback)");
+        }
 
         res.status(201).json({
           userId,

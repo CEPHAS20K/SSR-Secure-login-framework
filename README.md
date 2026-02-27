@@ -283,6 +283,11 @@ Versioning envs:
 
 - `APP_VERSION`: public application version shown in UI/footer and API responses.
 - `ASSET_VERSION`: static asset cache-busting version appended to asset URLs.
+- SMTP for OTP/email:
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+  - `SMTP_SECURE` (true/false)
+  - `SMTP_FROM` (default: no-reply@example.com)
+  - If unset, emails fall back to console JSON transport (dev only).
 
 ## Docker Services (PostgreSQL + Redis)
 
