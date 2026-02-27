@@ -438,6 +438,10 @@ document.addEventListener("DOMContentLoaded", () => {
         notify("Login timed out. Check your connection and try again.", "error", "Network");
         return;
       }
+      if (error.status === 401) {
+        notify("Wrong credentials.", "error", "Login failed");
+        return;
+      }
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
         notify(error.message || "Unable to sign in right now.", "error", "Login failed");
         return;

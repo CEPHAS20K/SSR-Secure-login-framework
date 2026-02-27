@@ -120,7 +120,9 @@ block content
           class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
         )
       div(class="space-y-1.5")
-        label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900 Reset Code
+        .flex.items-center.justify-between.gap-3
+          label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900 Reset Code
+          +appButton("Send code", "ghost", "button")#resetSendCode.text-xs.px-3.py-2.min-w-0
         .flex.items-center.gap-2
           each digit, idx in [0, 1, 2, 3, 4]
             input.reset-digit.w-12.rounded-xl.border.border-rose-200.px-3.py-2.text-center.text-lg.font-bold.text-rose-950.outline-none(
@@ -156,7 +158,6 @@ block content
           class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
         )
     .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
-      +appButton("Send code", "ghost", "button")#resetSendCode.flex-1
       +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
       +appButton("Cancel", "ghost", "button")#resetCancel.flex-1
   script(src=assetPath("/js/pages/login.js"), type="module")
