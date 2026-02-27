@@ -5,11 +5,16 @@ const Redis = require("ioredis");
 const redisUrl =
   process.env.REDIS_URL ||
   process.env.REDIS_CONNECTION_STRING ||
-  "redis://default:vault%40340k@redis:6379/0";
+  "redis://default:vault%40340k@localhost:6379/0";
 
 const redis = new Redis(redisUrl, {
   maxRetriesPerRequest: 2,
   enableOfflineQueue: false,
+});
+
+redis.on("error", (error) => {
+  // Fail open; just log to avoid unhandled error events in test/dev when Redis is unavailable.
+  console.warn("rateLimit redis error", error);
 });
 
 function rateLimit(options) {

@@ -123,6 +123,8 @@ function createPublicController(options = {}) {
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
   const ACCOUNT_LOCK_MINUTES = Number(process.env.ACCOUNT_LOCK_MINUTES || 5);
   const MAX_FAILED_ATTEMPTS = Number(process.env.MAX_FAILED_ATTEMPTS || 5);
+  const AUTH_BACKEND_DISABLED =
+    process.env.AUTH_BACKEND_DISABLED === "true" || process.env.NODE_ENV === "test";
 
   function renderLanding(req, res) {
     res.render("pages/user/landing", {
@@ -152,6 +154,10 @@ function createPublicController(options = {}) {
 
   function login(req, res) {
     (async () => {
+      if (AUTH_BACKEND_DISABLED) {
+        res.status(501).json(authNotConfiguredResponse);
+        return;
+      }
       const parsedPayload = loginPayloadSchema.safeParse(req.body || {});
       if (!parsedPayload.success) {
         const firstIssue = parsedPayload.error.issues[0];
@@ -258,6 +264,10 @@ function createPublicController(options = {}) {
 
   function register(req, res) {
     (async () => {
+      if (AUTH_BACKEND_DISABLED) {
+        res.status(501).json(authNotConfiguredResponse);
+        return;
+      }
       const parsedPayload = registerPayloadSchema.safeParse(req.body || {});
       if (!parsedPayload.success) {
         const firstIssue = parsedPayload.error.issues[0];
@@ -393,6 +403,10 @@ function createPublicController(options = {}) {
   }
 
   async function verifyOtp(req, res) {
+    if (AUTH_BACKEND_DISABLED) {
+      res.status(501).json(authNotConfiguredResponse);
+      return;
+    }
     const userId = String(req.body?.userId || "").trim();
     const otp = String(req.body?.otp || "").trim();
     const fingerprint = req.body?.fingerprint || null;

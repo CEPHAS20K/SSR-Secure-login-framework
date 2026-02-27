@@ -5,7 +5,7 @@ const { Pool } = require("pg");
 const connectionString =
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL ||
-  "postgresql://vault-user:auth%40340@postgres:5432/vault";
+  "postgresql://vault-user:auth%40340@localhost:5432/vault";
 
 const pool = new Pool({
   connectionString,

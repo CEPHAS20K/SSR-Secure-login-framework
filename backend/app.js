@@ -10,15 +10,6 @@ const pino = require("pino");
 const pinoHttp = require("pino-http");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
-const { createAdminController, createPublicController } = require("./controllers");
-const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
-const {
-  createAdminInternalAccessGuard,
-  notFoundHandler,
-  internalServerErrorHandler,
-} = require("./middleware");
-const { initSentry, captureSentryException } = require("./observability");
-
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
 const PUBLIC_DIR = path.join(FRONTEND_DIR, "public");
@@ -41,7 +32,31 @@ const LONG_CACHE_EXTENSIONS = new Set([
 const FONT_EXTENSIONS = new Set([".woff", ".woff2", ".ttf", ".eot"]);
 const MID_CACHE_EXTENSIONS = new Set([".css", ".js", ".mjs"]);
 
+// Ensure environment variables are loaded before any other local modules run,
+// so services like Redis/PG pick up the right host/port from .env.dev/.env.proc.
 let isEnvLoaded = false;
+function loadEnvironment(customEnvFile) {
+  if (isEnvLoaded) return;
+  const envFile =
+    typeof customEnvFile === "string" && customEnvFile.trim()
+      ? customEnvFile.trim()
+      : process.env.NODE_ENV === "production"
+        ? ".env.proc"
+        : ".env.dev";
+  dotenv.config({ path: path.join(__dirname, envFile) });
+  isEnvLoaded = true;
+}
+
+loadEnvironment();
+
+const { createAdminController, createPublicController } = require("./controllers");
+const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
+const {
+  createAdminInternalAccessGuard,
+  notFoundHandler,
+  internalServerErrorHandler,
+} = require("./middleware");
+const { initSentry, captureSentryException } = require("./observability");
 
 function createApp(options = {}) {
   loadEnvironment(options.envFile);
@@ -452,18 +467,6 @@ function loadOpenApiDocument(filePath, options = {}) {
       paths: {},
     };
   }
-}
-
-function loadEnvironment(customEnvFile) {
-  if (isEnvLoaded) return;
-  const envFile =
-    typeof customEnvFile === "string" && customEnvFile.trim()
-      ? customEnvFile.trim()
-      : process.env.NODE_ENV === "production"
-        ? ".env.proc"
-        : ".env.dev";
-  dotenv.config({ path: path.join(__dirname, envFile) });
-  isEnvLoaded = true;
 }
 
 if (require.main === module) {
