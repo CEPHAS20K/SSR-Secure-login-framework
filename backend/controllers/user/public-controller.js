@@ -1,6 +1,9 @@
 "use strict";
 
 const { z } = require("zod");
+const bcrypt = require("bcrypt");
+const { pool } = require("../../database/pool");
+const { redis } = require("../../services/redis-client");
 
 const loginPayloadSchema = z.object({
   email: z
@@ -112,6 +115,7 @@ const rumMetricSchema = z.object({
 
 function createPublicController(options = {}) {
   const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
+  const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
   function renderLanding(req, res) {
     res.render("pages/user/landing", {
@@ -159,31 +163,84 @@ function createPublicController(options = {}) {
   }
 
   function register(req, res) {
-    const parsedPayload = registerPayloadSchema.safeParse(req.body || {});
-    if (!parsedPayload.success) {
-      const firstIssue = parsedPayload.error.issues[0];
-      res.status(400).json({ error: firstIssue?.message || "Invalid registration payload." });
-      return;
-    }
+    (async () => {
+      const parsedPayload = registerPayloadSchema.safeParse(req.body || {});
+      if (!parsedPayload.success) {
+        const firstIssue = parsedPayload.error.issues[0];
+        res.status(400).json({ error: firstIssue?.message || "Invalid registration payload." });
+        return;
+      }
 
-    const normalizedGender = String(parsedPayload.data.gender || "").toLowerCase();
-    if (!acceptedGenders.has(normalizedGender)) {
-      res.status(400).json({ error: "Gender must be one of: male, female, other." });
-      return;
-    }
+      const normalizedGender = String(parsedPayload.data.gender || "").toLowerCase();
+      if (!acceptedGenders.has(normalizedGender)) {
+        res.status(400).json({ error: "Gender must be one of: male, female, other." });
+        return;
+      }
 
-    if (typeof logger.warn === "function") {
-      logger.warn(
-        {
-          route: "/auth/register",
-          email: parsedPayload.data.email,
-          username: parsedPayload.data.username,
-        },
-        "Registration attempted but auth backend is not configured"
-      );
-    }
+      const client = await pool.connect();
+      const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
 
-    res.status(501).json(authNotConfiguredResponse);
+      try {
+        const existing = await client.query(
+          `
+          SELECT 1 FROM users
+          WHERE lower(email) = lower($1) OR lower(username) = lower($2)
+          LIMIT 1
+        `,
+          [parsedPayload.data.email, parsedPayload.data.username]
+        );
+        if (existing.rowCount > 0) {
+          res.status(409).json({ error: "Username or email already exists." });
+          return;
+        }
+
+        const passwordHash = await bcrypt.hash(parsedPayload.data.password, saltRounds);
+        const insertUser = await client.query(
+          `
+            INSERT INTO users (username, email, password_hash, gender)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
+          `,
+          [parsedPayload.data.username, parsedPayload.data.email, passwordHash, normalizedGender]
+        );
+
+        const userId = insertUser.rows[0].id;
+        const otp = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 5);
+        const otpHash = await bcrypt.hash(otp, 10);
+        const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+        await client.query(
+          `
+            INSERT INTO otp_tokens (user_id, otp_hash, expires_at)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id) DO UPDATE
+              SET otp_hash = EXCLUDED.otp_hash, expires_at = EXCLUDED.expires_at, created_at = now()
+          `,
+          [userId, otpHash, expiresAt]
+        );
+
+        // Cache OTP in Redis with TTL for fast lookup (optional)
+        try {
+          await redis.setex(`otp:user:${userId}`, Math.floor(OTP_TTL_MS / 1000), otpHash);
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to cache OTP in redis");
+        }
+
+        // TODO: integrate real email service. For now, log the OTP for dev.
+        logger.info({ email: parsedPayload.data.email, otp }, "Dev OTP generated (not emailed)");
+
+        res.status(201).json({
+          userId,
+          requiresOtp: true,
+          message: "Registration successful. Verify OTP to continue.",
+        });
+      } catch (error) {
+        logger.error({ err: error }, "Registration failed");
+        res.status(500).json({ error: "Registration failed. Try again." });
+      } finally {
+        client.release();
+      }
+    })();
   }
 
   function health(req, res) {

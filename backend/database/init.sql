@@ -1,5 +1,5 @@
 
--- Complete PostgreSQL Schema for Auth System
+-- Complete PostgreSQL Schema for vault System
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
