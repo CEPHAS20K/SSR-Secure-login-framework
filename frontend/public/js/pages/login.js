@@ -57,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetSubmit = document.getElementById("resetSubmit");
   const resetCodeInputs = Array.from(document.querySelectorAll("[data-reset-digit]"));
   const resetSendCode = document.getElementById("resetSendCode");
+  const resetCodeBlock = document.getElementById("resetCodeBlock");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
   const formShell = document.getElementById("loginFormShell");
@@ -68,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let resendTimer = null;
   let resetResendSecondsLeft = 0;
   let resetResendTimer = null;
+  let resetCodeVisible = false;
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
 
@@ -305,14 +307,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const updateResetSubmitState = () => {
     if (!isResetModalReady) return;
+    if (!resetCodeVisible) {
+      resetSubmit.disabled = true;
+      return null;
+    }
     const parse = resetAccountSchema.safeParse({
       email: resetEmail.value.trim(),
       code: readResetCode(),
       newPassword: resetNewPassword.value,
       confirmPassword: resetConfirmPassword.value,
     });
-    // Keep submit action available and surface validation via toast (Notyf).
-    resetSubmit.disabled = false;
+    resetSubmit.disabled = !parse.success;
     return parse;
   };
 
@@ -360,6 +365,8 @@ document.addEventListener("DOMContentLoaded", () => {
       input.value = "";
       input.classList.remove("ring-2", "ring-rose-400");
     });
+    resetCodeVisible = false;
+    if (resetCodeBlock) resetCodeBlock.classList.add("hidden");
     resetResendSecondsLeft = 0;
     stopResetResendTimer();
     updateResetResendState();
@@ -522,6 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const tryAutoSubmitReset = () => {
     if (!resetSubmit) return;
+    if (!resetCodeVisible) return;
     const parse = resetAccountSchema.safeParse({
       email: resetEmail.value.trim(),
       code: readResetCode(),
@@ -637,6 +645,8 @@ document.addEventListener("DOMContentLoaded", () => {
           timeoutMs: 5200,
         });
         notify("Reset code sent. Check your email.", "success", "Reset");
+        resetCodeVisible = true;
+        if (resetCodeBlock) resetCodeBlock.classList.remove("hidden");
         startResetResendTimer();
         resetCodeInputs[0]?.focus();
       } catch (error) {
