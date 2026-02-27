@@ -267,7 +267,7 @@ function createPublicController(options = {}) {
 
       const normalizedGender = String(parsedPayload.data.gender || "").toLowerCase();
       if (!acceptedGenders.has(normalizedGender)) {
-        res.status(400).json({ error: "Gender must be one of: male, female, other." });
+        res.status(400).json({ error: "Gender must be one of: male, female." });
         return;
       }
 
