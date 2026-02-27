@@ -134,7 +134,7 @@ block content
   +authModalShell("registerOtpModal")
     +authModalHeader("Verify Email OTP", "Enter the 5-digit code sent to your email.", "registerOtpClose")
     .mt-4.flex.items-center.justify-center.gap-2
-      each digit in [0, 1, 2, 3, 4]
+      each digit, idx in [0, 1, 2, 3, 4]
         input.register-otp-digit.w-12.rounded-xl.border.border-rose-200.px-3.py-2.text-center.text-lg.font-bold.text-rose-950.outline-none(
           type="text",
           maxlength="1",
@@ -142,7 +142,9 @@ block content
           pattern="[0-9]*",
           autocomplete="one-time-code",
           data-otp-digit,
-          aria-label=`OTP digit ${digit + 1}`,
+          id=`registerOtpDigit${idx + 1}`,
+          name=`registerOtpDigit${idx + 1}`,
+          aria-label=`OTP digit ${idx + 1}`,
           class="bg-white/70 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
         )
     .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")

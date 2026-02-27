@@ -88,7 +88,7 @@
       <img class="offline-illustration" src="/images/off.svg" alt="Offline state" />
       <h1>You are offline</h1>
       <p>Secure Storage Vault cannot reach the server right now. Reconnect and retry.</p>
-      <p class="status" id="connectionStatus">Checking connection every 5 seconds...</p>
+      <p class="status" id="connectionStatus">Checking connection in 5s...</p>
       <div class="actions">
         <a href="/">Retry</a>
         <a href="/login" aria-label="Try login once back online">Login</a>
@@ -100,12 +100,31 @@
         const statusNode = document.getElementById("connectionStatus");
         const PING_INTERVAL_MS = 5000;
         const PING_TIMEOUT_MS = 3500;
+        let countdown = PING_INTERVAL_MS / 1000;
         let redirecting = false;
         let intervalId = null;
+        let countdownId = null;
 
         const setStatus = (message) => {
           if (!statusNode) return;
           statusNode.textContent = message;
+        };
+
+        const startCountdown = () => {
+          if (countdownId) clearInterval(countdownId);
+          countdown = PING_INTERVAL_MS / 1000;
+          setStatus(`Checking connection in ${countdown}s...`);
+          countdownId = setInterval(() => {
+            countdown -= 1;
+            if (countdown <= 0) {
+              clearInterval(countdownId);
+              countdownId = null;
+              setStatus("Checking connection...");
+              tryRecover();
+              return;
+            }
+            setStatus(`Checking connection in ${countdown}s...`);
+          }, 1000);
         };
 
         const pingServer = async () => {
@@ -146,18 +165,18 @@
 
         const tryRecover = async () => {
           if (redirecting) return;
-          setStatus("Checking connection every 5 seconds...");
           const isBackOnline = await pingServer();
           if (!isBackOnline) return;
           redirecting = true;
           if (intervalId) clearInterval(intervalId);
+          if (countdownId) clearInterval(countdownId);
           setStatus("Connection restored. Redirecting...");
           window.location.replace("/");
         };
 
         window.addEventListener("online", tryRecover);
-        intervalId = setInterval(tryRecover, PING_INTERVAL_MS);
-        tryRecover();
+        intervalId = setInterval(startCountdown, PING_INTERVAL_MS);
+        startCountdown();
       })();
     </script>
   </body>
