@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const otpSubmit = document.getElementById("otpSubmit");
   const otpInputs = Array.from(document.querySelectorAll("[data-otp-digit]"));
   const resendOtp = document.getElementById("resendOtp");
+  const resendHint = document.getElementById("resendOtpHint");
   const otpClose = document.getElementById("otpClose");
   const forgotPasswordLink = document.getElementById("forgotPasswordLink");
   const resetModal = document.getElementById("resetModal");
@@ -57,8 +58,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetSubmit = document.getElementById("resetSubmit");
   const resetCodeInputs = Array.from(document.querySelectorAll("[data-reset-digit]"));
   const resetCodeBlock = document.getElementById("resetCodeBlock");
+  const passkeyModal = document.getElementById("passkeyModal");
+  const passkeyModalCard = passkeyModal ? passkeyModal.querySelector(".otp-card") : null;
+  const passkeyBegin = document.getElementById("passkeyBegin");
+  const passkeyClose = document.getElementById("passkeyClose");
+  const passkeyCancel = document.getElementById("passkeyCancel");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
+  const trustDevice = document.getElementById("trustDevice");
   const formShell = document.getElementById("loginFormShell");
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   const RESET_CODE_COUNTDOWN_SECONDS = 60;
@@ -69,6 +76,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let resetResendSecondsLeft = 0;
   let resetResendTimer = null;
   let resetCodeVisible = false;
+  let pendingUserId = null;
+  let otpDemoMode = false;
+  let loginLockoutSecondsLeft = 0;
+  let loginLockoutTimer = null;
+  const LOGIN_SUCCESS_REDIRECT = "/login";
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
 
@@ -84,6 +96,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetFocusTrap = createModalFocusTrap(resetModal, {
     onEscape: () => closeResetModal(),
   });
+  const passkeyFocusTrap = createModalFocusTrap(passkeyModal, {
+    onEscape: () => closePasskeyModal(),
+  });
 
   const setRumPhase = (phase) => {
     window.__rumPhase = phase || "";
@@ -91,6 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const setButtonLoading = (button, isLoading, busyLabel) => {
     if (!button) return;
+    if (button.dataset.locked === "true" && !isLoading) {
+      button.disabled = true;
+      return;
+    }
     const labelNode = button.querySelector(".app-btn__label") || button;
     button.dataset.loading = isLoading ? "true" : "false";
     button.disabled = isLoading;
@@ -104,9 +123,70 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const setResetSubmitLabel = (mode) => {
+    if (!resetSubmit) return;
+    const labelNode = resetSubmit.querySelector(".app-btn__label") || resetSubmit;
+    if (mode === "send") {
+      labelNode.textContent = "Send Reset Code";
+      resetSubmit.dataset.mode = "send";
+      return;
+    }
+    labelNode.textContent = "Submit Reset";
+    resetSubmit.dataset.mode = "reset";
+  };
+
+  const clearLoginLockout = () => {
+    if (!loginBtn) return;
+    if (loginLockoutTimer) {
+      clearInterval(loginLockoutTimer);
+      loginLockoutTimer = null;
+    }
+    loginLockoutSecondsLeft = 0;
+    loginBtn.dataset.locked = "false";
+    if (loginBtn.dataset.originalText) {
+      const labelNode = loginBtn.querySelector(".app-btn__label") || loginBtn;
+      labelNode.textContent = loginBtn.dataset.originalText;
+    }
+    updateButtonState();
+  };
+
+  const updateLoginLockoutLabel = () => {
+    if (!loginBtn) return;
+    const labelNode = loginBtn.querySelector(".app-btn__label") || loginBtn;
+    loginBtn.dataset.originalText = loginBtn.dataset.originalText || labelNode.textContent;
+    labelNode.textContent = `Locked (${formatTime(loginLockoutSecondsLeft)})`;
+    loginBtn.disabled = true;
+  };
+
+  const startLoginLockout = (seconds) => {
+    const normalized = Math.max(1, Number(seconds) || 0);
+    if (!normalized) return;
+    if (loginLockoutTimer) clearInterval(loginLockoutTimer);
+    loginLockoutSecondsLeft = normalized;
+    loginBtn.dataset.locked = "true";
+    updateLoginLockoutLabel();
+    loginLockoutTimer = setInterval(() => {
+      loginLockoutSecondsLeft -= 1;
+      if (loginLockoutSecondsLeft <= 0) {
+        clearLoginLockout();
+        return;
+      }
+      updateLoginLockoutLabel();
+    }, 1000);
+  };
+
   const notify = (message, tone = "info", title = "Status") => {
     if (!message) return;
-    showToast(message, { tone, title });
+    showToast(message, { tone, title, forceCustom: true });
+  };
+
+  const showRetryToast = (message, title, onRetry) => {
+    showToast(message, {
+      tone: "error",
+      title,
+      actionLabel: "Retry",
+      onAction: onRetry,
+    });
   };
 
   const revealForm = () => {
@@ -124,6 +204,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const updateButtonState = () => {
+    if (loginBtn.dataset.loading === "true") {
+      loginBtn.disabled = true;
+      return;
+    }
+    if (loginLockoutSecondsLeft > 0) {
+      loginBtn.disabled = true;
+      return;
+    }
     const parse = loginSchema.safeParse({
       email: email.value.trim(),
       password: password.value,
@@ -131,11 +219,23 @@ document.addEventListener("DOMContentLoaded", () => {
     loginBtn.disabled = !parse.success;
   };
 
+  const retryFormSubmit = () => {
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+      return;
+    }
+    form.dispatchEvent(new Event("submit", { cancelable: true }));
+  };
+
   const readOtpValue = () => otpInputs.map((el) => el.value.trim()).join("");
   const readResetCode = () => resetCodeInputs.map((el) => el.value.trim()).join("");
 
   const updateOtpSubmitState = () => {
     if (!otpSubmit || otpInputs.length === 0) return;
+    if (otpSubmit.dataset.loading === "true") {
+      otpSubmit.disabled = true;
+      return;
+    }
     const parse = otpSchema.safeParse(readOtpValue());
     otpSubmit.disabled = !parse.success;
   };
@@ -150,11 +250,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const updateResendState = () => {
     if (!resendOtp) return;
+    if (resendOtp.dataset.loading === "true") {
+      resendOtp.disabled = true;
+      return;
+    }
     const isReady = resendSecondsLeft <= 0;
     resendOtp.disabled = !isReady;
     resendOtp.textContent = isReady ? "Resend OTP" : `Resend (${formatTime(resendSecondsLeft)})`;
     resendOtp.classList.toggle("opacity-60", !isReady);
     resendOtp.classList.toggle("cursor-not-allowed", !isReady);
+    if (resendHint) {
+      resendHint.textContent = isReady
+        ? "Didn’t get a code? You can resend now."
+        : `You can resend in ${formatTime(resendSecondsLeft)}.`;
+    }
   };
 
   const stopResendTimer = () => {
@@ -246,6 +355,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const isOtpModalOpen = () =>
+    modal && !modal.classList.contains("hidden") && modal.style.display === "flex";
+
   const startResendTimer = (duration = OTP_COUNTDOWN_SECONDS) => {
     stopResendTimer();
     resendSecondsLeft = duration;
@@ -296,6 +408,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const updateResetSubmitState = () => {
     if (!isResetModalReady) return;
+    if (resetSubmit.dataset.loading === "true") {
+      resetSubmit.disabled = true;
+      return;
+    }
     if (!resetCodeVisible) {
       const parse = forgotPasswordSchema.safeParse({
         email: resetEmail.value.trim(),
@@ -347,6 +463,77 @@ document.addEventListener("DOMContentLoaded", () => {
     resetFocusTrap.deactivate();
   };
 
+  const setPasskeyModalOpenState = (open) => {
+    if (!passkeyModal) return;
+    passkeyModal.classList.toggle("hidden", !open);
+    passkeyModal.classList.toggle("flex", open);
+    passkeyModal.setAttribute("aria-hidden", open ? "false" : "true");
+    passkeyModal.style.display = open ? "flex" : "none";
+  };
+
+  const closePasskeyModal = () => {
+    if (!passkeyModal) return;
+    if (passkeyModal.classList.contains("hidden") && passkeyModal.style.display !== "flex") return;
+
+    if (window.gsap) {
+      if (passkeyModalCard) {
+        gsap.to(passkeyModalCard, {
+          y: 12,
+          scale: 0.98,
+          autoAlpha: 0,
+          duration: 0.2,
+          ease: "power1.in",
+        });
+      }
+      gsap.to(passkeyModal, {
+        autoAlpha: 0,
+        duration: 0.2,
+        ease: "power1.in",
+        onComplete: () => {
+          setPasskeyModalOpenState(false);
+          passkeyFocusTrap.deactivate();
+          gsap.set(passkeyModal, { clearProps: "opacity,visibility" });
+          if (passkeyModalCard) gsap.set(passkeyModalCard, { clearProps: "opacity,transform" });
+        },
+      });
+      return;
+    }
+
+    setPasskeyModalOpenState(false);
+    passkeyFocusTrap.deactivate();
+  };
+
+  const openPasskeyModal = () => {
+    if (!passkeyModal) return;
+    setPasskeyModalOpenState(true);
+
+    if (!window.gsap) {
+      passkeyFocusTrap.activate({ initialFocus: passkeyBegin || passkeyModal });
+      return;
+    }
+
+    gsap.fromTo(
+      passkeyModal,
+      { autoAlpha: 0 },
+      { autoAlpha: 1, duration: 0.2, ease: "power1.out" }
+    );
+    if (passkeyModalCard) {
+      gsap.fromTo(
+        passkeyModalCard,
+        { y: 18, scale: 0.96, autoAlpha: 0 },
+        {
+          y: 0,
+          scale: 1,
+          autoAlpha: 1,
+          duration: 0.3,
+          ease: "power2.out",
+          onComplete: () =>
+            passkeyFocusTrap.activate({ initialFocus: passkeyBegin || passkeyModal }),
+        }
+      );
+    }
+  };
+
   const openResetModal = () => {
     if (!isResetModalReady) return;
     setResetModalOpenState(true);
@@ -359,6 +546,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     resetCodeVisible = false;
     if (resetCodeBlock) resetCodeBlock.classList.add("hidden");
+    setResetSubmitLabel("send");
     resetResendSecondsLeft = 0;
     stopResetResendTimer();
     updateResetResendState();
@@ -398,7 +586,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const isPassword = password.type === "password";
     password.type = isPassword ? "text" : "password";
     togglePassword.textContent = isPassword ? "Hide" : "Show";
+    togglePassword.setAttribute("aria-pressed", isPassword ? "true" : "false");
+    togglePassword.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
   });
+  togglePassword.setAttribute("aria-pressed", "false");
+  togglePassword.setAttribute("aria-label", "Show password");
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -425,26 +617,60 @@ document.addEventListener("DOMContentLoaded", () => {
     setButtonLoading(loginBtn, true, "Verifying...");
 
     try {
-      await apiClient.request("/auth/login", {
+      const response = await apiClient.request("/auth/login", {
         method: "POST",
         data: parse.data,
         retries: 1,
         timeoutMs: 5200,
       });
-      notify("Credentials accepted. Enter OTP to continue.", "success", "Login");
+      pendingUserId = response?.userId || null;
+      otpDemoMode = false;
+      const requiresOtp = Boolean(response?.requiresOtp);
+      const requiresWebAuthn = Boolean(response?.requiresWebAuthn);
+
+      if (requiresWebAuthn) {
+        notify("Passkey required. Use your device passkey to continue.", "info", "Passkey");
+        setRumPhase("login:passkey-open");
+        openPasskeyModal();
+        return;
+      }
+      if (requiresOtp) {
+        notify("Credentials accepted. Enter OTP to continue.", "success", "Login");
+        setRumPhase("login:otp-open");
+        openOtpModal();
+        return;
+      }
+
+      notify("Login successful. Redirecting...", "success", "Login");
+      window.setTimeout(() => {
+        window.location.href = LOGIN_SUCCESS_REDIRECT;
+      }, 700);
+      return;
     } catch (error) {
       if (error.code === "TIMEOUT") {
-        notify("Login timed out. Check your connection and try again.", "error", "Network");
+        showRetryToast(
+          "Login timed out. Check your connection and try again.",
+          "Network",
+          retryFormSubmit
+        );
         return;
       }
       if (error.status === 401) {
-        notify("Wrong credentials.", "error", "Login failed");
+        notify("Invalid credentials.", "error", "Login failed");
+        return;
+      }
+      if (error.status === 423) {
+        const retryAfter = Number(error.retryAfterSeconds || 0);
+        if (retryAfter > 0) startLoginLockout(retryAfter);
+        notify("Account locked. Try again later.", "error", "Login");
         return;
       }
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
         notify(error.message || "Unable to sign in right now.", "error", "Login failed");
         return;
       }
+      pendingUserId = null;
+      otpDemoMode = true;
       notify("Auth backend is in setup mode. Continuing with OTP demo flow.", "info", "Demo mode");
     } finally {
       setButtonLoading(loginBtn, false);
@@ -465,6 +691,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const tryAutoSubmitOtp = () => {
+    if (!isOtpModalOpen()) return;
     const parse = otpSchema.safeParse(readOtpValue());
     if (!parse.success) return;
     otpSubmit.click();
@@ -579,15 +806,105 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     setRumPhase("login:otp-submit");
-    notify("OTP submitted.", "success", "OTP");
-    closeOtpModal();
+    setButtonLoading(otpSubmit, true, "Verifying...");
+    (async () => {
+      if (otpDemoMode) {
+        notify("Login successful. Redirecting...", "success", "Login");
+        closeOtpModal();
+        window.setTimeout(() => {
+          window.location.href = LOGIN_SUCCESS_REDIRECT;
+        }, 700);
+        setButtonLoading(otpSubmit, false);
+        return;
+      }
+      if (!pendingUserId) {
+        notify("Missing session context. Please login again.", "error", "OTP");
+        setButtonLoading(otpSubmit, false);
+        return;
+      }
+      try {
+        await apiClient.request("/auth/verify-otp", {
+          method: "POST",
+          data: {
+            userId: pendingUserId,
+            otp: readOtpValue(),
+            trustDevice: Boolean(trustDevice?.checked),
+          },
+          retries: 1,
+          timeoutMs: 5200,
+        });
+        notify("Login successful. Redirecting...", "success", "Login");
+        closeOtpModal();
+        window.setTimeout(() => {
+          window.location.href = LOGIN_SUCCESS_REDIRECT;
+        }, 700);
+      } catch (error) {
+        if (error.code === "TIMEOUT") {
+          showRetryToast("OTP verification timed out. Try again.", "Network", () =>
+            otpSubmit.click()
+          );
+          return;
+        }
+        if (error.code === "AUTH_NOT_CONFIGURED" || error.status === 501) {
+          notify("Login successful. Redirecting...", "success", "Login");
+          closeOtpModal();
+          window.setTimeout(() => {
+            window.location.href = LOGIN_SUCCESS_REDIRECT;
+          }, 700);
+          return;
+        }
+        if (error.status === 400) {
+          notify("OTP expired or invalid.", "error", "OTP");
+          return;
+        }
+        notify(error.message || "OTP verification failed.", "error", "OTP");
+      } finally {
+        setButtonLoading(otpSubmit, false);
+        updateOtpSubmitState();
+      }
+    })();
   });
 
   updateResendState();
   resendOtp.addEventListener("click", () => {
     if (resendSecondsLeft > 0) return;
-    notify("OTP resent successfully.", "info", "OTP");
-    startResendTimer();
+    if (otpDemoMode) {
+      notify("OTP resent successfully.", "info", "OTP");
+      startResendTimer();
+      return;
+    }
+    if (!pendingUserId) {
+      notify("Missing session context. Please login again.", "error", "OTP");
+      return;
+    }
+    setButtonLoading(resendOtp, true, "Sending...");
+    (async () => {
+      try {
+        const response = await apiClient.request("/auth/otp/resend", {
+          method: "POST",
+          data: { userId: pendingUserId },
+          retries: 1,
+          timeoutMs: 5200,
+        });
+        notify("OTP resent successfully.", "info", "OTP");
+        const nextCooldown = Number(response?.retryAfterSeconds || OTP_COUNTDOWN_SECONDS);
+        startResendTimer(nextCooldown);
+      } catch (error) {
+        if (error.code === "TIMEOUT") {
+          showRetryToast("OTP resend timed out.", "Network", () => resendOtp.click());
+          return;
+        }
+        if (error.status === 429 && Number(error.retryAfterSeconds) > 0) {
+          startResendTimer(Number(error.retryAfterSeconds));
+          notify("Please wait before resending OTP.", "info", "OTP");
+          return;
+        }
+        notify(error.message || "Unable to resend OTP right now.", "error", "OTP");
+      } finally {
+        setButtonLoading(resendOtp, false);
+        updateResendState();
+      }
+    })();
   });
 
   setModalOpenState(false);
@@ -605,6 +922,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isResetModalReady) {
     updateResetSubmitState();
     updateResetResendState();
+    setResetSubmitLabel("send");
 
     forgotPasswordLink.addEventListener("click", (event) => {
       event.preventDefault();
@@ -648,11 +966,14 @@ document.addEventListener("DOMContentLoaded", () => {
           notify("Reset code sent. Check your email.", "success", "Reset");
           resetCodeVisible = true;
           if (resetCodeBlock) resetCodeBlock.classList.remove("hidden");
+          setResetSubmitLabel("reset");
           startResetResendTimer();
           resetCodeInputs[0]?.focus();
         } catch (error) {
           if (error.code === "TIMEOUT") {
-            notify("Reset request timed out. Try again.", "error", "Network");
+            showRetryToast("Reset request timed out. Try again.", "Network", () =>
+              resetSubmit.click()
+            );
             return;
           }
           notify(error.message || "Unable to send reset code.", "error", "Reset");
@@ -688,7 +1009,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 650);
       } catch (error) {
         if (error.code === "TIMEOUT") {
-          notify("Reset request timed out. Try again.", "error", "Network");
+          showRetryToast("Reset request timed out. Try again.", "Network", () =>
+            resetSubmit.click()
+          );
           return;
         }
         notify(error.message || "Unable to submit reset request right now.", "error", "Reset");
@@ -708,9 +1031,57 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (passkeyBegin) {
+    passkeyBegin.addEventListener("click", async () => {
+      if (passkeyBegin.disabled) return;
+      if (!pendingUserId) {
+        notify("Missing session context. Please login again.", "error", "Passkey");
+        return;
+      }
+      setButtonLoading(passkeyBegin, true, "Opening...");
+      try {
+        await apiClient.request("/auth/webauthn/login/begin", {
+          method: "POST",
+          data: {
+            userId: pendingUserId,
+          },
+          retries: 1,
+          timeoutMs: 5200,
+        });
+        notify("Passkey flow started. Follow your device prompt.", "info", "Passkey");
+      } catch (error) {
+        if (error.code === "TIMEOUT") {
+          showRetryToast("Passkey timed out. Try again.", "Network", () => passkeyBegin.click());
+          return;
+        }
+        if (error.code === "AUTH_NOT_CONFIGURED" || error.status === 501) {
+          notify("Passkey login is not configured yet.", "error", "Passkey");
+          return;
+        }
+        notify(error.message || "Passkey login failed.", "error", "Passkey");
+      } finally {
+        setButtonLoading(passkeyBegin, false);
+      }
+    });
+  }
+
+  if (passkeyClose) passkeyClose.addEventListener("click", closePasskeyModal);
+  if (passkeyCancel) passkeyCancel.addEventListener("click", closePasskeyModal);
+  if (passkeyModal) {
+    passkeyModal.addEventListener("click", (event) => {
+      if (passkeyModalCard && passkeyModalCard.contains(event.target)) return;
+      closePasskeyModal();
+    });
+    passkeyModal.addEventListener("mousedown", (event) => {
+      if (passkeyModalCard && passkeyModalCard.contains(event.target)) return;
+      closePasskeyModal();
+    });
+  }
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeOtpModal();
     closeResetModal();
+    closePasskeyModal();
   });
 });

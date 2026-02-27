@@ -44,6 +44,8 @@ function createToastNode(message, options) {
   const tone = options.tone || "info";
   const styleClass = TONE_STYLES[tone] || TONE_STYLES.info;
   const title = options.title ? String(options.title) : "";
+  const actionLabel = options.actionLabel ? String(options.actionLabel) : "";
+  const onAction = typeof options.onAction === "function" ? options.onAction : null;
 
   const node = document.createElement("article");
   node.className = `pointer-events-auto rounded-xl border px-3 py-2 shadow-lg backdrop-blur-md ${styleClass}`;
@@ -68,19 +70,37 @@ function createToastNode(message, options) {
   messageNode.textContent = String(message || "");
   content.append(messageNode);
 
+  const actions = document.createElement("div");
+  actions.className = "flex items-center gap-2";
+
+  if (actionLabel && onAction) {
+    const actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.className =
+      "rounded-md px-2 py-1 text-[11px] font-bold text-rose-900 transition hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-white/80";
+    actionButton.textContent = actionLabel;
+    actionButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onAction();
+      node.remove();
+    });
+    actions.append(actionButton);
+  }
+
   const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className =
     "rounded-md px-2 py-1 text-[11px] font-bold transition hover:bg-white/55 focus:outline-none focus:ring-2 focus:ring-white/80";
   closeButton.setAttribute("aria-label", "Dismiss notification");
   closeButton.textContent = "Close";
-
-  topRow.append(content, closeButton);
-  node.append(topRow);
-
   closeButton.addEventListener("click", () => {
     node.remove();
   });
+
+  actions.append(closeButton);
+
+  topRow.append(content, actions);
+  node.append(topRow);
 
   return node;
 }
@@ -92,14 +112,15 @@ export function showToast(message, options = {}) {
     ? Math.max(1200, Number(options.durationMs))
     : DEFAULT_DURATION_MS;
   const tone = resolveNotyfType(options.tone || "info");
-  const titlePrefix = options.title ? `${String(options.title)}: ` : "";
-  const content = `${titlePrefix}${String(message)}`;
+  const title = options.title ? String(options.title) : "";
+  const rawMessage = String(message);
+  const hasAction = Boolean(options.actionLabel && typeof options.onAction === "function");
 
   const notyf = getNotyfInstance();
-  if (notyf) {
+  if (notyf && !hasAction && options.forceCustom !== true) {
     notyf.open({
       type: tone,
-      message: content,
+      message: title ? `${title}: ${rawMessage}` : rawMessage,
       duration: options.persistent ? 0 : durationMs,
       dismissible: true,
     });
@@ -109,7 +130,12 @@ export function showToast(message, options = {}) {
   const region = getToastRegion();
   if (!region) return;
 
-  const toast = createToastNode(content, { tone });
+  const toast = createToastNode(rawMessage, {
+    tone,
+    title,
+    actionLabel: options.actionLabel,
+    onAction: options.onAction,
+  });
   region.prepend(toast);
 
   while (region.childElementCount > MAX_VISIBLE_TOASTS) {

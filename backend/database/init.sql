@@ -12,6 +12,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     gender VARCHAR(10),
+    email_verified_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     last_login TIMESTAMPTZ,
     last_login_ip INET,

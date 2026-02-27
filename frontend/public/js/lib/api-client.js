@@ -196,6 +196,7 @@ function normalizeApiError(error) {
     payload.message ||
     error?.message ||
     "Unable to complete request. Please try again.";
+  const retryAfterSeconds = Number(payload.retryAfterSeconds || payload.retry_after_seconds || 0);
 
   const isTimeout = error?.code === "ECONNABORTED" || error?.name === "AbortError";
   const retryable = isTimeout || status >= 500 || status === 0;
@@ -205,6 +206,7 @@ function normalizeApiError(error) {
     status,
     code: payload.code || (isTimeout ? "TIMEOUT" : error?.code) || "",
     retryable,
+    retryAfterSeconds: Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : 0,
   };
 }
 

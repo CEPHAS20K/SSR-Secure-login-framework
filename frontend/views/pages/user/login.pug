@@ -60,6 +60,9 @@ block content
                 )
                 button#togglePassword.absolute.right-3.rounded-md.px-2.py-1.text-xs.font-semibold.text-fuchsia-700.transition(
                   type="button",
+                  aria-pressed="false",
+                  aria-label="Show password",
+                  aria-controls="password",
                   class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100 hover:text-fuchsia-900"
                 ) Show
               p#capsWarning.invisible.text-xs.font-semibold.text-rose-900(
@@ -107,6 +110,14 @@ block content
     .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
       +appButton("Submit", "primary", "button")#otpSubmit.flex-1(disabled)
       +appButton("Resend (05:00)", "ghost", "button")#resendOtp.flex-1
+    p#resendOtpHint.mt-2.text-xs.font-semibold.text-rose-800.text-center
+
+  +authModalShell("passkeyModal")
+    +authModalHeader("Use Passkey", "This login requires a passkey.", "passkeyClose")
+    p.mt-2.text-sm.font-semibold.text-rose-800 Use your device passkey to continue.
+    .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
+      +appButton("Use Passkey", "primary", "button")#passkeyBegin.flex-1
+      +appButton("Cancel", "ghost", "button")#passkeyCancel.flex-1
 
   +authModalShell("resetModal", "fixed inset-0 hidden items-center justify-center p-3 backdrop-blur-sm z-[81] bg-rose-950/55 sm:p-4", "otp-card w-full max-w-md rounded-2xl border bg-white p-4 shadow-2xl backdrop-blur-2xl font-semibold border-white/40 bg-white/25")
     +authModalHeader("Reset Account", "Update your email and create a new password.", "resetClose", "text-lg leading-none text-rose-900", "Close")
@@ -140,22 +151,38 @@ block content
       div(class="space-y-1.5")
         label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(for="resetNewPassword")
           | New Password
-        input#resetNewPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
-          type="password",
-          autocomplete="new-password",
-          placeholder="Minimum 8 characters",
-          class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-        )
+        .relative
+          input#resetNewPassword.w-full.rounded-xl.border.border-rose-200.px-3.pr-16.text-sm.font-semibold.text-rose-950(
+            type="password",
+            autocomplete="new-password",
+            placeholder="Minimum 8 characters",
+            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          )
+          button#resetTogglePassword.absolute.right-2.rounded-md.px-2.py-1.text-xs.font-semibold.text-fuchsia-700.transition(
+            type="button",
+            aria-pressed="false",
+            aria-label="Show password",
+            aria-controls="resetNewPassword",
+            class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100 hover:text-fuchsia-900"
+          ) Show
       div(class="space-y-1.5")
         label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900(
           for="resetConfirmPassword"
         ) Confirm Password
-        input#resetConfirmPassword.w-full.rounded-xl.border.border-rose-200.px-3.text-sm.font-semibold.text-rose-950(
-          type="password",
-          autocomplete="new-password",
-          placeholder="Repeat new password",
-          class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-        )
+        .relative
+          input#resetConfirmPassword.w-full.rounded-xl.border.border-rose-200.px-3.pr-16.text-sm.font-semibold.text-rose-950(
+            type="password",
+            autocomplete="new-password",
+            placeholder="Repeat new password",
+            class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          )
+          button#resetToggleConfirm.absolute.right-2.rounded-md.px-2.py-1.text-xs.font-semibold.text-fuchsia-700.transition(
+            type="button",
+            aria-pressed="false",
+            aria-label="Show password",
+            aria-controls="resetConfirmPassword",
+            class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100 hover:text-fuchsia-900"
+          ) Show
     .mt-4.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
       +appButton("Submit Reset", "primary", "button")#resetSubmit.flex-1(disabled)
       +appButton("Cancel", "ghost", "button")#resetCancel.flex-1

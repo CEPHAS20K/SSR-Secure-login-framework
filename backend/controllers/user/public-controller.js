@@ -173,6 +173,7 @@ const rumMetricSchema = z.object({
 function createPublicController(options = {}) {
   const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
   const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  const OTP_RESEND_COOLDOWN_SECONDS = Number(process.env.OTP_RESEND_COOLDOWN_SECONDS || 60);
   const RESET_TTL_MS = 10 * 60 * 1000; // 10 minutes
   const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
@@ -228,12 +229,15 @@ function createPublicController(options = {}) {
         const lockKey = `lock:user:${parsedPayload.data.email}`;
         const locked = await redis.ttl(lockKey);
         if (locked > 0) {
-          res.status(423).json({ error: "Account temporarily locked. Try again later." });
+          res.status(423).json({
+            error: "Account temporarily locked. Try again later.",
+            retryAfterSeconds: locked,
+          });
           return;
         }
 
         const userQuery = await client.query(
-          `SELECT id, password_hash, last_login_ip FROM users WHERE lower(email)=lower($1)`,
+          `SELECT id, password_hash, last_login_ip, email_verified_at FROM users WHERE lower(email)=lower($1)`,
           [parsedPayload.data.email]
         );
         if (userQuery.rowCount === 0) {
@@ -264,13 +268,23 @@ function createPublicController(options = {}) {
           fingerprint,
           headers: req.headers || {},
         });
-        const { requiresOtp, requiresWebAuthn } = risk;
+        let requiresOtp = risk.requiresOtp;
+        let requiresWebAuthn = risk.requiresWebAuthn;
+        const reasons = Array.isArray(risk.reasons) ? [...risk.reasons] : [];
+        if (!user.email_verified_at) {
+          requiresOtp = true;
+          if (!reasons.includes("email_unverified")) {
+            reasons.push("email_unverified");
+          }
+        }
 
         if (!requiresOtp && !requiresWebAuthn) {
           const sessionToken = await issueSession(client, user.id, fingerprint);
           res.status(200).json({
             sessionToken,
             userId: user.id,
+            requiresOtp: false,
+            requiresWebAuthn: false,
             risk: risk.score,
             trusted: risk.trustedDevice,
           });
@@ -306,7 +320,7 @@ function createPublicController(options = {}) {
           requiresOtp,
           requiresWebAuthn,
           risk: risk.score,
-          reasons: risk.reasons,
+          reasons,
         });
       } catch (error) {
         logger.error({ err: error }, "Login failed");
@@ -395,6 +409,7 @@ function createPublicController(options = {}) {
         res.status(201).json({
           userId,
           requiresOtp: true,
+          requiresWebAuthn: false,
           message: "Registration successful. Verify OTP to continue.",
         });
       } catch (error) {
@@ -591,6 +606,74 @@ function createPublicController(options = {}) {
     res.status(202).json({ accepted: true });
   }
 
+  function resendOtp(req, res) {
+    (async () => {
+      if (AUTH_BACKEND_DISABLED) {
+        res.status(501).json(authNotConfiguredResponse);
+        return;
+      }
+      const userId = String(req.body?.userId || "").trim();
+      if (!userId) {
+        res.status(400).json({ error: "userId is required." });
+        return;
+      }
+
+      const client = await pool.connect();
+      try {
+        const userQuery = await client.query(`SELECT id, email FROM users WHERE id=$1`, [userId]);
+        if (userQuery.rowCount === 0) {
+          res.status(404).json({ error: "User not found." });
+          return;
+        }
+
+        const cooldownKey = `otp:resend:${userId}`;
+        const cooldown = await redis.ttl(cooldownKey);
+        if (cooldown > 0) {
+          res.status(429).json({
+            error: "OTP resend cooldown active.",
+            retryAfterSeconds: cooldown,
+          });
+          return;
+        }
+
+        const { otp, otpHash, expiresAt } = await generateOtp();
+        await client.query(
+          `
+            INSERT INTO otp_tokens (user_id, otp_hash, expires_at)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id) DO UPDATE
+              SET otp_hash=EXCLUDED.otp_hash, expires_at=EXCLUDED.expires_at, created_at=now()
+          `,
+          [userId, otpHash, expiresAt]
+        );
+
+        try {
+          await redis.setex(`otp:user:${userId}`, Math.floor(OTP_TTL_MS / 1000), otpHash);
+          await redis.setex(cooldownKey, OTP_RESEND_COOLDOWN_SECONDS, "1");
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to cache OTP in redis");
+        }
+
+        try {
+          await sendOtpEmail(userQuery.rows[0].email, otp);
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to resend OTP email");
+          logger.info({ email: userQuery.rows[0].email, otp }, "Dev OTP (email fallback)");
+        }
+
+        res.status(202).json({
+          message: "OTP resent.",
+          retryAfterSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+        });
+      } catch (error) {
+        logger.error({ err: error }, "OTP resend failed");
+        res.status(500).json({ error: "Unable to resend OTP." });
+      } finally {
+        client.release();
+      }
+    })();
+  }
+
   async function verifyOtp(req, res) {
     if (AUTH_BACKEND_DISABLED) {
       res.status(501).json(authNotConfiguredResponse);
@@ -618,17 +701,22 @@ function createPublicController(options = {}) {
         })());
 
       if (!otpHash) {
-        res.status(400).json({ error: "OTP expired or not found." });
+        res.status(400).json({ error: "OTP expired or invalid." });
         return;
       }
 
       const ok = await bcrypt.compare(otp, otpHash);
       if (!ok) {
-        res.status(400).json({ error: "Invalid OTP." });
+        res.status(400).json({ error: "OTP expired or invalid." });
         return;
       }
 
       const sessionToken = await issueSession(client, userId, fingerprint);
+
+      await client.query(
+        `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id=$1`,
+        [userId]
+      );
 
       if (trustDevice && fingerprint) {
         await client.query(
@@ -712,6 +800,7 @@ function createPublicController(options = {}) {
     register,
     requestPasswordReset,
     resetPassword,
+    resendOtp,
     verifyOtp,
     beginWebAuthnRegistration,
     finishWebAuthnRegistration,

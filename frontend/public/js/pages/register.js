@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const otpInputs = Array.from(document.querySelectorAll("[data-otp-digit].register-otp-digit"));
   const otpSubmit = document.getElementById("registerOtpSubmit");
   const resendOtp = document.getElementById("registerResendOtp");
+  const resendHint = document.getElementById("registerResendHint");
   const otpClose = document.getElementById("registerOtpClose");
   const formShell = document.getElementById("registerFormShell");
   const capsWarning = document.getElementById("registerCapsWarning");
@@ -79,7 +80,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const notify = (message, tone = "info", title = "Status") => {
     if (!message) return;
-    showToast(message, { tone, title });
+    showToast(message, { tone, title, forceCustom: true });
+  };
+
+  const showRetryToast = (message, title, onRetry) => {
+    showToast(message, {
+      tone: "error",
+      title,
+      actionLabel: "Retry",
+      onAction: onRetry,
+    });
+  };
+
+  const retryFormSubmit = () => {
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+      return;
+    }
+    form.dispatchEvent(new Event("submit", { cancelable: true }));
   };
 
   const revealForm = () => {
@@ -120,6 +138,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateRegisterButton = () => {
+    if (registerBtn.dataset.loading === "true") {
+      registerBtn.disabled = true;
+      return;
+    }
     const formPayload = getFormPayload();
     const coreFieldParse = registerSchema.safeParse({
       ...formPayload,
@@ -132,6 +154,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const readOtpValue = () => otpInputs.map((el) => el.value.trim()).join("");
 
   const updateOtpSubmitState = () => {
+    if (otpSubmit.dataset.loading === "true") {
+      otpSubmit.disabled = true;
+      return;
+    }
     const parse = otpSchema.safeParse(readOtpValue());
     otpSubmit.disabled = !parse.success;
   };
@@ -145,11 +171,20 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateResendState = () => {
+    if (resendOtp.dataset.loading === "true") {
+      resendOtp.disabled = true;
+      return;
+    }
     const canResend = secondsLeft <= 0;
     resendOtp.disabled = !canResend;
     resendOtp.textContent = canResend ? "Resend OTP" : `Resend (${formatTime(secondsLeft)})`;
     resendOtp.classList.toggle("opacity-60", !canResend);
     resendOtp.classList.toggle("cursor-not-allowed", !canResend);
+    if (resendHint) {
+      resendHint.textContent = canResend
+        ? "Didn’t get a code? You can resend now."
+        : `You can resend in ${formatTime(secondsLeft)}.`;
+    }
   };
 
   const stopTimer = () => {
@@ -212,6 +247,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const isOtpModalOpen = () =>
+    otpModal && !otpModal.classList.contains("hidden") && otpModal.style.display === "flex";
+
   const closeOtpModal = () => {
     if (otpModal.classList.contains("hidden") && otpModal.style.display !== "flex") return;
 
@@ -249,6 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const isPassword = field.type === "password";
     field.type = isPassword ? "text" : "password";
     trigger.textContent = isPassword ? "Hide" : "Show";
+    trigger.setAttribute("aria-pressed", isPassword ? "true" : "false");
+    trigger.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
   };
 
   toggleRegPassword.addEventListener("click", () =>
@@ -257,6 +297,10 @@ document.addEventListener("DOMContentLoaded", () => {
   toggleRegPasswordConfirm.addEventListener("click", () =>
     togglePasswordField(regPasswordConfirm, toggleRegPasswordConfirm)
   );
+  toggleRegPassword.setAttribute("aria-pressed", "false");
+  toggleRegPassword.setAttribute("aria-label", "Show password");
+  toggleRegPasswordConfirm.setAttribute("aria-pressed", "false");
+  toggleRegPasswordConfirm.setAttribute("aria-label", "Show password");
 
   const updateCapsWarning = (event) => {
     if (!capsWarning || typeof event?.getModifierState !== "function") return;
@@ -352,7 +396,11 @@ document.addEventListener("DOMContentLoaded", () => {
       notify("Account details accepted. Verify OTP to continue.", "success", "Register");
     } catch (error) {
       if (error.code === "TIMEOUT") {
-        notify("Register request timed out. Check your connection and retry.", "error", "Network");
+        showRetryToast(
+          "Register request timed out. Check your connection and retry.",
+          "Network",
+          retryFormSubmit
+        );
         return;
       }
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
@@ -381,6 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const tryAutoSubmitOtp = () => {
+    if (!isOtpModalOpen()) return;
     const parse = otpSchema.safeParse(readOtpValue());
     if (!parse.success) return;
     otpSubmit.click();
@@ -462,7 +511,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 700);
       } catch (error) {
         if (error.code === "TIMEOUT") {
-          notify("OTP verification timed out. Try again.", "error", "Network");
+          showRetryToast("OTP verification timed out. Try again.", "Network", () =>
+            otpSubmit.click()
+          );
           return;
         }
         if (error.code === "AUTH_NOT_CONFIGURED" || error.status === 501) {
@@ -471,6 +522,10 @@ document.addEventListener("DOMContentLoaded", () => {
           window.setTimeout(() => {
             window.location.href = "/login";
           }, 700);
+          return;
+        }
+        if (error.status === 400) {
+          notify("OTP expired or invalid.", "error", "OTP");
           return;
         }
         notify(error.message || "OTP verification failed.", "error", "OTP");
@@ -482,8 +537,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resendOtp.addEventListener("click", () => {
     if (secondsLeft > 0) return;
-    notify("OTP resent successfully.", "info", "OTP");
-    startTimer();
+    if (!pendingUserId || otpDemoMode) {
+      notify("OTP resent successfully.", "info", "OTP");
+      startTimer();
+      return;
+    }
+    setButtonLoading(resendOtp, true, "Sending...");
+    (async () => {
+      try {
+        const response = await apiClient.request("/auth/otp/resend", {
+          method: "POST",
+          data: { userId: pendingUserId },
+          retries: 1,
+          timeoutMs: 5200,
+        });
+        notify("OTP resent successfully.", "info", "OTP");
+        const nextCooldown = Number(response?.retryAfterSeconds || OTP_COUNTDOWN_SECONDS);
+        startTimer(nextCooldown);
+      } catch (error) {
+        if (error.code === "TIMEOUT") {
+          showRetryToast("OTP resend timed out.", "Network", () => resendOtp.click());
+          return;
+        }
+        if (error.status === 429 && Number(error.retryAfterSeconds) > 0) {
+          startTimer(Number(error.retryAfterSeconds));
+          notify("Please wait before resending OTP.", "info", "OTP");
+          return;
+        }
+        notify(error.message || "Unable to resend OTP right now.", "error", "OTP");
+      } finally {
+        setButtonLoading(resendOtp, false);
+        updateResendState();
+      }
+    })();
   });
 
   if (otpClose) {
