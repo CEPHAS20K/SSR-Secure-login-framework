@@ -18,6 +18,7 @@
     "test": "npm run test:api && npm run test:e2e",
     "test:all": "npm run test && npm run check:bundle-size && npm run perf:lighthouse",
     "test:api": "npm --prefix ./backend run test",
+    "test:api:live": "SKIP_NETWORK_TESTS=false DISABLE_REDIS=false DISABLE_RATE_LIMIT=false AUTH_BACKEND_DISABLED=false TEST_HOST=127.0.0.1 npm --prefix ./backend run test",
     "test:e2e": "if [ \"${SKIP_WEB_TESTS:-true}\" = \"true\" ]; then echo \"Skipping E2E (SKIP_WEB_TESTS)\"; exit 0; fi; playwright test",
     "test:e2e:headed": "playwright test --headed",
     "lint": "npm run lint:frontend",
