@@ -16,9 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const registerBtn = document.getElementById("registerBtn");
   const otpModal = document.getElementById("registerOtpModal");
   const modalCard = otpModal ? otpModal.querySelector(".otp-card") : null;
-  const otpInputs = Array.from(
-    document.querySelectorAll('[data-otp-digit="true"].register-otp-digit')
-  );
+  const otpInputs = Array.from(document.querySelectorAll("[data-otp-digit].register-otp-digit"));
   const otpSubmit = document.getElementById("registerOtpSubmit");
   const resendOtp = document.getElementById("registerResendOtp");
   const otpClose = document.getElementById("registerOtpClose");

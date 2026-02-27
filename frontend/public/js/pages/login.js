@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalCard = modal ? modal.querySelector(".otp-card") : null;
   const togglePassword = document.getElementById("togglePassword");
   const otpSubmit = document.getElementById("otpSubmit");
-  const otpInputs = Array.from(document.querySelectorAll('[data-otp-digit="true"]'));
+  const otpInputs = Array.from(document.querySelectorAll("[data-otp-digit]"));
   const resendOtp = document.getElementById("resendOtp");
   const otpClose = document.getElementById("otpClose");
   const forgotPasswordLink = document.getElementById("forgotPasswordLink");
