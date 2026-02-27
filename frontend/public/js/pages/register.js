@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     !agreeTerms ||
     !registerBtn ||
     !otpModal ||
-    !otpInput ||
+    otpInputs.length === 0 ||
     !otpSubmit ||
     !resendOtp
   ) {
@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     otpInputs[0]?.focus();
 
     if (!window.gsap) {
-      otpFocusTrap.activate({ initialFocus: otpInput });
+      otpFocusTrap.activate({ initialFocus: otpInputs[0] || otpModal });
       return;
     }
 
@@ -206,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
           autoAlpha: 1,
           duration: 0.3,
           ease: "power2.out",
-          onComplete: () => otpFocusTrap.activate({ initialFocus: otpInput }),
+          onComplete: () => otpFocusTrap.activate({ initialFocus: otpInputs[0] || otpModal }),
         }
       );
     }
@@ -376,12 +376,19 @@ document.addEventListener("DOMContentLoaded", () => {
     otpInputs[index + 1].focus();
   };
 
+  const tryAutoSubmitOtp = () => {
+    const parse = otpSchema.safeParse(readOtpValue());
+    if (!parse.success) return;
+    otpSubmit.click();
+  };
+
   otpInputs.forEach((input, index) => {
     input.addEventListener("input", (event) => {
       const value = event.target.value.replace(/\D/g, "").slice(0, 1);
       event.target.value = value;
       if (value && index < otpInputs.length - 1) focusNext(index);
       updateOtpSubmitState();
+      if (value && index === otpInputs.length - 1) tryAutoSubmitOtp();
     });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Backspace" && !event.target.value) {
@@ -398,6 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const nextIndex = Math.min(digits.length, otpInputs.length - 1);
       otpInputs[nextIndex]?.focus();
       event.preventDefault();
+      if (digits.length === otpInputs.length) tryAutoSubmitOtp();
     });
   });
 
