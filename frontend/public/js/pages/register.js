@@ -392,6 +392,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (event.key === "Backspace" && !event.target.value) {
         focusPrev(index);
       }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        focusPrev(index);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        focusNext(index);
+      }
     });
     input.addEventListener("paste", (event) => {
       const data = event.clipboardData?.getData("text") || "";

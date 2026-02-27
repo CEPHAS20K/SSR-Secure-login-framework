@@ -420,13 +420,25 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("input", (event) => {
       const value = event.target.value.replace(/\D/g, "").slice(0, 1);
       event.target.value = value;
-      if (value && index < otpInputs.length - 1) focusNext(index);
+      if (value && index < otpInputs.length - 1) {
+        focusNext(index);
+      }
       updateOtpSubmitState();
-      if (value && index === otpInputs.length - 1) tryAutoSubmitOtp();
+      if (value && index === otpInputs.length - 1) {
+        tryAutoSubmitOtp();
+      }
     });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Backspace" && !event.target.value) {
         focusPrev(index);
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        focusPrev(index);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        focusNext(index);
       }
     });
     input.addEventListener("paste", (event) => {
