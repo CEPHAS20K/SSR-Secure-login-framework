@@ -119,9 +119,7 @@ block content
           placeholder="you@example.com",
           class="py-2.5 bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
         )
-      .flex.items-center.justify-between.gap-3
-        p.text-xs.font-bold.uppercase.tracking-wide.text-rose-900 Send Reset Code
-        +appButton("Send code", "ghost", "button")#resetSendCode.text-xs.px-3.py-2.min-w-0
+      p.text-xs.font-bold.uppercase.tracking-wide.text-rose-900 We will email a reset code
       #resetCodeBlock.hidden(class="space-y-1.5")
         label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-900 Reset Code
         .flex.items-center.gap-2

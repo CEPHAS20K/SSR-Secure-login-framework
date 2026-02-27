@@ -1,6 +1,6 @@
 "use strict";
 
-const SW_VERSION = "v20";
+const SW_VERSION = "v21";
 const ASSET_CACHE = `auth-assets-${SW_VERSION}`;
 const OFFLINE_FALLBACK_URL = "/offline.html";
 const PRECACHE_ASSETS = [

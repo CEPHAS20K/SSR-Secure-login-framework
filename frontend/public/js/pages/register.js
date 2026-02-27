@@ -26,6 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   let secondsLeft = OTP_COUNTDOWN_SECONDS;
   let timer = null;
+  let pendingUserId = null;
+  let otpDemoMode = false;
   const setRumPhase = (phase) => {
     window.__rumPhase = phase || "";
   };
@@ -334,7 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setRumPhase("register:submit");
     setButtonLoading(registerBtn, true, "Verifying...");
     try {
-      await apiClient.request("/auth/register", {
+      const response = await apiClient.request("/auth/register", {
         method: "POST",
         data: {
           username: parse.data.username,
@@ -345,6 +347,8 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         timeoutMs: 5200,
       });
+      pendingUserId = response?.userId || null;
+      otpDemoMode = false;
       notify("Account details accepted. Verify OTP to continue.", "success", "Register");
     } catch (error) {
       if (error.code === "TIMEOUT") {
@@ -355,6 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
         notify(error.message || "Unable to register right now.", "error", "Register failed");
         return;
       }
+      pendingUserId = null;
+      otpDemoMode = true;
       notify("Auth backend is in setup mode. Continuing with OTP demo flow.", "info", "Demo mode");
     } finally {
       setButtonLoading(registerBtn, false);
@@ -423,8 +429,55 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     setRumPhase("register:otp-submit");
-    notify("Account verified with OTP.", "success", "OTP");
-    closeOtpModal();
+    setButtonLoading(otpSubmit, true, "Verifying...");
+    if (otpDemoMode) {
+      notify("Registration successful. Redirecting to login.", "success", "Register");
+      closeOtpModal();
+      window.setTimeout(() => {
+        window.location.href = "/login";
+      }, 700);
+      setButtonLoading(otpSubmit, false);
+      return;
+    }
+    if (!pendingUserId) {
+      notify("Missing registration context. Please register again.", "error", "OTP");
+      setButtonLoading(otpSubmit, false);
+      return;
+    }
+    (async () => {
+      try {
+        await apiClient.request("/auth/verify-otp", {
+          method: "POST",
+          data: {
+            userId: pendingUserId,
+            otp: readOtpValue(),
+          },
+          retries: 1,
+          timeoutMs: 5200,
+        });
+        notify("Registration successful. Redirecting to login.", "success", "Register");
+        closeOtpModal();
+        window.setTimeout(() => {
+          window.location.href = "/login";
+        }, 700);
+      } catch (error) {
+        if (error.code === "TIMEOUT") {
+          notify("OTP verification timed out. Try again.", "error", "Network");
+          return;
+        }
+        if (error.code === "AUTH_NOT_CONFIGURED" || error.status === 501) {
+          notify("Registration successful. Redirecting to login.", "success", "Register");
+          closeOtpModal();
+          window.setTimeout(() => {
+            window.location.href = "/login";
+          }, 700);
+          return;
+        }
+        notify(error.message || "OTP verification failed.", "error", "OTP");
+      } finally {
+        setButtonLoading(otpSubmit, false);
+      }
+    })();
   });
 
   resendOtp.addEventListener("click", () => {

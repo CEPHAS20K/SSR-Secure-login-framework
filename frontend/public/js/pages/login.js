@@ -56,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetConfirmPassword = document.getElementById("resetConfirmPassword");
   const resetSubmit = document.getElementById("resetSubmit");
   const resetCodeInputs = Array.from(document.querySelectorAll("[data-reset-digit]"));
-  const resetSendCode = document.getElementById("resetSendCode");
   const resetCodeBlock = document.getElementById("resetCodeBlock");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
@@ -167,14 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateResetResendState = () => {
-    if (!resetSendCode) return;
-    const isReady = resetResendSecondsLeft <= 0;
-    resetSendCode.disabled = !isReady;
-    resetSendCode.textContent = isReady
-      ? "Send code"
-      : `Send code (${formatTime(resetResendSecondsLeft)})`;
-    resetSendCode.classList.toggle("opacity-60", !isReady);
-    resetSendCode.classList.toggle("cursor-not-allowed", !isReady);
+    // No visible resend button; keep timer for toast messages.
   };
 
   const stopResetResendTimer = () => {
@@ -293,7 +285,6 @@ document.addEventListener("DOMContentLoaded", () => {
     resetNewPassword &&
     resetConfirmPassword &&
     resetSubmit &&
-    resetSendCode &&
     resetCodeInputs.length
   );
 
@@ -308,8 +299,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const updateResetSubmitState = () => {
     if (!isResetModalReady) return;
     if (!resetCodeVisible) {
-      resetSubmit.disabled = true;
-      return null;
+      const parse = forgotPasswordSchema.safeParse({
+        email: resetEmail.value.trim(),
+      });
+      resetSubmit.disabled = !parse.success;
+      return parse;
     }
     const parse = resetAccountSchema.safeParse({
       email: resetEmail.value.trim(),
@@ -626,43 +620,51 @@ document.addEventListener("DOMContentLoaded", () => {
     resetNewPassword.addEventListener("input", updateResetSubmitState);
     resetConfirmPassword.addEventListener("input", updateResetSubmitState);
 
-    resetSendCode.addEventListener("click", async () => {
-      if (resetResendSecondsLeft > 0) return;
-      const parse = forgotPasswordSchema.safeParse({
-        email: resetEmail.value.trim(),
-      });
-      if (!parse.success) {
-        notify(firstSchemaError(parse), "error", "Validation error");
+    resetSubmit.addEventListener("click", async () => {
+      if (resetSubmit.disabled) return;
+      if (!resetCodeVisible) {
+        if (resetResendSecondsLeft > 0) {
+          notify(
+            `Please wait ${formatTime(resetResendSecondsLeft)} before requesting another code.`,
+            "info",
+            "Reset"
+          );
+          return;
+        }
+        const parse = forgotPasswordSchema.safeParse({
+          email: resetEmail.value.trim(),
+        });
+        if (!parse.success) {
+          notify(firstSchemaError(parse), "error", "Validation error");
+          return;
+        }
+
+        setButtonLoading(resetSubmit, true, "Sending code...");
+        try {
+          await apiClient.request("/auth/password/forgot", {
+            method: "POST",
+            data: parse.data,
+            retries: 1,
+            timeoutMs: 5200,
+          });
+          notify("Reset code sent. Check your email.", "success", "Reset");
+          resetCodeVisible = true;
+          if (resetCodeBlock) resetCodeBlock.classList.remove("hidden");
+          startResetResendTimer();
+          resetCodeInputs[0]?.focus();
+        } catch (error) {
+          if (error.code === "TIMEOUT") {
+            notify("Reset request timed out. Try again.", "error", "Network");
+            return;
+          }
+          notify(error.message || "Unable to send reset code.", "error", "Reset");
+        } finally {
+          setButtonLoading(resetSubmit, false);
+          updateResetSubmitState();
+        }
         return;
       }
 
-      setButtonLoading(resetSendCode, true, "Sending...");
-      try {
-        await apiClient.request("/auth/password/forgot", {
-          method: "POST",
-          data: parse.data,
-          retries: 1,
-          timeoutMs: 5200,
-        });
-        notify("Reset code sent. Check your email.", "success", "Reset");
-        resetCodeVisible = true;
-        if (resetCodeBlock) resetCodeBlock.classList.remove("hidden");
-        startResetResendTimer();
-        resetCodeInputs[0]?.focus();
-      } catch (error) {
-        if (error.code === "TIMEOUT") {
-          notify("Reset request timed out. Try again.", "error", "Network");
-          return;
-        }
-        notify(error.message || "Unable to send reset code.", "error", "Reset");
-      } finally {
-        setButtonLoading(resetSendCode, false);
-        updateResetResendState();
-      }
-    });
-
-    resetSubmit.addEventListener("click", async () => {
-      if (resetSubmit.disabled) return;
       const parse = resetAccountSchema.safeParse({
         email: resetEmail.value.trim(),
         code: readResetCode(),
