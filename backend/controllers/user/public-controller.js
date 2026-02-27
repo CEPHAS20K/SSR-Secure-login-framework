@@ -120,6 +120,8 @@ function createPublicController(options = {}) {
   const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
   const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
+  const ACCOUNT_LOCK_MINUTES = Number(process.env.ACCOUNT_LOCK_MINUTES || 5);
+  const MAX_FAILED_ATTEMPTS = Number(process.env.MAX_FAILED_ATTEMPTS || 5);
 
   function renderLanding(req, res) {
     res.render("pages/user/landing", {
@@ -160,6 +162,14 @@ function createPublicController(options = {}) {
       const ip = req.ip || req.socket?.remoteAddress || null;
       const fingerprint = req.body?.fingerprint || null;
       try {
+        // Brute-force lock check
+        const lockKey = `lock:user:${parsedPayload.data.email}`;
+        const locked = await redis.ttl(lockKey);
+        if (locked > 0) {
+          res.status(423).json({ error: "Account temporarily locked. Try again later." });
+          return;
+        }
+
         const userQuery = await client.query(
           `SELECT id, password_hash, last_login_ip FROM users WHERE lower(email)=lower($1)`,
           [parsedPayload.data.email]
@@ -175,6 +185,12 @@ function createPublicController(options = {}) {
           [user.id, ip, passwordOk]
         );
         if (!passwordOk) {
+          const failKey = `fail:user:${user.id}`;
+          const fails = await redis.incr(failKey);
+          await redis.expire(failKey, 15 * 60); // 15 minutes window
+          if (fails >= MAX_FAILED_ATTEMPTS) {
+            await redis.setex(lockKey, ACCOUNT_LOCK_MINUTES * 60, "1");
+          }
           res.status(401).json({ error: "Invalid credentials." });
           return;
         }
