@@ -2,12 +2,17 @@ mixin appButton(label, variant, buttonType)
   -
     const palette = {
       primary:
-        "bg-primary text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-rose-300",
+        "bg-primary text-white hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-rose-300",
       secondary:
-        "bg-secondary text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-rose-300",
+        "bg-secondary text-white hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-rose-300",
       ghost:
-        "bg-fuchsia-100/80 text-fuchsia-950 hover:bg-fuchsia-200 disabled:cursor-not-allowed disabled:opacity-60",
+        "bg-fuchsia-100/80 text-fuchsia-950 hover:bg-fuchsia-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:opacity-60",
     };
   - const tone = palette[variant] || palette.primary;
-  button.rounded-xl.px-4.text-sm.font-bold.transition(class=`py-2.5 ${tone}`, type=buttonType || "button")&attributes(attributes)
-    = label
+  button.app-btn.rounded-lg.px-4.py-3.text-base.font-semibold.transition.flex.items-center.justify-center(
+    class=`${tone}`,
+    type=buttonType || "button",
+    data-loading="false",
+    data-variant=variant || "primary"
+  )&attributes(attributes)
+    span.app-btn__label= label

@@ -16,7 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const registerBtn = document.getElementById("registerBtn");
   const otpModal = document.getElementById("registerOtpModal");
   const modalCard = otpModal ? otpModal.querySelector(".otp-card") : null;
-  const otpInput = document.getElementById("registerOtpInput");
+  const otpInputs = Array.from(
+    document.querySelectorAll('[data-otp-digit="true"].register-otp-digit')
+  );
   const otpSubmit = document.getElementById("registerOtpSubmit");
   const resendOtp = document.getElementById("registerResendOtp");
   const otpClose = document.getElementById("registerOtpClose");
@@ -26,6 +28,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
   let secondsLeft = OTP_COUNTDOWN_SECONDS;
   let timer = null;
+  const setRumPhase = (phase) => {
+    window.__rumPhase = phase || "";
+  };
+
+  const setButtonLoading = (button, isLoading, busyLabel) => {
+    if (!button) return;
+    const labelNode = button.querySelector(".app-btn__label") || button;
+    button.dataset.loading = isLoading ? "true" : "false";
+    button.disabled = isLoading;
+    if (labelNode) {
+      if (isLoading && busyLabel) {
+        labelNode.dataset.originalText = labelNode.dataset.originalText || labelNode.textContent;
+        labelNode.textContent = busyLabel;
+      } else if (!isLoading && labelNode.dataset.originalText) {
+        labelNode.textContent = labelNode.dataset.originalText;
+      }
+    }
+  };
 
   if (
     !form ||
@@ -80,6 +100,19 @@ document.addEventListener("DOMContentLoaded", () => {
     agreeTerms: Boolean(agreeTerms.checked),
   });
 
+  const markInlineError = (element, message, helperId) => {
+    const helper = helperId ? document.getElementById(helperId) : null;
+    if (element) {
+      element.setAttribute("aria-invalid", message ? "true" : "false");
+      element.classList.toggle("ring-2", Boolean(message));
+      element.classList.toggle("ring-rose-400", Boolean(message));
+    }
+    if (helper) {
+      helper.textContent = message || "";
+      helper.classList.toggle("hidden", !message);
+    }
+  };
+
   const setMismatchState = () => {
     const mismatch =
       regPasswordConfirm.value.length > 0 && regPassword.value !== regPasswordConfirm.value;
@@ -90,14 +123,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const formPayload = getFormPayload();
     const coreFieldParse = registerSchema.safeParse({
       ...formPayload,
-      gender: "male",
+      gender: formPayload.gender || "male",
       agreeTerms: true,
     });
     registerBtn.disabled = !coreFieldParse.success;
   };
 
+  const readOtpValue = () => otpInputs.map((el) => el.value.trim()).join("");
+
   const updateOtpSubmitState = () => {
-    const parse = otpSchema.safeParse(otpInput.value.trim());
+    const parse = otpSchema.safeParse(readOtpValue());
     otpSubmit.disabled = !parse.success;
   };
 
@@ -147,9 +182,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const openOtpModal = () => {
     setModalOpenState(true);
-    otpInput.value = "";
+    otpInputs.forEach((input) => {
+      input.value = "";
+      input.classList.remove("ring-2", "ring-rose-400");
+    });
     updateOtpSubmitState();
     startTimer();
+    otpInputs[0]?.focus();
 
     if (!window.gsap) {
       otpFocusTrap.activate({ initialFocus: otpInput });
@@ -241,10 +280,12 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("input", () => {
       setMismatchState();
       updateRegisterButton();
+      if (input === gender) markInlineError(gender, "", "genderHelp");
     });
     input.addEventListener("change", () => {
       setMismatchState();
       updateRegisterButton();
+      if (input === gender) markInlineError(gender, "", "genderHelp");
     });
     input.addEventListener("blur", () => {
       setMismatchState();
@@ -254,6 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   agreeTerms.addEventListener("change", () => {
     updateRegisterButton();
+    markInlineError(agreeTerms, "", "termsHelp");
   });
 
   setMismatchState();
@@ -266,15 +308,18 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     setMismatchState();
 
+    setRumPhase("register:validate");
     const parse = registerSchema.safeParse(getFormPayload());
     updateRegisterButton();
     if (!parse.success) {
       const firstIssuePath = parse.error?.issues?.[0]?.path?.[0];
       if (firstIssuePath === "gender") {
+        markInlineError(gender, "Select your gender to continue.", "genderHelp");
         notify("Please select your gender before continuing.", "error", "Validation warning");
         return;
       }
       if (firstIssuePath === "agreeTerms") {
+        markInlineError(agreeTerms, "Please accept terms to proceed.", "termsHelp");
         notify(
           "Please accept terms and privacy policy to continue.",
           "error",
@@ -285,10 +330,11 @@ document.addEventListener("DOMContentLoaded", () => {
       notify(firstSchemaError(parse), "error", "Validation error");
       return;
     }
+    markInlineError(gender, "", "genderHelp");
+    markInlineError(agreeTerms, "", "termsHelp");
 
-    const originalText = registerBtn.textContent;
-    registerBtn.disabled = true;
-    registerBtn.textContent = "Creating...";
+    setRumPhase("register:submit");
+    setButtonLoading(registerBtn, true, "Verifying...");
     try {
       await apiClient.request("/auth/register", {
         method: "POST",
@@ -303,31 +349,66 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       notify("Account details accepted. Verify OTP to continue.", "success", "Register");
     } catch (error) {
+      if (error.code === "TIMEOUT") {
+        notify("Register request timed out. Check your connection and retry.", "error", "Network");
+        return;
+      }
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
         notify(error.message || "Unable to register right now.", "error", "Register failed");
         return;
       }
       notify("Auth backend is in setup mode. Continuing with OTP demo flow.", "info", "Demo mode");
     } finally {
-      registerBtn.textContent = originalText;
+      setButtonLoading(registerBtn, false);
       updateRegisterButton();
     }
 
+    setRumPhase("register:otp-open");
     openOtpModal();
   });
 
-  otpInput.addEventListener("input", () => {
-    otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 5);
-    updateOtpSubmitState();
+  const focusPrev = (index) => {
+    if (index <= 0) return;
+    otpInputs[index - 1].focus();
+  };
+  const focusNext = (index) => {
+    if (index >= otpInputs.length - 1) return;
+    otpInputs[index + 1].focus();
+  };
+
+  otpInputs.forEach((input, index) => {
+    input.addEventListener("input", (event) => {
+      const value = event.target.value.replace(/\D/g, "").slice(0, 1);
+      event.target.value = value;
+      if (value && index < otpInputs.length - 1) focusNext(index);
+      updateOtpSubmitState();
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Backspace" && !event.target.value) {
+        focusPrev(index);
+      }
+    });
+    input.addEventListener("paste", (event) => {
+      const data = event.clipboardData?.getData("text") || "";
+      const digits = data.replace(/\D/g, "").slice(0, otpInputs.length).split("");
+      otpInputs.forEach((el, i) => {
+        el.value = digits[i] || "";
+      });
+      updateOtpSubmitState();
+      const nextIndex = Math.min(digits.length, otpInputs.length - 1);
+      otpInputs[nextIndex]?.focus();
+      event.preventDefault();
+    });
   });
 
   otpSubmit.addEventListener("click", () => {
     if (otpSubmit.disabled) return;
-    const parse = otpSchema.safeParse(otpInput.value.trim());
+    const parse = otpSchema.safeParse(readOtpValue());
     if (!parse.success) {
       notify(firstSchemaError(parse, "Invalid OTP format."), "error", "OTP");
       return;
     }
+    setRumPhase("register:otp-submit");
     notify("Account verified with OTP.", "success", "OTP");
     closeOtpModal();
   });

@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalCard = modal ? modal.querySelector(".otp-card") : null;
   const togglePassword = document.getElementById("togglePassword");
   const otpSubmit = document.getElementById("otpSubmit");
-  const otpInput = document.getElementById("otpInput");
+  const otpInputs = Array.from(document.querySelectorAll('[data-otp-digit="true"]'));
   const resendOtp = document.getElementById("resendOtp");
   const otpClose = document.getElementById("otpClose");
   const forgotPasswordLink = document.getElementById("forgotPasswordLink");
@@ -80,6 +80,25 @@ document.addEventListener("DOMContentLoaded", () => {
     onEscape: () => closeResetModal(),
   });
 
+  const setRumPhase = (phase) => {
+    window.__rumPhase = phase || "";
+  };
+
+  const setButtonLoading = (button, isLoading, busyLabel) => {
+    if (!button) return;
+    const labelNode = button.querySelector(".app-btn__label") || button;
+    button.dataset.loading = isLoading ? "true" : "false";
+    button.disabled = isLoading;
+    if (labelNode) {
+      if (isLoading && busyLabel) {
+        labelNode.dataset.originalText = labelNode.dataset.originalText || labelNode.textContent;
+        labelNode.textContent = busyLabel;
+      } else if (!isLoading && labelNode.dataset.originalText) {
+        labelNode.textContent = labelNode.dataset.originalText;
+      }
+    }
+  };
+
   const notify = (message, tone = "info", title = "Status") => {
     if (!message) return;
     showToast(message, { tone, title });
@@ -107,9 +126,11 @@ document.addEventListener("DOMContentLoaded", () => {
     loginBtn.disabled = !parse.success;
   };
 
+  const readOtpValue = () => otpInputs.map((el) => el.value.trim()).join("");
+
   const updateOtpSubmitState = () => {
-    if (!otpSubmit || !otpInput) return;
-    const parse = otpSchema.safeParse(otpInput.value.trim());
+    if (!otpSubmit || otpInputs.length === 0) return;
+    const parse = otpSchema.safeParse(readOtpValue());
     otpSubmit.disabled = !parse.success;
   };
 
@@ -179,8 +200,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const openOtpModal = () => {
     setModalOpenState(true);
     startResendTimer();
-    otpInput.value = "";
+    otpInputs.forEach((input) => {
+      input.value = "";
+      input.classList.remove("ring-2", "ring-rose-400");
+    });
     updateOtpSubmitState();
+    const first = otpInputs[0];
+    if (first) first.focus();
 
     if (!window.gsap) {
       otpFocusTrap.activate({ initialFocus: otpInput });
@@ -345,9 +371,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    const originalText = loginBtn.textContent;
-    loginBtn.disabled = true;
-    loginBtn.textContent = "Checking...";
+    setRumPhase("login:submit");
+    setButtonLoading(loginBtn, true, "Verifying...");
 
     try {
       await apiClient.request("/auth/login", {
@@ -358,32 +383,67 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       notify("Credentials accepted. Enter OTP to continue.", "success", "Login");
     } catch (error) {
+      if (error.code === "TIMEOUT") {
+        notify("Login timed out. Check your connection and try again.", "error", "Network");
+        return;
+      }
       if (error.code !== "AUTH_NOT_CONFIGURED" && error.status !== 501) {
         notify(error.message || "Unable to sign in right now.", "error", "Login failed");
         return;
       }
       notify("Auth backend is in setup mode. Continuing with OTP demo flow.", "info", "Demo mode");
     } finally {
-      loginBtn.textContent = originalText;
+      setButtonLoading(loginBtn, false);
       updateButtonState();
     }
 
+    setRumPhase("login:otp-open");
     openOtpModal();
   });
 
-  otpInput.addEventListener("input", () => {
-    otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 5);
-    updateOtpSubmitState();
+  const focusPrev = (index) => {
+    if (index <= 0) return;
+    otpInputs[index - 1].focus();
+  };
+  const focusNext = (index) => {
+    if (index >= otpInputs.length - 1) return;
+    otpInputs[index + 1].focus();
+  };
+
+  otpInputs.forEach((input, index) => {
+    input.addEventListener("input", (event) => {
+      const value = event.target.value.replace(/\D/g, "").slice(0, 1);
+      event.target.value = value;
+      if (value && index < otpInputs.length - 1) focusNext(index);
+      updateOtpSubmitState();
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Backspace" && !event.target.value) {
+        focusPrev(index);
+      }
+    });
+    input.addEventListener("paste", (event) => {
+      const data = event.clipboardData?.getData("text") || "";
+      const digits = data.replace(/\D/g, "").slice(0, otpInputs.length).split("");
+      otpInputs.forEach((el, i) => {
+        el.value = digits[i] || "";
+      });
+      updateOtpSubmitState();
+      const nextIndex = Math.min(digits.length, otpInputs.length - 1);
+      otpInputs[nextIndex]?.focus();
+      event.preventDefault();
+    });
   });
   updateOtpSubmitState();
 
   otpSubmit.addEventListener("click", () => {
     if (otpSubmit.disabled) return;
-    const parse = otpSchema.safeParse(otpInput.value.trim());
+    const parse = otpSchema.safeParse(readOtpValue());
     if (!parse.success) {
       notify(firstSchemaError(parse, "Invalid OTP format."), "error", "OTP");
       return;
     }
+    setRumPhase("login:otp-submit");
     notify("OTP submitted.", "success", "OTP");
     closeOtpModal();
   });

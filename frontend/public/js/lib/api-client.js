@@ -197,13 +197,13 @@ function normalizeApiError(error) {
     error?.message ||
     "Unable to complete request. Please try again.";
 
-  const retryable =
-    error?.code === "ECONNABORTED" || error?.name === "AbortError" || status >= 500 || status === 0;
+  const isTimeout = error?.code === "ECONNABORTED" || error?.name === "AbortError";
+  const retryable = isTimeout || status >= 500 || status === 0;
 
   return {
     message,
     status,
-    code: payload.code || error?.code || "",
+    code: payload.code || (isTimeout ? "TIMEOUT" : error?.code) || "",
     retryable,
   };
 }

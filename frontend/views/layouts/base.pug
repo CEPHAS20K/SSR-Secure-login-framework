@@ -2,7 +2,7 @@ doctype html
 html(lang="en")
   -
     const currentPage = typeof page === "string" ? page : "";
-    const gsapPages = new Set(["landing", "login", "register", "admin-login", "error"]);
+    const gsapPages = new Set(["landing", "admin-dashboard", "error"]);
     const shouldLoadGsap = gsapPages.has(currentPage);
     const shouldPreloadLandingVisuals = currentPage === "landing";
     const preloadFontHrefs = ["/fonts/inter-latin-400.woff2"];
@@ -37,50 +37,23 @@ html(lang="en")
     each fontHref in preloadFontHrefs
       link(rel="preload", as="font", type="font/woff2", href=fontHref, crossorigin="anonymous")
     script.
-      (function () {
-        try {
-          if (sessionStorage.getItem("auth_nav_transition") === "1") {
-            document.documentElement.setAttribute("data-nav-transition", "1");
-          }
-        } catch (error) {}
-      })();
+      window.__assetVersion = "#{assetVersion}";
     link(rel="stylesheet", href=assetPath("/css/fonts.css"))
     link(rel="stylesheet", href=assetPath("/vendor/notyf.min.css"))
+    link(rel="preload", as="style", href=assetPath("/css/critical.css"))
+    link(
+      rel="stylesheet",
+      href=assetPath("/css/critical.css"),
+      media="print",
+      onload="this.media='all'"
+    )
     style.
       html,
       body {
         background: #ff7700;
       }
-      #pageTransitionOverlay {
-        position: fixed;
-        inset: 0;
-        z-index: 60;
-        pointer-events: none;
-        visibility: hidden;
-        opacity: 1;
-        clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%);
-        background: linear-gradient(160deg, #ff7700 0%, #ba274b 55%, #a62a95 100%);
-      }
-      #pageTransitionStroke {
-        position: absolute;
-        inset: 0 auto 0 0;
-        width: 2px;
-        opacity: 0;
-        background: linear-gradient(180deg, rgba(255, 248, 237, 0.94) 0%, rgba(255, 170, 106, 0.96) 100%);
-        box-shadow: 0 0 22px rgba(255, 220, 173, 0.85);
-      }
-      html[data-nav-transition="1"] #pageTransitionOverlay {
-        visibility: visible;
-        clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
-      }
-      html[data-nav-transition="1"] #pageTransitionStroke {
-        opacity: 1;
-        transform: translateX(calc(100vw - 2px));
-      }
     link(rel="stylesheet", href=assetPath("/css/output.css"))
   body.min-h-screen.bg-slate-100.font-body.text-slate-900(data-page=page || "")
-    #pageTransitionOverlay
-      #pageTransitionStroke
     #appToastRegion.pointer-events-none.fixed.inset-x-0.top-16.mx-auto.flex.w-full.max-w-md.flex-col.gap-2.px-3(
       class="z-[90]",
       aria-live="polite",

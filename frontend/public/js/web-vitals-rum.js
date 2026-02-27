@@ -22,6 +22,7 @@ function createBasePayload(name, value, extra = {}) {
     page: document.body?.dataset?.page || "",
     connectionType: navigator.connection?.effectiveType || "",
     timestamp: new Date().toISOString(),
+    phase: window.__rumPhase || "",
     ...extra,
   };
 }

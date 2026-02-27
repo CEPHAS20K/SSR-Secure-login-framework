@@ -159,6 +159,35 @@
     transform: translate3d(0, var(--parallax-shift, 0px), 0);
   }
 
+  .app-btn {
+    position: relative;
+    min-width: 9rem;
+    line-height: 1.2;
+  }
+
+  .app-btn[data-loading="true"] {
+    pointer-events: none;
+  }
+
+  .focus-ring {
+    outline: 2px solid #ff7700;
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  button:focus-visible {
+    outline-color: #ff7700;
+  }
+
+  .tw-ring-preserve {
+    @apply ring-2 ring-rose-400 ring-offset-0;
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .landing-mesh {
     background-image:
       radial-gradient(circle at 20% 20%, rgba(255, 228, 196, 0.2), transparent 42%),

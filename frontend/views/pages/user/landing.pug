@@ -64,28 +64,36 @@ block content
               style="font-family: 'Schoolbell', cursive"
             ) Admin Login
         #landingHeroVisual.relative.overflow-hidden.rounded-3xl.bg-transparent.h-96(class="sm:h-112")
-          img#landingHeroSvg.relative.z-10.h-full.w-full.object-contain.landing-svg-float.opacity-72.mix-blend-normal.brightness-110.saturate-125.contrast-110(
-            src=assetPath("/images/land.svg"),
-            alt="Landing illustration",
-            width="500",
-            height="500",
-            loading="eager",
-            decoding="async",
-            fetchpriority="high",
-            style="clip-path: inset(2px)"
-          )
+          picture.relative.z-10.block.h-full.w-full
+            source(type="image/svg+xml", srcset=assetPath("/images/land.svg"))
+            img#landingHeroSvg.relative.z-10.h-full.w-full.object-contain.landing-svg-float.opacity-72.mix-blend-normal.brightness-110.saturate-125.contrast-110(
+              src=assetPath("/images/land.svg"),
+              alt="Landing illustration",
+              width="500",
+              height="500",
+              loading="eager",
+              decoding="async",
+              fetchpriority="high",
+              aria-hidden="true",
+              role="presentation",
+              style="clip-path: inset(2px)"
+            )
       section#heroCta.relative.z-10.mx-auto.w-full.max-w-6xl.px-4.pb-6(class="md:px-6")
         .grid.items-center.gap-8(class="md:grid-cols-[1.1fr_0.9fr] md:gap-12")
           .flex.w-full.items-center.justify-center(class="md:justify-center")
-            img#heroCtaSvg.up-svg-float.h-auto.w-full.object-contain.max-w-2xl(
-              src=assetPath("/images/up.svg"),
-              alt="Secure access illustration",
-              width="500",
-              height="500",
-              loading="lazy",
-              decoding="async",
-              class="sm:max-w-3xl"
-            )
+            picture.max-w-2xl.w-full
+              source(type="image/svg+xml", srcset=assetPath("/images/up.svg"))
+              img#heroCtaSvg.up-svg-float.h-auto.w-full.object-contain.max-w-2xl(
+                src=assetPath("/images/up.svg"),
+                alt="Secure access illustration",
+                width="500",
+                height="500",
+                loading="lazy",
+                decoding="async",
+                aria-hidden="true",
+                role="presentation",
+                class="sm:max-w-3xl"
+              )
           .w-full.p-6.text-center(class="sm:p-8")
             h2.text-3xl.font-headline-bold.leading-none.text-rose-980(
               class="sm:text-4xl",

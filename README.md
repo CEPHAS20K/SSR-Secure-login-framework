@@ -234,6 +234,15 @@ npm run test:e2e -- e2e/auth-visual.spec.js --update-snapshots=all
 
 - `perf:lighthouse` is stricter and may take longer than API/E2E tests.
 
+#### Custom ports for tests
+
+- Backend API tests respect `TEST_HOST`/`TEST_PORT` (default `127.0.0.1:3999`):  
+  `TEST_PORT=3004 TEST_HOST=127.0.0.1 SKIP_NETWORK_TESTS=false npm run test:api`
+- Playwright E2E uses `E2E_HOST`/`E2E_PORT` (default `127.0.0.1:4173`):  
+  `E2E_PORT=3004 E2E_HOST=127.0.0.1 SKIP_WEB_TESTS=false npm run test:e2e`
+- Full suite with custom port:  
+  `TEST_PORT=3004 TEST_HOST=127.0.0.1 E2E_PORT=3004 E2E_HOST=127.0.0.1 SKIP_NETWORK_TESTS=false SKIP_WEB_TESTS=false npm run test`
+
 ## Performance Budgets
 
 - `npm run check:bundle-size`: enforces static asset size budgets.

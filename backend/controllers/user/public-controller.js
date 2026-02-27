@@ -102,6 +102,7 @@ const rumMetricSchema = z.object({
   page: z.string().trim().max(80).optional().default(""),
   connectionType: z.string().trim().max(32).optional().default(""),
   fieldName: z.string().trim().max(120).optional().default(""),
+  phase: z.string().trim().max(64).optional().default(""),
   timestamp: z
     .string({
       error: "Timestamp is required.",

@@ -1,154 +1,152 @@
 document.addEventListener("DOMContentLoaded", () => {
-  if (!window.gsap) return;
-
+  const page = document.body?.dataset?.page || "";
   const fromNavTransition = sessionStorage.getItem("auth_view_transition") === "nav_swap";
-  const fromOverlayTransition = sessionStorage.getItem("auth_nav_transition") === "1";
-  const pageOverlay = document.getElementById("pageTransitionOverlay");
-  const pageOverlayStroke = document.getElementById("pageTransitionStroke");
-  sessionStorage.removeItem("auth_view_transition");
-  sessionStorage.removeItem("auth_nav_transition");
-  document.documentElement.removeAttribute("data-nav-transition");
 
-  if (pageOverlay) {
-    if (fromOverlayTransition) {
-      const viewportWidth = Math.max(
-        window.innerWidth || 0,
-        document.documentElement.clientWidth || 0
-      );
-      gsap.set(pageOverlay, {
-        visibility: "visible",
-        autoAlpha: 1,
-        clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-      });
-
-      if (pageOverlayStroke) {
-        gsap.set(pageOverlayStroke, { autoAlpha: 1, x: Math.max(viewportWidth - 2, 0) });
+  const loadGsap = () =>
+    new Promise((resolve) => {
+      if (window.gsap) {
+        resolve(window.gsap);
+        return;
       }
+      const script = document.createElement("script");
+      const version = window.__assetVersion
+        ? `?v=${encodeURIComponent(window.__assetVersion)}`
+        : "";
+      script.src = `/vendor/gsap.min.js${version}`;
+      script.async = true;
+      script.onload = () => resolve(window.gsap || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    });
 
-      const transitionTimeline = gsap
-        .timeline({ defaults: { ease: "power1.out" } })
-        .to(
-          pageOverlay,
-          {
-            clipPath: "polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)",
-            duration: 0.16,
-          },
-          0
-        )
-        .set(pageOverlay, {
-          visibility: "hidden",
-          clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-        });
+  const runAnimations = () => {
+    const gsap = window.gsap;
+    if (!gsap) return;
 
-      if (pageOverlayStroke) {
-        transitionTimeline
-          .to(
-            pageOverlayStroke,
-            {
-              x: viewportWidth + 18,
-              autoAlpha: 0,
-              duration: 0.16,
-            },
-            0
-          )
-          .set(pageOverlayStroke, { x: 0 });
-      }
-    } else {
-      gsap.set(pageOverlay, {
-        visibility: "hidden",
-        autoAlpha: 1,
-        clipPath: "polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)",
-      });
-      if (pageOverlayStroke) {
-        gsap.set(pageOverlayStroke, { autoAlpha: 0, x: 0 });
-      }
-    }
-  }
+    sessionStorage.removeItem("auth_view_transition");
+    sessionStorage.removeItem("auth_nav_transition");
 
-  if (document.querySelector("#loginCard")) {
-    const targets = ["#loginCard", "#loginTitle", ".login-field", "#loginBtn"];
-    gsap.set(targets, { autoAlpha: 0, y: fromNavTransition ? 10 : 14 });
+    if (document.querySelector("#loginCard")) {
+      const targets = ["#loginCard", "#loginTitle", ".login-field", "#loginBtn"];
+      gsap.set(targets, { autoAlpha: 0, y: fromNavTransition ? 10 : 14 });
 
-    gsap
-      .timeline({ defaults: { ease: "power3.out" } })
-      .to("#loginCard", {
-        autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        duration: fromNavTransition ? 0.16 : 0.24,
-      })
-      .to("#loginTitle", { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.14 : 0.2 }, "-=0.08")
-      .to(
-        ".login-field",
-        {
+      gsap
+        .timeline({ defaults: { ease: "power3.out" } })
+        .to("#loginCard", {
           autoAlpha: 1,
           y: 0,
-          duration: fromNavTransition ? 0.12 : 0.2,
-          stagger: fromNavTransition ? 0.02 : 0.04,
-        },
-        "-=0.06"
-      )
-      .to("#loginBtn", { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.1 : 0.16 }, "-=0.06");
-    return;
-  }
+          scale: 1,
+          duration: fromNavTransition ? 0.16 : 0.24,
+        })
+        .to(
+          "#loginTitle",
+          { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.14 : 0.2 },
+          "-=0.08"
+        )
+        .to(
+          ".login-field",
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: fromNavTransition ? 0.12 : 0.2,
+            stagger: fromNavTransition ? 0.02 : 0.04,
+          },
+          "-=0.06"
+        )
+        .to(
+          "#loginBtn",
+          { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.1 : 0.16 },
+          "-=0.06"
+        );
+      return;
+    }
 
-  if (document.querySelector("#registerCard")) {
-    const card = "#registerCard";
-    const fields = ".register-field";
+    if (document.querySelector("#registerCard")) {
+      const card = "#registerCard";
+      const fields = ".register-field";
 
-    gsap.set(card, {
-      autoAlpha: 0,
-      y: fromNavTransition ? 20 : 24,
-      rotateX: fromNavTransition ? 4 : 5,
-      transformOrigin: "50% 100%",
-    });
-    gsap.set("#registerTitle", { autoAlpha: 0, y: fromNavTransition ? 8 : 14 });
-    gsap.set(fields, {
-      autoAlpha: 0,
-      x: (index) => (index % 2 === 0 ? (fromNavTransition ? -8 : -16) : fromNavTransition ? 8 : 16),
-    });
-    gsap.set("#registerBtn", { autoAlpha: 0, y: fromNavTransition ? 6 : 10 });
+      gsap.set(card, {
+        autoAlpha: 0,
+        y: fromNavTransition ? 20 : 24,
+        rotateX: fromNavTransition ? 4 : 5,
+        transformOrigin: "50% 100%",
+      });
+      gsap.set("#registerTitle", { autoAlpha: 0, y: fromNavTransition ? 8 : 14 });
+      gsap.set(fields, {
+        autoAlpha: 0,
+        x: (index) =>
+          index % 2 === 0 ? (fromNavTransition ? -8 : -16) : fromNavTransition ? 8 : 16,
+      });
+      gsap.set("#registerBtn", { autoAlpha: 0, y: fromNavTransition ? 6 : 10 });
 
-    gsap
-      .timeline({ defaults: { ease: "power3.out" } })
-      .to(card, {
-        autoAlpha: 1,
-        y: 0,
-        rotateX: 0,
-        duration: fromNavTransition ? 0.18 : 0.28,
-      })
-      .to(
-        "#registerTitle",
-        { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.12 : 0.18 },
-        "-=0.1"
-      )
-      .to(
-        fields,
-        {
+      gsap
+        .timeline({ defaults: { ease: "power3.out" } })
+        .to(card, {
           autoAlpha: 1,
-          x: 0,
-          duration: fromNavTransition ? 0.12 : 0.2,
-          stagger: fromNavTransition ? 0.02 : 0.04,
-        },
-        "-=0.08"
-      )
-      .to(
-        "#registerBtn",
-        { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.1 : 0.14 },
-        "-=0.06"
-      );
+          y: 0,
+          rotateX: 0,
+          duration: fromNavTransition ? 0.18 : 0.28,
+        })
+        .to(
+          "#registerTitle",
+          { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.12 : 0.18 },
+          "-=0.1"
+        )
+        .to(
+          fields,
+          {
+            autoAlpha: 1,
+            x: 0,
+            duration: fromNavTransition ? 0.12 : 0.2,
+            stagger: fromNavTransition ? 0.02 : 0.04,
+          },
+          "-=0.08"
+        )
+        .to(
+          "#registerBtn",
+          { autoAlpha: 1, y: 0, duration: fromNavTransition ? 0.1 : 0.14 },
+          "-=0.06"
+        );
+      return;
+    }
+
+    const heroTargets = ["#hero-title", "#hero-copy", "#hero-note"].filter((selector) =>
+      document.querySelector(selector)
+    );
+    if (!heroTargets.length) return;
+
+    gsap.set(heroTargets, { autoAlpha: 0, y: 40 });
+    gsap.timeline({ defaults: { ease: "power3.out", duration: 0.7 } }).to(heroTargets, {
+      autoAlpha: 1,
+      y: 0,
+      stagger: 0.2,
+    });
+  };
+
+  const targetSelector =
+    page === "login" ? "#loginCard" : page === "register" ? "#registerCard" : "";
+  const shouldLazyLoad =
+    (page === "login" || page === "register") && typeof IntersectionObserver !== "undefined";
+
+  if (shouldLazyLoad && targetSelector) {
+    const target = document.querySelector(targetSelector);
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        observer.disconnect();
+        loadGsap().then(runAnimations);
+      },
+      { rootMargin: "0px 0px -40% 0px", threshold: 0.1 }
+    );
+    observer.observe(target);
     return;
   }
 
-  const heroTargets = ["#hero-title", "#hero-copy", "#hero-note"].filter((selector) =>
-    document.querySelector(selector)
-  );
-  if (!heroTargets.length) return;
+  if (window.gsap) {
+    runAnimations();
+    return;
+  }
 
-  gsap.set(heroTargets, { autoAlpha: 0, y: 40 });
-  gsap.timeline({ defaults: { ease: "power3.out", duration: 0.7 } }).to(heroTargets, {
-    autoAlpha: 1,
-    y: 0,
-    stagger: 0.2,
-  });
+  loadGsap().then(runAnimations);
 });

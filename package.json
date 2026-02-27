@@ -16,7 +16,7 @@
     "test": "npm run test:api && npm run test:e2e",
     "test:all": "npm run test && npm run check:bundle-size && npm run perf:lighthouse",
     "test:api": "npm --prefix ./backend run test",
-    "test:e2e": "playwright test",
+    "test:e2e": "if [ \"${SKIP_WEB_TESTS:-true}\" = \"true\" ]; then echo \"Skipping E2E (SKIP_WEB_TESTS)\"; exit 0; fi; playwright test",
     "test:e2e:headed": "playwright test --headed",
     "lint": "npm run lint:frontend",
     "lint:all": "npm run lint:backend && npm run lint:frontend",

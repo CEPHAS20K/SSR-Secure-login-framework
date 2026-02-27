@@ -32,8 +32,8 @@ block content
               .auth-skeleton-block.h-11
             .auth-skeleton-block.h-11.mt-2
             .auth-skeleton-block.h-11.mt-2
-          form#registerForm.grid.gap-3(action="/auth/register", method="POST", class="md:grid-cols-2")
-            +authFieldShell("username", "Username", "register-field space-y-1.5", "block text-xs font-bold uppercase tracking-wide text-rose-800")
+          form#registerForm.grid.gap-2(action="/auth/register", method="POST", class="md:grid-cols-2")
+            +authFieldShell("username", "Username", "register-field space-y-1", "block text-xs font-bold uppercase tracking-wide text-rose-800")
               input#username.w-full.rounded-xl.border.px-3.border-rose-200.text-rose-950(
                 type="text",
                 name="username",
@@ -43,7 +43,7 @@ block content
                 class="py-2.5 bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary"
               )
 
-            +authFieldShell("regEmail", "Email", "register-field space-y-1.5", "block text-xs font-bold uppercase tracking-wide text-rose-800")
+            +authFieldShell("regEmail", "Email", "register-field space-y-1", "block text-xs font-bold uppercase tracking-wide text-rose-800")
               input#regEmail.w-full.rounded-xl.border.px-3.border-rose-200.text-rose-950(
                 type="email",
                 name="email",
@@ -53,7 +53,7 @@ block content
                 class="py-2.5 bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary"
               )
 
-            .register-field(class="space-y-1.5")
+            .register-field.space-y-1
               label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-800(
                 for="regPassword"
               ) Password
@@ -76,7 +76,7 @@ block content
                 aria-hidden="true"
               ) Caps Lock is on
 
-            .register-field(class="space-y-1.5")
+            .register-field.space-y-1
               label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-800(
                 for="regPasswordConfirm"
               ) Confirm
@@ -94,13 +94,14 @@ block content
                   class="top-1/2 -translate-y-1/2 hover:bg-fuchsia-100"
                 ) Show
 
-            .register-field(class="space-y-1.5")
+            .register-field.space-y-1
               label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-800(for="gender") Gender
               .relative.w-full
                 select#gender.w-full.appearance-none.rounded-xl.border.px-3.pr-10.border-rose-200.text-rose-950(
                   name="gender",
                   autocomplete="sex",
                   required,
+                  aria-describedby="genderHelp",
                   class="py-2.5 bg-white/70 focus:border-primary focus:ring-2 focus:ring-primary"
                 )
                   option(value="") Select Gender
@@ -110,14 +111,20 @@ block content
                 span.pointer-events-none.absolute.inset-y-0.right-3.flex.items-center.text-rose-700(
                   aria-hidden="true"
                 ) ▼
+              p#genderHelp.hidden.text-xs.font-semibold.text-rose-800(aria-live="polite")
 
-            .register-field(class="space-y-1.5")
+            .register-field.space-y-1
               label.block.text-xs.font-bold.uppercase.tracking-wide.text-rose-800(for="agreeTerms")
                 | Terms
               label.flex.items-start.gap-2.rounded-lg.p-3(class="bg-white/55")
-                input#agreeTerms.h-4.w-4.rounded.border-rose-300(type="checkbox", class="mt-0.5")
+                input#agreeTerms.h-4.w-4.rounded.border-rose-300(
+                  type="checkbox",
+                  aria-describedby="termsHelp",
+                  class="mt-0.5"
+                )
                 span.text-xs.font-semibold.text-rose-800
                   | I agree to the terms and privacy policy.
+              p#termsHelp.hidden.text-xs.font-semibold.text-rose-800(aria-live="polite")
 
             .register-field.flex.justify-center(class="md:col-span-2")
               +appButton("Register", "primary", "submit")#registerBtn.py-3.px-8.min-w-36(
@@ -126,14 +133,18 @@ block content
 
   +authModalShell("registerOtpModal")
     +authModalHeader("Verify Email OTP", "Enter the 5-digit code sent to your email.", "registerOtpClose")
-    input#registerOtpInput.mt-4.w-full.rounded-xl.border.border-rose-200.px-3.text-rose-950(
-      type="text",
-      autocomplete="one-time-code",
-      inputmode="numeric",
-      maxlength="5",
-      placeholder="12345",
-      class="bg-white/60 py-2.5 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-    )
+    .mt-4.flex.items-center.justify-center.gap-2
+      each digit in [0, 1, 2, 3, 4]
+        input.register-otp-digit.w-12.rounded-xl.border.border-rose-200.px-3.py-2.text-center.text-lg.font-bold.text-rose-950.outline-none(
+          type="text",
+          maxlength="1",
+          inputmode="numeric",
+          pattern="[0-9]*",
+          autocomplete="one-time-code",
+          data-otp-digit,
+          aria-label=`OTP digit ${digit + 1}`,
+          class="bg-white/70 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        )
     .mt-5.flex.flex-col.gap-3(class="sm:flex-row sm:items-center sm:justify-between")
       +appButton("Submit", "primary", "button")#registerOtpSubmit.flex-1(disabled)
       +appButton("Resend (05:00)", "ghost", "button")#registerResendOtp.flex-1(disabled)
