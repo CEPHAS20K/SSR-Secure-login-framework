@@ -2,20 +2,26 @@
 
 const Redis = require("ioredis");
 
-const redisUrl =
-  process.env.REDIS_URL ||
-  process.env.REDIS_CONNECTION_STRING ||
-  "redis://default:vault%40340k@localhost:6379/0";
+const RATE_LIMIT_DISABLED =
+  process.env.DISABLE_RATE_LIMIT === "true" || process.env.NODE_ENV === "test";
 
-const redis = new Redis(redisUrl, {
-  maxRetriesPerRequest: 2,
-  enableOfflineQueue: false,
-});
+let redis = null;
+if (!RATE_LIMIT_DISABLED) {
+  const redisUrl =
+    process.env.REDIS_URL ||
+    process.env.REDIS_CONNECTION_STRING ||
+    "redis://default:vault%40340k@localhost:6379/0";
 
-redis.on("error", (error) => {
-  // Fail open; just log to avoid unhandled error events in test/dev when Redis is unavailable.
-  console.warn("rateLimit redis error", error);
-});
+  redis = new Redis(redisUrl, {
+    maxRetriesPerRequest: 2,
+    enableOfflineQueue: false,
+  });
+
+  redis.on("error", (error) => {
+    // Fail open; just log to avoid unhandled error events in test/dev when Redis is unavailable.
+    console.warn("rateLimit redis error", error);
+  });
+}
 
 function rateLimit(options) {
   const {
@@ -26,6 +32,10 @@ function rateLimit(options) {
   } = options;
 
   return async function rateLimitMiddleware(req, res, next) {
+    if (RATE_LIMIT_DISABLED || !redis) {
+      next();
+      return;
+    }
     const key = `rl:${keyBuilder(req)}`;
     const ttl = windowSec;
     try {

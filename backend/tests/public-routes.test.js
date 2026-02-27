@@ -1,5 +1,11 @@
 "use strict";
 
+process.env.NODE_ENV = "test";
+process.env.DISABLE_REDIS = "true";
+process.env.DISABLE_RATE_LIMIT = "true";
+process.env.AUTH_BACKEND_DISABLED = "true";
+process.env.SKIP_NETWORK_TESTS = "true";
+
 const request = require("supertest");
 const net = require("net");
 const { createApp } = require("../app");
@@ -44,10 +50,21 @@ function buildTestClient(overrides = {}) {
 }
 
 async function createTestClient(overrides = {}) {
-  const server = null;
+  const app = buildTestApp(overrides);
+  const host = process.env.TEST_HOST || "127.0.0.1";
+  const server = await new Promise((resolve, reject) => {
+    const srv = app.listen({ port: 0, host }, () => resolve(srv));
+    srv.on("error", reject);
+  });
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  const client = request(`http://${host}:${port}`);
   return {
-    request: request(buildTestApp(overrides)),
-    close: () => Promise.resolve(),
+    request: client,
+    close: () =>
+      new Promise((resolve) => {
+        server.close(() => resolve());
+      }),
   };
 }
 
