@@ -1,6 +1,7 @@
 import { createApiClient } from "../lib/api-client.js";
 import {
   firstSchemaError,
+  forgotPasswordSchema,
   loginSchema,
   otpSchema,
   resetAccountSchema,
@@ -54,14 +55,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetNewPassword = document.getElementById("resetNewPassword");
   const resetConfirmPassword = document.getElementById("resetConfirmPassword");
   const resetSubmit = document.getElementById("resetSubmit");
+  const resetCodeInputs = Array.from(document.querySelectorAll("[data-reset-digit]"));
+  const resetSendCode = document.getElementById("resetSendCode");
   const capsWarning = document.getElementById("capsWarning");
   const rememberMe = document.getElementById("rememberMe");
   const formShell = document.getElementById("loginFormShell");
   const OTP_COUNTDOWN_SECONDS = 5 * 60;
+  const RESET_CODE_COUNTDOWN_SECONDS = 60;
   const FORM_SKELETON_MIN_MS = 220;
   const rememberedEmail = safeReadStorage("auth_email");
   let resendSecondsLeft = OTP_COUNTDOWN_SECONDS;
   let resendTimer = null;
+  let resetResendSecondsLeft = 0;
+  let resetResendTimer = null;
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
 
@@ -127,6 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const readOtpValue = () => otpInputs.map((el) => el.value.trim()).join("");
+  const readResetCode = () => resetCodeInputs.map((el) => el.value.trim()).join("");
 
   const updateOtpSubmitState = () => {
     if (!otpSubmit || otpInputs.length === 0) return;
@@ -155,6 +162,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!resendTimer) return;
     clearInterval(resendTimer);
     resendTimer = null;
+  };
+
+  const updateResetResendState = () => {
+    if (!resetSendCode) return;
+    const isReady = resetResendSecondsLeft <= 0;
+    resetSendCode.disabled = !isReady;
+    resetSendCode.textContent = isReady
+      ? "Send code"
+      : `Send code (${formatTime(resetResendSecondsLeft)})`;
+    resetSendCode.classList.toggle("opacity-60", !isReady);
+    resetSendCode.classList.toggle("cursor-not-allowed", !isReady);
+  };
+
+  const stopResetResendTimer = () => {
+    if (!resetResendTimer) return;
+    clearInterval(resetResendTimer);
+    resetResendTimer = null;
   };
 
   const setModalOpenState = (open) => {
@@ -245,13 +269,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
   };
 
+  const startResetResendTimer = (duration = RESET_CODE_COUNTDOWN_SECONDS) => {
+    stopResetResendTimer();
+    resetResendSecondsLeft = duration;
+    updateResetResendState();
+
+    resetResendTimer = setInterval(() => {
+      resetResendSecondsLeft -= 1;
+      if (resetResendSecondsLeft <= 0) {
+        resetResendSecondsLeft = 0;
+        stopResetResendTimer();
+      }
+      updateResetResendState();
+    }, 1000);
+  };
+
   const isResetModalReady = Boolean(
     forgotPasswordLink &&
     resetModal &&
     resetEmail &&
     resetNewPassword &&
     resetConfirmPassword &&
-    resetSubmit
+    resetSubmit &&
+    resetSendCode &&
+    resetCodeInputs.length
   );
 
   const setResetModalOpenState = (open) => {
@@ -266,6 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isResetModalReady) return;
     const parse = resetAccountSchema.safeParse({
       email: resetEmail.value.trim(),
+      code: readResetCode(),
       newPassword: resetNewPassword.value,
       confirmPassword: resetConfirmPassword.value,
     });
@@ -293,6 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
         duration: 0.2,
         ease: "power1.in",
         onComplete: () => {
+          stopResetResendTimer();
           setResetModalOpenState(false);
           resetFocusTrap.deactivate();
           gsap.set(resetModal, { clearProps: "opacity,visibility" });
@@ -303,6 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     setResetModalOpenState(false);
+    stopResetResendTimer();
     resetFocusTrap.deactivate();
   };
 
@@ -312,6 +356,13 @@ document.addEventListener("DOMContentLoaded", () => {
     resetEmail.value = email.value.trim();
     resetNewPassword.value = "";
     resetConfirmPassword.value = "";
+    resetCodeInputs.forEach((input) => {
+      input.value = "";
+      input.classList.remove("ring-2", "ring-rose-400");
+    });
+    resetResendSecondsLeft = 0;
+    stopResetResendTimer();
+    updateResetResendState();
     updateResetSubmitState();
 
     if (!window.gsap) {
@@ -456,6 +507,66 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   updateOtpSubmitState();
 
+  const focusResetPrev = (index) => {
+    if (index <= 0) return;
+    resetCodeInputs[index - 1].focus();
+  };
+  const focusResetNext = (index) => {
+    if (index >= resetCodeInputs.length - 1) return;
+    resetCodeInputs[index + 1].focus();
+  };
+
+  const tryAutoSubmitReset = () => {
+    if (!resetSubmit) return;
+    const parse = resetAccountSchema.safeParse({
+      email: resetEmail.value.trim(),
+      code: readResetCode(),
+      newPassword: resetNewPassword.value,
+      confirmPassword: resetConfirmPassword.value,
+    });
+    if (!parse.success) return;
+    resetSubmit.click();
+  };
+
+  resetCodeInputs.forEach((input, index) => {
+    input.addEventListener("input", (event) => {
+      const value = event.target.value.replace(/\D/g, "").slice(0, 1);
+      event.target.value = value;
+      if (value && index < resetCodeInputs.length - 1) {
+        focusResetNext(index);
+      }
+      updateResetSubmitState();
+      if (value && index === resetCodeInputs.length - 1) {
+        tryAutoSubmitReset();
+      }
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Backspace" && !event.target.value) {
+        focusResetPrev(index);
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        focusResetPrev(index);
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        focusResetNext(index);
+      }
+    });
+    input.addEventListener("paste", (event) => {
+      const data = event.clipboardData?.getData("text") || "";
+      const digits = data.replace(/\D/g, "").slice(0, resetCodeInputs.length).split("");
+      resetCodeInputs.forEach((el, i) => {
+        el.value = digits[i] || "";
+      });
+      updateResetSubmitState();
+      const nextIndex = Math.min(digits.length, resetCodeInputs.length - 1);
+      resetCodeInputs[nextIndex]?.focus();
+      event.preventDefault();
+      if (digits.length === resetCodeInputs.length) tryAutoSubmitReset();
+    });
+  });
+
   otpSubmit.addEventListener("click", () => {
     if (otpSubmit.disabled) return;
     const parse = otpSchema.safeParse(readOtpValue());
@@ -489,6 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setResetModalOpenState(false);
   if (isResetModalReady) {
     updateResetSubmitState();
+    updateResetResendState();
 
     forgotPasswordLink.addEventListener("click", (event) => {
       event.preventDefault();
@@ -498,10 +610,48 @@ document.addEventListener("DOMContentLoaded", () => {
     if (resetClose) resetClose.addEventListener("click", closeResetModal);
     if (resetCancel) resetCancel.addEventListener("click", closeResetModal);
 
+    resetEmail.addEventListener("input", updateResetSubmitState);
+    resetNewPassword.addEventListener("input", updateResetSubmitState);
+    resetConfirmPassword.addEventListener("input", updateResetSubmitState);
+
+    resetSendCode.addEventListener("click", async () => {
+      if (resetResendSecondsLeft > 0) return;
+      const parse = forgotPasswordSchema.safeParse({
+        email: resetEmail.value.trim(),
+      });
+      if (!parse.success) {
+        notify(firstSchemaError(parse), "error", "Validation error");
+        return;
+      }
+
+      setButtonLoading(resetSendCode, true, "Sending...");
+      try {
+        await apiClient.request("/auth/password/forgot", {
+          method: "POST",
+          data: parse.data,
+          retries: 1,
+          timeoutMs: 5200,
+        });
+        notify("Reset code sent. Check your email.", "success", "Reset");
+        startResetResendTimer();
+        resetCodeInputs[0]?.focus();
+      } catch (error) {
+        if (error.code === "TIMEOUT") {
+          notify("Reset request timed out. Try again.", "error", "Network");
+          return;
+        }
+        notify(error.message || "Unable to send reset code.", "error", "Reset");
+      } finally {
+        setButtonLoading(resetSendCode, false);
+        updateResetResendState();
+      }
+    });
+
     resetSubmit.addEventListener("click", async () => {
       if (resetSubmit.disabled) return;
       const parse = resetAccountSchema.safeParse({
         email: resetEmail.value.trim(),
+        code: readResetCode(),
         newPassword: resetNewPassword.value,
         confirmPassword: resetConfirmPassword.value,
       });
@@ -510,24 +660,26 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      resetSubmit.disabled = true;
-      resetSubmit.textContent = "Submitting...";
+      setButtonLoading(resetSubmit, true, "Updating...");
       try {
-        await apiClient.request("/health", {
-          method: "GET",
-          cache: false,
-          retries: 0,
-          timeoutMs: 3000,
+        await apiClient.request("/auth/password/reset", {
+          method: "POST",
+          data: parse.data,
+          retries: 1,
+          timeoutMs: 5200,
         });
-        notify("Reset request submitted. Check your email for next steps.", "success", "Reset");
+        notify("Password updated. Please sign in again.", "success", "Reset");
         setTimeout(() => {
           closeResetModal();
         }, 650);
       } catch (error) {
+        if (error.code === "TIMEOUT") {
+          notify("Reset request timed out. Try again.", "error", "Network");
+          return;
+        }
         notify(error.message || "Unable to submit reset request right now.", "error", "Reset");
       } finally {
-        resetSubmit.textContent = "Submit Reset";
-        resetSubmit.disabled = false;
+        setButtonLoading(resetSubmit, false);
         updateResetSubmitState();
       }
     });

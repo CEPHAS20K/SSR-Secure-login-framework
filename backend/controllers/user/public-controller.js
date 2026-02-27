@@ -5,7 +5,11 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { pool } = require("../../database/pool");
 const { redis } = require("../../services/redis-client");
-const { sendOtpEmail } = require("../../services/mailer");
+const {
+  sendOtpEmail,
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmation,
+} = require("../../services/mailer");
 const { assessRisk } = require("../../services/risk-engine");
 
 const loginPayloadSchema = z.object({
@@ -24,6 +28,56 @@ const loginPayloadSchema = z.object({
     .min(8, "Password must be at least 8 characters.")
     .max(128, "Password must be less than 128 characters."),
 });
+
+const forgotPasswordSchema = z.object({
+  email: z
+    .string({
+      error: "Email is required.",
+    })
+    .trim()
+    .email("Provide a valid email address.")
+    .transform((value) => value.toLowerCase()),
+});
+
+const resetPasswordSchema = z
+  .object({
+    email: z
+      .string({
+        error: "Email is required.",
+      })
+      .trim()
+      .email("Provide a valid email address.")
+      .transform((value) => value.toLowerCase()),
+    code: z
+      .string({
+        error: "Reset code is required.",
+      })
+      .trim()
+      .regex(/^\d{5}$/, "Reset code must be 5 digits."),
+    newPassword: z
+      .string({
+        error: "New password is required.",
+      })
+      .trim()
+      .min(8, "New password must be at least 8 characters.")
+      .max(128, "New password must be less than 128 characters."),
+    confirmPassword: z
+      .string({
+        error: "Confirm password is required.",
+      })
+      .trim()
+      .min(8, "Confirm password must be at least 8 characters.")
+      .max(128, "Confirm password must be less than 128 characters."),
+  })
+  .superRefine((value, context) => {
+    if (value.newPassword !== value.confirmPassword) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirmPassword"],
+        message: "New password and confirm password must match.",
+      });
+    }
+  });
 
 const registerPayloadSchema = z
   .object({
@@ -119,6 +173,7 @@ const rumMetricSchema = z.object({
 function createPublicController(options = {}) {
   const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
   const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  const RESET_TTL_MS = 10 * 60 * 1000; // 10 minutes
   const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
   const ACCOUNT_LOCK_MINUTES = Number(process.env.ACCOUNT_LOCK_MINUTES || 5);
@@ -351,6 +406,141 @@ function createPublicController(options = {}) {
     })();
   }
 
+  function requestPasswordReset(req, res) {
+    (async () => {
+      if (AUTH_BACKEND_DISABLED) {
+        res.status(501).json(authNotConfiguredResponse);
+        return;
+      }
+      const parsedPayload = forgotPasswordSchema.safeParse(req.body || {});
+      if (!parsedPayload.success) {
+        const firstIssue = parsedPayload.error.issues[0];
+        res.status(400).json({ error: firstIssue?.message || "Invalid reset payload." });
+        return;
+      }
+
+      const client = await pool.connect();
+      try {
+        const userQuery = await client.query(
+          `SELECT id, email FROM users WHERE lower(email)=lower($1)`,
+          [parsedPayload.data.email]
+        );
+        if (userQuery.rowCount > 0) {
+          const user = userQuery.rows[0];
+          const { code, codeHash, expiresAt } = await generateResetCode();
+          await client.query(
+            `
+              INSERT INTO password_resets (user_id, reset_token_hash, expires_at)
+              VALUES ($1,$2,$3)
+              ON CONFLICT (user_id) DO UPDATE
+                SET reset_token_hash=EXCLUDED.reset_token_hash,
+                    expires_at=EXCLUDED.expires_at,
+                    created_at=now()
+            `,
+            [user.id, codeHash, expiresAt]
+          );
+          try {
+            await redis.setex(
+              `pwdreset:user:${user.id}`,
+              Math.floor(RESET_TTL_MS / 1000),
+              codeHash
+            );
+          } catch (error) {
+            logger.warn({ err: error }, "Failed to cache reset code in redis");
+          }
+          try {
+            await sendPasswordResetEmail(user.email, code, RESET_TTL_MS);
+          } catch (error) {
+            logger.warn({ err: error }, "Failed to send reset email");
+            logger.info({ email: user.email, code }, "Dev reset code (email fallback)");
+          }
+        }
+
+        res.status(202).json({
+          message: "If the email exists, a reset code has been sent.",
+        });
+      } catch (error) {
+        logger.error({ err: error }, "Password reset request failed");
+        res.status(500).json({ error: "Unable to process reset request." });
+      } finally {
+        client.release();
+      }
+    })();
+  }
+
+  function resetPassword(req, res) {
+    (async () => {
+      if (AUTH_BACKEND_DISABLED) {
+        res.status(501).json(authNotConfiguredResponse);
+        return;
+      }
+      const parsedPayload = resetPasswordSchema.safeParse(req.body || {});
+      if (!parsedPayload.success) {
+        const firstIssue = parsedPayload.error.issues[0];
+        res.status(400).json({ error: firstIssue?.message || "Invalid reset payload." });
+        return;
+      }
+
+      const client = await pool.connect();
+      try {
+        const userQuery = await client.query(
+          `SELECT id, email FROM users WHERE lower(email)=lower($1)`,
+          [parsedPayload.data.email]
+        );
+        if (userQuery.rowCount === 0) {
+          res.status(400).json({ error: "Invalid reset code or email." });
+          return;
+        }
+        const user = userQuery.rows[0];
+
+        const storedHash =
+          (await redis.get(`pwdreset:user:${user.id}`)) ||
+          (await (async () => {
+            const row = await client.query(
+              `SELECT reset_token_hash FROM password_resets WHERE user_id=$1 AND expires_at > now()`,
+              [user.id]
+            );
+            return row.rows[0]?.reset_token_hash || null;
+          })());
+
+        if (!storedHash) {
+          res.status(400).json({ error: "Reset code expired or invalid." });
+          return;
+        }
+
+        const ok = await bcrypt.compare(parsedPayload.data.code, storedHash);
+        if (!ok) {
+          res.status(400).json({ error: "Reset code expired or invalid." });
+          return;
+        }
+
+        const passwordHash = await bcrypt.hash(parsedPayload.data.newPassword, saltRounds);
+        await client.query(`UPDATE users SET password_hash=$2 WHERE id=$1`, [
+          user.id,
+          passwordHash,
+        ]);
+        await client.query(`DELETE FROM password_resets WHERE user_id=$1`, [user.id]);
+        await client.query(`DELETE FROM sessions WHERE user_id=$1`, [user.id]);
+        await redis.del(`pwdreset:user:${user.id}`);
+
+        try {
+          await sendPasswordResetConfirmation(user.email);
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to send reset confirmation email");
+        }
+
+        res.status(200).json({
+          message: "Password updated. Please log in again.",
+        });
+      } catch (error) {
+        logger.error({ err: error }, "Password reset failed");
+        res.status(500).json({ error: "Unable to reset password." });
+      } finally {
+        client.release();
+      }
+    })();
+  }
+
   function health(req, res) {
     res.status(200).json({
       status: "ok",
@@ -508,12 +698,21 @@ function createPublicController(options = {}) {
     return { otp, otpHash, expiresAt };
   }
 
+  async function generateResetCode() {
+    const code = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 5);
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + RESET_TTL_MS);
+    return { code, codeHash, expiresAt };
+  }
+
   return {
     renderLanding,
     renderLogin,
     renderRegister,
     login,
     register,
+    requestPasswordReset,
+    resetPassword,
     verifyOtp,
     beginWebAuthnRegistration,
     finishWebAuthnRegistration,

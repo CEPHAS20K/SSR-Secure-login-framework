@@ -42,6 +42,43 @@ async function sendOtpEmail(to, otpCode) {
   return info;
 }
 
+async function sendPasswordResetEmail(to, resetCode, ttlMs = 10 * 60 * 1000) {
+  const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
+  const subject = "Secure Storage Vault password reset code";
+  const text = `Your password reset code is ${resetCode}. It expires in ${ttlMinutes} minutes. If you did not request this, ignore this message.`;
+  const html = `<p>Your password reset code is <strong>${resetCode}</strong>.</p><p>It expires in ${ttlMinutes} minutes.</p><p>If you did not request this, ignore this message.</p>`;
+
+  const info = await transporter.sendMail({
+    from: defaultFrom,
+    to,
+    subject,
+    text,
+    html,
+  });
+
+  return info;
+}
+
+async function sendPasswordResetConfirmation(to) {
+  const subject = "Your password was updated";
+  const text =
+    "Your Secure Storage Vault password was updated. If this was not you, contact support immediately.";
+  const html =
+    "<p>Your Secure Storage Vault password was updated.</p><p>If this was not you, contact support immediately.</p>";
+
+  const info = await transporter.sendMail({
+    from: defaultFrom,
+    to,
+    subject,
+    text,
+    html,
+  });
+
+  return info;
+}
+
 module.exports = {
   sendOtpEmail,
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmation,
 };

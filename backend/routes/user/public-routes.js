@@ -17,6 +17,13 @@ function registerPublicRoutes(app, options = {}) {
   app.get("/register", publicController.renderRegister);
   app.post("/auth/login", ipLimiter, strictIpLimiter, publicController.login);
   app.post("/auth/register", ipLimiter, publicController.register);
+  app.post(
+    "/auth/password/forgot",
+    ipLimiter,
+    strictIpLimiter,
+    publicController.requestPasswordReset
+  );
+  app.post("/auth/password/reset", ipLimiter, strictIpLimiter, publicController.resetPassword);
   app.post("/auth/verify-otp", ipLimiter, strictIpLimiter, publicController.verifyOtp);
   app.post("/auth/webauthn/register/begin", publicController.beginWebAuthnRegistration);
   app.post("/auth/webauthn/register/finish", publicController.finishWebAuthnRegistration);

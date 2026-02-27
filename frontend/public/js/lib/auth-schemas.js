@@ -1,5 +1,5 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const GENDER_SET = new Set(["male", "female", "other"]);
+const GENDER_SET = new Set(["male", "female"]);
 
 function createIssue(message, path) {
   return {
@@ -113,11 +113,15 @@ export const otpSchema = {
 export const resetAccountSchema = {
   safeParse(input) {
     const email = trimString(input?.email);
+    const code = trimString(input?.code);
     const newPassword = asString(input?.newPassword);
     const confirmPassword = asString(input?.confirmPassword);
 
     if (!isValidEmail(email)) {
       return createIssue("Enter a valid email address.", "email");
+    }
+    if (!/^\d{5}$/.test(code)) {
+      return createIssue("Reset code must be 5 digits.", "code");
     }
     if (!isBetweenLength(newPassword, 8, 128)) {
       return createIssue("New password must be at least 8 characters.", "newPassword");
@@ -131,9 +135,20 @@ export const resetAccountSchema = {
 
     return createSuccess({
       email,
+      code,
       newPassword,
       confirmPassword,
     });
+  },
+};
+
+export const forgotPasswordSchema = {
+  safeParse(input) {
+    const email = trimString(input?.email);
+    if (!isValidEmail(email)) {
+      return createIssue("Enter a valid email address.", "email");
+    }
+    return createSuccess({ email });
   },
 };
 
