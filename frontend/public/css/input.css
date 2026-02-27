@@ -178,7 +178,8 @@
   select:focus-visible,
   textarea:focus-visible,
   button:focus-visible {
-    outline-color: #ff7700;
+    outline: 2px solid #ff7700;
+    outline-offset: 2px;
   }
 
   .tw-ring-preserve {

@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U authuser -d authdb"]
+      test: ["CMD-SHELL", "pg_isready -U vault-user -d vault"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -21,6 +21,7 @@ services:
     image: redis:8.6.0-alpine
     container_name: auth-redis
     restart: unless-stopped
+    command: ["redis-server", "--requirepass", "vault@340k"]
     ports:
       - "6379:6379"
     volumes:
