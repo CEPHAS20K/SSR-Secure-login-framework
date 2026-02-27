@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { pool } = require("../../database/pool");
 const { redis } = require("../../services/redis-client");
 const { sendOtpEmail } = require("../../services/mailer");
+const { assessRisk } = require("../../services/risk-engine");
 
 const loginPayloadSchema = z.object({
   email: z
@@ -77,7 +78,7 @@ const authNotConfiguredResponse = {
   code: "AUTH_NOT_CONFIGURED",
 };
 
-const acceptedGenders = new Set(["male", "female", "other"]);
+const acceptedGenders = new Set(["male", "female"]);
 const acceptedRumMetrics = new Set(["LCP", "CLS", "INP", "FIELD_ACTIVE_MS"]);
 const safeNoStoreHeaders = {
   "Cache-Control": "no-store",
