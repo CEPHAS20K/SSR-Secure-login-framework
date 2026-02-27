@@ -425,39 +425,38 @@ function createPublicController(options = {}) {
           `SELECT id, email FROM users WHERE lower(email)=lower($1)`,
           [parsedPayload.data.email]
         );
-        if (userQuery.rowCount > 0) {
-          const user = userQuery.rows[0];
-          const { code, codeHash, expiresAt } = await generateResetCode();
-          await client.query(
-            `
-              INSERT INTO password_resets (user_id, reset_token_hash, expires_at)
-              VALUES ($1,$2,$3)
-              ON CONFLICT (user_id) DO UPDATE
-                SET reset_token_hash=EXCLUDED.reset_token_hash,
-                    expires_at=EXCLUDED.expires_at,
-                    created_at=now()
-            `,
-            [user.id, codeHash, expiresAt]
-          );
-          try {
-            await redis.setex(
-              `pwdreset:user:${user.id}`,
-              Math.floor(RESET_TTL_MS / 1000),
-              codeHash
-            );
-          } catch (error) {
-            logger.warn({ err: error }, "Failed to cache reset code in redis");
-          }
-          try {
-            await sendPasswordResetEmail(user.email, code, RESET_TTL_MS);
-          } catch (error) {
-            logger.warn({ err: error }, "Failed to send reset email");
-            logger.info({ email: user.email, code }, "Dev reset code (email fallback)");
-          }
+        if (userQuery.rowCount === 0) {
+          res.status(404).json({ error: "Email not found." });
+          return;
+        }
+
+        const user = userQuery.rows[0];
+        const { code, codeHash, expiresAt } = await generateResetCode();
+        await client.query(
+          `
+            INSERT INTO password_resets (user_id, reset_token_hash, expires_at)
+            VALUES ($1,$2,$3)
+            ON CONFLICT (user_id) DO UPDATE
+              SET reset_token_hash=EXCLUDED.reset_token_hash,
+                  expires_at=EXCLUDED.expires_at,
+                  created_at=now()
+          `,
+          [user.id, codeHash, expiresAt]
+        );
+        try {
+          await redis.setex(`pwdreset:user:${user.id}`, Math.floor(RESET_TTL_MS / 1000), codeHash);
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to cache reset code in redis");
+        }
+        try {
+          await sendPasswordResetEmail(user.email, code, RESET_TTL_MS);
+        } catch (error) {
+          logger.warn({ err: error }, "Failed to send reset email");
+          logger.info({ email: user.email, code }, "Dev reset code (email fallback)");
         }
 
         res.status(202).json({
-          message: "If the email exists, a reset code has been sent.",
+          message: "Reset code sent. Check your email.",
         });
       } catch (error) {
         logger.error({ err: error }, "Password reset request failed");
