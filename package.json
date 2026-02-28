@@ -11,7 +11,7 @@
     "dev:frontend": "npm --prefix ./frontend run dev",
     "build:frontend": "npm --prefix ./frontend run build",
     "build": "npm run build:frontend",
-    "prestart": "docker compose up -d",
+    "prestart": "sudo docker compose up -d",
     "start": "npm --prefix ./backend run start",
     "prestart:proc": "docker compose up -d",
     "start:proc": "npm run build:frontend && npm --prefix ./backend run start:proc",
