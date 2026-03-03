@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This folder is reserved for backend code.",
   "main": "app.js",
   "scripts": {

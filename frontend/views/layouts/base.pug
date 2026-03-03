@@ -53,7 +53,10 @@ html(lang="en")
         background: #ff7700;
       }
     link(rel="stylesheet", href=assetPath("/css/output.css"))
-  body.min-h-screen.bg-slate-100.font-body.text-slate-900(data-page=page || "")
+  body.min-h-screen.bg-slate-100.font-body.text-slate-900(
+    data-page=page || "",
+    data-app-version=appVersion || ""
+  )
     #appToastRegion.pointer-events-none.fixed.inset-x-0.top-16.mx-auto.flex.w-full.max-w-md.flex-col.gap-2.px-3(
       class="z-[90]",
       aria-live="polite",

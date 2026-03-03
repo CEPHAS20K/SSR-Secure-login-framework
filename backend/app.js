@@ -159,6 +159,7 @@ function createApp(options = {}) {
   app.set("view cache", config.IS_PRODUCTION && !config.FORCE_NO_STORE);
   app.locals.assetVersion = config.ASSET_VERSION;
   app.locals.appVersion = config.APP_VERSION;
+  app.locals.appVersion = config.APP_VERSION;
   app.locals.assetPath = createAssetPathResolver(config.ASSET_VERSION);
   app.locals.adminEnabled = config.ADMIN_ENABLED;
   app.locals.rumEnabled = config.RUM_ENABLED;
