@@ -62,6 +62,7 @@ function registerPublicRoutes(app, options = {}) {
     app.get("/api/vault/items/:id", ipLimiter, vaultController.getVaultItem);
     app.post("/api/vault/items", ipLimiter, vaultController.createVaultItem);
     app.put("/api/vault/items/:id", ipLimiter, vaultController.updateVaultItem);
+    app.post("/api/vault/items/:id/attachments", ipLimiter, vaultController.createAttachment);
     app.get("/api/vault/usage", ipLimiter, vaultController.getVaultUsage);
   }
 }

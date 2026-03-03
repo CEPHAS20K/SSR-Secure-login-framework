@@ -66,6 +66,21 @@ function createVaultApiController(options = {}) {
         usedBytes: used + totalNewBytes,
         quotaBytes: perUserQuotaBytes > 0 ? perUserQuotaBytes : null,
       });
+
+      await recordAudit(client, {
+        req,
+        action: "vault_item_create",
+        actorUserId: userId,
+        targetType: "vault_item",
+        targetId: insert.rows[0].id,
+        status: "success",
+        meta: {
+          encryptionScheme,
+          ciphertextBytes: ciphertext.length,
+          attachmentBytes: Number(attachmentBytes || 0),
+          version: insert.rows[0].version,
+        },
+      });
     } catch (error) {
       logger.error({ err: error }, "createVaultItem failed");
       res.status(500).json({ error: "Unable to store vault item." });
@@ -160,6 +175,16 @@ function createVaultApiController(options = {}) {
         version: item.version,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
+      });
+
+      await recordAudit(client, {
+        req,
+        action: "vault_item_read",
+        actorUserId: userId,
+        targetType: "vault_item",
+        targetId: item.id,
+        status: "success",
+        meta: { version: item.version },
       });
     } catch (error) {
       logger.error({ err: error }, "getVaultItem failed");
@@ -270,6 +295,20 @@ function createVaultApiController(options = {}) {
         usedBytes: used + diff,
         quotaBytes: perUserQuotaBytes > 0 ? perUserQuotaBytes : null,
       });
+
+      await recordAudit(client, {
+        req,
+        action: "vault_item_update",
+        actorUserId: userId,
+        targetType: "vault_item",
+        targetId: itemId,
+        status: "success",
+        meta: {
+          previousBytes: currentBytes,
+          newBytes,
+          version: update.rows[0].version,
+        },
+      });
     } catch (error) {
       logger.error({ err: error }, "updateVaultItem failed");
       res.status(500).json({ error: "Unable to update vault item." });
@@ -305,12 +344,126 @@ function createVaultApiController(options = {}) {
     }
   }
 
+  async function createAttachment(req, res) {
+    const userId = readUserId(req);
+    const itemId = String(req.params?.id || "").trim();
+    const {
+      blobPath,
+      sizeBytes = 0,
+      mimeType,
+      ciphertextKeyWrap,
+      nonce,
+      authTag,
+      bytesError,
+    } = parseAttachmentPayload(req.body || {});
+
+    if (!userId || !itemId) {
+      res.status(400).json({ error: "userId and item id are required." });
+      return;
+    }
+    if (!blobPath || !sizeBytes) {
+      res.status(400).json({ error: "blobPath and sizeBytes are required." });
+      return;
+    }
+    if (bytesError) {
+      res.status(400).json({ error: bytesError });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const user = await ensureUser(client, userId);
+      if (!user) {
+        await client.query("ROLLBACK");
+        res.status(401).json({ error: "Invalid user." });
+        return;
+      }
+
+      const currentItem = await client.query(
+        `SELECT id, attachment_bytes, version FROM vault_items WHERE id=$1 AND user_id=$2 FOR UPDATE`,
+        [itemId, userId]
+      );
+      if (currentItem.rowCount === 0) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Item not found." });
+        return;
+      }
+
+      const used = await getUserUsageBytes(client, userId);
+      if (perUserQuotaBytes > 0 && used + sizeBytes > perUserQuotaBytes) {
+        await client.query("ROLLBACK");
+        res.status(413).json({
+          error: "User storage quota exceeded.",
+          quotaBytes: perUserQuotaBytes,
+          usedBytes: used,
+          requestedBytes: sizeBytes,
+        });
+        return;
+      }
+
+      const insert = await client.query(
+        `
+        INSERT INTO attachments (vault_item_id, blob_path, size_bytes, mime_type, ciphertext_key_wrap, nonce, auth_tag)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        RETURNING id, created_at
+      `,
+        [itemId, blobPath, sizeBytes, mimeType || null, ciphertextKeyWrap, nonce, authTag]
+      );
+
+      const update = await client.query(
+        `
+        UPDATE vault_items
+        SET attachment_bytes = attachment_bytes + $2,
+            version = version + 1,
+            updated_at = now()
+        WHERE id=$1
+        RETURNING version, updated_at
+      `,
+        [itemId, sizeBytes]
+      );
+
+      await recordAudit(client, {
+        req,
+        action: "vault_attachment_create",
+        actorUserId: userId,
+        targetType: "vault_item",
+        targetId: itemId,
+        status: "success",
+        meta: {
+          attachmentId: insert.rows[0].id,
+          sizeBytes,
+          version: update.rows[0].version,
+        },
+      });
+
+      await client.query("COMMIT");
+
+      res.status(201).json({
+        attachmentId: insert.rows[0].id,
+        itemId,
+        version: update.rows[0].version,
+        createdAt: insert.rows[0].created_at,
+        updatedAt: update.rows[0].updated_at,
+        usedBytes: used + sizeBytes,
+        quotaBytes: perUserQuotaBytes > 0 ? perUserQuotaBytes : null,
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      logger.error({ err: error }, "createAttachment failed");
+      res.status(500).json({ error: "Unable to attach file." });
+    } finally {
+      client.release();
+    }
+  }
+
   return {
     createVaultItem,
     listVaultItems,
     getVaultItem,
     updateVaultItem,
     getVaultUsage,
+    createAttachment,
   };
 }
 
@@ -353,12 +506,86 @@ async function ensureUser(client, userId) {
 
 async function getUserUsageBytes(client, userId) {
   const row = await client.query(
-    `SELECT COALESCE(SUM(octet_length(ciphertext) + attachment_bytes),0)::bigint AS used
-     FROM vault_items
-     WHERE user_id=$1`,
+    `
+    SELECT
+      COALESCE(SUM(octet_length(v.ciphertext)), 0)::bigint AS ciphertext_bytes,
+      COALESCE(SUM(v.attachment_bytes), 0)::bigint AS attachment_bytes,
+      COALESCE(SUM(a.size_bytes), 0)::bigint AS attachment_table_bytes
+    FROM vault_items v
+    LEFT JOIN attachments a ON a.vault_item_id = v.id
+    WHERE v.user_id = $1
+  `,
     [userId]
   );
-  return Number(row.rows[0]?.used || 0);
+  if (!row.rowCount) return 0;
+  const ciphertextBytes = Number(row.rows[0].ciphertext_bytes || 0);
+  const attachmentBytes = Number(row.rows[0].attachment_bytes || 0);
+  const attachmentTableBytes = Number(row.rows[0].attachment_table_bytes || 0);
+  return ciphertextBytes + Math.max(attachmentBytes, attachmentTableBytes);
+}
+
+async function recordAudit(client, options = {}) {
+  const {
+    req,
+    actorUserId = null,
+    action,
+    targetType = null,
+    targetId = null,
+    status = "success",
+    reason = null,
+    meta = null,
+  } = options;
+  if (!action) return;
+  const ip =
+    req?.headers?.["x-forwarded-for"]?.split(",")?.[0]?.trim() ||
+    req?.ip ||
+    req?.connection?.remoteAddress ||
+    null;
+  const userAgent = req?.headers?.["user-agent"] || null;
+  try {
+    await client.query(
+      `
+      INSERT INTO audit_logs (actor_user_id, action, target_type, target_id, ip, user_agent, status, reason, meta)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `,
+      [
+        actorUserId || null,
+        action,
+        targetType,
+        targetId || null,
+        ip,
+        userAgent,
+        status,
+        reason,
+        meta,
+      ]
+    );
+  } catch (error) {
+    // Avoid failing user flows because of audit log issues
+    console.warn("audit_log_failed", { error, action, targetId });
+  }
+}
+
+function parseAttachmentPayload(body) {
+  try {
+    const ciphertextKeyWrap = body.ciphertextKeyWrap
+      ? Buffer.from(String(body.ciphertextKeyWrap || ""), "base64")
+      : null;
+    const nonce = body.nonce ? Buffer.from(String(body.nonce || ""), "base64") : null;
+    const authTag = body.authTag ? Buffer.from(String(body.authTag || ""), "base64") : null;
+    return {
+      blobPath: String(body.blobPath || "").trim(),
+      sizeBytes: Number(body.sizeBytes || 0),
+      mimeType: String(body.mimeType || "")
+        .trim()
+        .slice(0, 120),
+      ciphertextKeyWrap,
+      nonce,
+      authTag,
+    };
+  } catch (error) {
+    return { bytesError: "Invalid base64 encoding for attachment payload." };
+  }
 }
 
 module.exports = {
