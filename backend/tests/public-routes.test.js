@@ -1,5 +1,7 @@
 "use strict";
 
+/* eslint-disable no-unused-vars */
+
 process.env.NODE_ENV = "test";
 process.env.DISABLE_REDIS = "true";
 process.env.DISABLE_RATE_LIMIT = "true";
@@ -70,7 +72,6 @@ async function createTestClient(overrides = {}) {
 
 async function withTestClient(overrides, testFn) {
   if (SKIP_NETWORK_TESTS) {
-    // eslint-disable-next-line no-console
     console.warn("[tests] Skipping HTTP route tests (SKIP_NETWORK_TESTS enabled or bind blocked).");
     return;
   }

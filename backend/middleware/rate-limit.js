@@ -56,7 +56,6 @@ function rateLimit(options) {
       }
     } catch (error) {
       // Fail open on Redis errors
-      // eslint-disable-next-line no-console
       console.warn("rateLimit redis error", error);
     }
     next();

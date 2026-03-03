@@ -53,6 +53,8 @@ function registerPublicRoutes(app, options = {}) {
   app.post("/auth/webauthn/register/finish", publicController.finishWebAuthnRegistration);
   app.post("/auth/webauthn/login/begin", publicController.beginWebAuthnLogin);
   app.post("/auth/webauthn/login/finish", publicController.finishWebAuthnLogin);
+  app.post("/api/profile/avatar", ipLimiter, publicController.uploadAvatar);
+  app.get("/api/profile/:userId/avatar", ipLimiter, publicController.getAvatar);
   app.post("/api/rum", publicController.ingestRumMetric);
   app.get("/health", publicController.health);
   app.get("/version", publicController.getVersion);

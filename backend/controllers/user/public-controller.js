@@ -137,6 +137,24 @@ const acceptedRumMetrics = new Set(["LCP", "CLS", "INP", "FIELD_ACTIVE_MS"]);
 const safeNoStoreHeaders = {
   "Cache-Control": "no-store",
 };
+const MAX_AVATAR_BYTES = Number(process.env.MAX_AVATAR_BYTES || 512 * 1024); // 512 KB default
+const allowedAvatarMimeTypes = ["image/png", "image/jpeg", "image/webp"];
+const avatarUploadSchema = z.object({
+  userId: z
+    .string({
+      error: "userId is required.",
+    })
+    .uuid("userId must be a UUID."),
+  mimeType: z.enum(allowedAvatarMimeTypes, {
+    error: "Avatar must be PNG, JPEG, or WebP.",
+  }),
+  avatarBase64: z
+    .string({
+      error: "Avatar is required.",
+    })
+    .trim()
+    .min(16, "Avatar data is required."),
+});
 const rumMetricSchema = z.object({
   name: z
     .string({
@@ -207,6 +225,100 @@ function createPublicController(options = {}) {
       activePage: "register",
       page: "register",
     });
+  }
+
+  async function uploadAvatar(req, res) {
+    if (AUTH_BACKEND_DISABLED) {
+      res.status(501).json(authNotConfiguredResponse);
+      return;
+    }
+    const parsed = avatarUploadSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      res.status(400).json({ error: firstIssue?.message || "Invalid avatar payload." });
+      return;
+    }
+    const { userId, avatarBase64, mimeType } = parsed.data;
+    const avatarBuffer = decodeBase64Payload(avatarBase64);
+    if (!avatarBuffer || !avatarBuffer.length) {
+      res.status(400).json({ error: "Invalid avatar encoding." });
+      return;
+    }
+    if (avatarBuffer.length > MAX_AVATAR_BYTES) {
+      res.status(413).json({
+        error: "Avatar too large.",
+        maxBytes: MAX_AVATAR_BYTES,
+        receivedBytes: avatarBuffer.length,
+      });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      const update = await client.query(
+        `
+        UPDATE users
+        SET avatar=$2, avatar_mime=$3, avatar_updated_at=now()
+        WHERE id=$1
+        RETURNING avatar_updated_at
+      `,
+        [userId, avatarBuffer, mimeType]
+      );
+      if (update.rowCount === 0) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
+      res.status(200).json({
+        message: "Avatar updated.",
+        bytes: avatarBuffer.length,
+        mimeType,
+        updatedAt: update.rows[0].avatar_updated_at,
+      });
+    } catch (error) {
+      logger.error({ err: error }, "uploadAvatar failed");
+      res.status(500).json({ error: "Unable to save avatar right now." });
+    } finally {
+      client.release();
+    }
+  }
+
+  async function getAvatar(req, res) {
+    const userId = String(
+      req.params?.userId || req.query?.userId || req.headers?.["x-user-id"] || ""
+    ).trim();
+    if (!userId) {
+      res.status(400).json({ error: "userId is required." });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      const row = await client.query(
+        `SELECT avatar, avatar_mime, avatar_updated_at FROM users WHERE id=$1`,
+        [userId]
+      );
+      if (row.rowCount === 0) {
+        res.status(404).json({ error: "User not found." });
+        return;
+      }
+      const avatar = row.rows[0].avatar;
+      if (!avatar || avatar.length === 0) {
+        res.status(404).json({ error: "No avatar uploaded." });
+        return;
+      }
+      const mime = row.rows[0].avatar_mime || "application/octet-stream";
+      if (row.rows[0].avatar_updated_at) {
+        res.setHeader("Last-Modified", new Date(row.rows[0].avatar_updated_at).toUTCString());
+      }
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Cache-Control", "private, max-age=120");
+      res.status(200).send(avatar);
+    } catch (error) {
+      logger.error({ err: error }, "getAvatar failed");
+      res.status(500).json({ error: "Unable to fetch avatar." });
+    } finally {
+      client.release();
+    }
   }
 
   function login(req, res) {
@@ -818,6 +930,8 @@ function createPublicController(options = {}) {
     register,
     requestPasswordReset,
     resetPassword,
+    uploadAvatar,
+    getAvatar,
     resendOtp,
     verifyOtp,
     beginWebAuthnRegistration,
@@ -828,6 +942,15 @@ function createPublicController(options = {}) {
     health,
     getVersion,
   };
+}
+
+function decodeBase64Payload(value) {
+  try {
+    const cleaned = String(value || "").replace(/^data:[^;]+;base64,/i, "");
+    return Buffer.from(cleaned, "base64");
+  } catch (error) {
+    return null;
+  }
 }
 
 module.exports = {

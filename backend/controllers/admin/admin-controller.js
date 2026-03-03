@@ -72,6 +72,8 @@ function createAdminController(options = {}) {
         alertRulesState,
         governanceState,
         exportState,
+        maxUsers,
+        perUserQuotaBytes,
       });
     } catch (error) {
       logger.warn({ err: error }, "Admin dashboard falling back to demo data (DB unreachable?)");
@@ -437,6 +439,8 @@ async function buildDashboardData(options = {}) {
     alertRulesState = createDefaultAlertRulesState(),
     governanceState = createDefaultGovernanceState(),
     exportState = createDefaultExportState(),
+    maxUsers = Number(process.env.MAX_USERS || 0),
+    perUserQuotaBytes = Number(process.env.USER_STORAGE_QUOTA_BYTES || 10 * 1024 * 1024 * 1024),
   } = options;
   const days = Math.max(1, Number(rangeDays) || 7);
   let client = null;

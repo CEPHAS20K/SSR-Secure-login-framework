@@ -232,7 +232,7 @@ function createApp(options = {}) {
     })
   );
 
-  app.use(express.json());
+  app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: false }));
   app.use("/auth", authLimiter);
 

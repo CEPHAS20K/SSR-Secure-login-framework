@@ -17,6 +17,9 @@ CREATE TABLE users (
     last_login TIMESTAMPTZ,
     last_login_ip INET,
     last_login_geo JSONB,
+    avatar BYTEA,
+    avatar_mime VARCHAR(60),
+    avatar_updated_at TIMESTAMPTZ,
     CONSTRAINT chk_users_gender CHECK (gender IS NULL OR gender IN ('male','female'))
 );
 
@@ -209,3 +212,10 @@ CREATE TABLE audit_logs (
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX idx_audit_logs_target ON audit_logs(target_id);
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
+
+-- =====================================
+-- SEED DATA (for local testing only)
+-- =====================================
+INSERT INTO users (username, email, password_hash, gender, email_verified_at)
+VALUES ('testuser', 'test@example.com', '$2b$10$cu3CZ8Zrnct56ydlQD.BSuRSZQGGSV5REdA0kOA1Z2LI819uV62.q', 'male', now())
+ON CONFLICT DO NOTHING;

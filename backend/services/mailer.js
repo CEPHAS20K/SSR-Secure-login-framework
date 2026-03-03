@@ -3,7 +3,7 @@
 const nodemailer = require("nodemailer");
 
 function createTransport() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE, SMTP_FROM } = process.env;
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE } = process.env;
 
   if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
     return nodemailer.createTransport({
