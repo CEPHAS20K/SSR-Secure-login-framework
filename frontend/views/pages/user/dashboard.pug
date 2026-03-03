@@ -6,30 +6,39 @@ include ../../components/button
 block content
   +appNavbar(activePage || "dashboard")
   .min-h-dvh.bg-gradient-to-br.from-orange-50.to-rose-100
-    .relative.mx-auto.flex.max-w-5xl.flex-col.gap-6.px-4.py-16.sm.lg:px-6:px-10
+    .relative.mx-auto.flex.max-w-6xl.flex-col.gap-6.px-4.py-16.sm.lg:px-6:px-10
       .flex.items-center.justify-between.gap-3
         h1.text-4xl.font-black.text-rose-900.font-headline Tracking your secure vault
         span.rounded-full.bg-rose-900/90.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50 Version #{appVersion || "dev"}
 
-      .grid.gap-5.md:grid-cols-2
-        .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
-          h2.text-lg.font-bold.text-rose-900 Vault Status
-          p.mt-2.text-sm.font-semibold.text-rose-800 You are signed in. Upload encrypted secrets, documents, and attachments from the upcoming vault UI.
-          ul.mt-3.space-y-1.text-sm.font-semibold.text-rose-900
-            li.flex.items-center.gap-2
-              span.h-2.w-2.rounded-full.bg-emerald-500
-              | Storage quota per user: 10 GB (configurable)
-            li.flex.items-center.gap-2
-              span.h-2.w-2.rounded-full.bg-sky-500
-              | Attachments are encrypted and counted toward your quota.
-            li.flex.items-center.gap-2
-              span.h-2.w-2.rounded-full.bg-amber-500
-              | Audit trails capture reads, writes, and attachments.
+      .grid.gap-5.lg:grid-cols-3
+        .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur.lg:col-span-2
+          h2.text-lg.font-bold.text-rose-900 Vault Storage
+          p.mt-1.text-sm.font-semibold.text-rose-800 Vault usage is calculated from encrypted items and attachments.
+          .mt-4.flex.items-center.gap-3.flex-wrap
+            div
+              p.text-xs.font-bold.uppercase.text-rose-700 User ID
+              input#userIdInput.w-64.rounded-lg.border.border-rose-200.bg-white/70.px-3.py-2.text-sm.font-semibold.text-rose-950.placeholder:text-rose-300.outline-none.focus:border-primary.focus:ring-2.focus:ring-primary/20(type="text", placeholder="paste user UUID")
+            +appButton("Save", "primary", "button")#saveUserIdBtn
+            +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
+            p#usageStatus.text-xs.font-semibold.text-rose-700
+          .mt-5
+            p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
+              span.h-3.w-3.rounded-full.bg-emerald-500
+              | Vault usage
+            .mt-2.w-full.rounded-xl.border border-rose-200.bg-white/80.p-3.shadow-inner
+              .flex.items-center.justify-between.text-xs.font-semibold.text-rose-800
+                span Current
+                span#vaultUsageSummary 0 B used
+              .mt-2.h-3.w-full.rounded-full.bg-rose-100
+                .h-3.rounded-full.bg-gradient-to-r.from-orange-400.to-rose-600.transition-all.duration-300.ease-out#usageBar(style="width: 0%")
+              p.mt-1.text-[11px].font-semibold.text-rose-700#usageHint Quota: —
         .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
           h2.text-lg.font-bold.text-rose-900 Quick Actions
-          .mt-3.flex.flex-wrap.items-center.gap-3
+          .mt-3.flex.flex-col.gap-3
             +appButton("Go to Vault API docs", "primary", "button")(onclick="window.location.href='/api-docs'")
             +appButton("View Admin Dashboard", "ghost", "button")(onclick="window.location.href='/admin/dashboard'")
+            +appButton("Open login page", "ghost", "button")(onclick="window.location.href='/login'")
           p.mt-3.text-sm.font-semibold.text-rose-800 The full user vault UI is coming next. Upload endpoints are live for client integrations.
 
       .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur

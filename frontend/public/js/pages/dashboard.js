@@ -6,8 +6,13 @@ import { createApiClient } from "../lib/api-client.js";
 const apiClient = createApiClient();
 
 async function fetchUsage() {
+  const statusEl = document.getElementById("usageStatus");
   try {
-    const userId = window.localStorage.getItem("last_user_id");
+    const userId = readUserId();
+    if (!userId) {
+      setStatus("Set a user ID to fetch usage", "info");
+      return;
+    }
     const headers = userId ? { "x-user-id": userId } : {};
     const response = await apiClient.request("/api/vault/usage", {
       method: "GET",
@@ -16,13 +21,27 @@ async function fetchUsage() {
       timeoutMs: 4000,
     });
     renderUsage(response);
+    setStatus("Usage loaded", "success");
   } catch (error) {
-    // Optional: silent on first load
+    setStatus(error.message || "Unable to load usage.", "error");
+  }
+  function setStatus(message, tone) {
+    if (!statusEl) return;
+    statusEl.textContent = message || "";
+    statusEl.className =
+      "text-xs font-semibold " +
+      (tone === "error"
+        ? "text-rose-700"
+        : tone === "success"
+          ? "text-emerald-700"
+          : "text-rose-700");
   }
 }
 
 function renderUsage(payload = {}) {
   const usageEl = document.getElementById("vaultUsageSummary");
+  const bar = document.getElementById("usageBar");
+  const hint = document.getElementById("usageHint");
   if (!usageEl) return;
   const used = Number(payload.usedBytes || 0);
   const quota = Number(payload.quotaBytes || 0);
@@ -34,6 +53,13 @@ function renderUsage(payload = {}) {
     percent !== null
       ? `${humanUsed} used of ${humanQuota} (${percent}%)`
       : `${humanUsed} used (no quota set)`;
+  if (bar) {
+    bar.style.width = `${percent !== null ? percent : Math.min(100, (used % 100000) / 1000)}%`;
+  }
+  if (hint) {
+    hint.textContent =
+      quota > 0 ? `Quota: ${humanQuota}` : "Quota: unlimited (no per-user cap configured)";
+  }
 }
 
 function formatBytes(bytes) {
@@ -45,8 +71,48 @@ function formatBytes(bytes) {
 }
 
 function init() {
+  wireUserIdControls();
   fetchUsage();
   notify("Signed in — dashboard placeholder loaded.", "success", "Dashboard");
+}
+
+function wireUserIdControls() {
+  const input = document.getElementById("userIdInput");
+  const saveBtn = document.getElementById("saveUserIdBtn");
+  const refreshBtn = document.getElementById("refreshUsageBtn");
+  if (input) input.value = readUserId();
+
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      const value = (input?.value || "").trim();
+      if (!value) {
+        notify("Enter a user ID (UUID) to fetch usage.", "error", "Dashboard");
+        return;
+      }
+      safeWriteStorage("last_user_id", value);
+      notify("User ID saved for this session.", "success", "Dashboard");
+      fetchUsage();
+    });
+  }
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", fetchUsage);
+  }
+}
+
+function readUserId() {
+  try {
+    return window.localStorage.getItem("last_user_id") || "";
+  } catch {
+    return "";
+  }
+}
+
+function safeWriteStorage(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
 }
 
 if (document.readyState === "loading") {
