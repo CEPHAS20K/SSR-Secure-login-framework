@@ -3,7 +3,7 @@
 const { rateLimit } = require("../../middleware/rate-limit");
 
 function registerPublicRoutes(app, options = {}) {
-  const { publicController } = options;
+  const { publicController, vaultController } = options;
 
   const ipLimiter = rateLimit({ windowSec: 60, limit: 20, keyBuilder: (req) => req.ip || "ip" });
   const strictIpLimiter = rateLimit({
@@ -56,6 +56,14 @@ function registerPublicRoutes(app, options = {}) {
   app.post("/api/rum", publicController.ingestRumMetric);
   app.get("/health", publicController.health);
   app.get("/version", publicController.getVersion);
+
+  if (vaultController) {
+    app.get("/api/vault/items", ipLimiter, vaultController.listVaultItems);
+    app.get("/api/vault/items/:id", ipLimiter, vaultController.getVaultItem);
+    app.post("/api/vault/items", ipLimiter, vaultController.createVaultItem);
+    app.put("/api/vault/items/:id", ipLimiter, vaultController.updateVaultItem);
+    app.get("/api/vault/usage", ipLimiter, vaultController.getVaultUsage);
+  }
 }
 
 module.exports = {

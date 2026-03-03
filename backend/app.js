@@ -49,7 +49,11 @@ function loadEnvironment(customEnvFile) {
 
 loadEnvironment();
 
-const { createAdminController, createPublicController } = require("./controllers");
+const {
+  createAdminController,
+  createPublicController,
+  createVaultApiController,
+} = require("./controllers");
 const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
 const {
   createAdminInternalAccessGuard,
@@ -124,6 +128,12 @@ function createApp(options = {}) {
     appVersion: config.APP_VERSION,
     assetVersion: config.ASSET_VERSION,
   });
+  const vaultController = createVaultApiController({
+    logger,
+    perUserQuotaBytes: env.USER_STORAGE_QUOTA_BYTES
+      ? Number(env.USER_STORAGE_QUOTA_BYTES)
+      : 10 * 1024 * 1024 * 1024,
+  });
   const adminController = createAdminController({
     logger,
     adminUsername: env.ADMIN_USERNAME,
@@ -132,7 +142,7 @@ function createApp(options = {}) {
     auth: adminAuth,
   });
   const { createVaultController } = require("./controllers/admin/vault-controller");
-  const vaultController = createVaultController({
+  const adminVaultController = createVaultController({
     logger,
     perUserQuotaBytes: env.USER_STORAGE_QUOTA_BYTES
       ? Number(env.USER_STORAGE_QUOTA_BYTES)
@@ -228,12 +238,13 @@ function createApp(options = {}) {
 
   registerPublicRoutes(app, {
     publicController,
+    vaultController,
   });
   if (config.ADMIN_ENABLED) {
     app.use("/admin", requireInternalAdminAccess);
     registerAdminRoutes(app, {
       adminController,
-      vaultController,
+      vaultController: adminVaultController,
       requireAdminAuth: adminAuth.requireAdminAuth,
       requireAdminApiAuth: adminAuth.requireAdminApiAuth,
     });
