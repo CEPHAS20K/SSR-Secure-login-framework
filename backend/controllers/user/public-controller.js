@@ -12,6 +12,56 @@ const {
 } = require("../../services/mailer");
 const { assessRisk } = require("../../services/risk-engine");
 
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "password123",
+  "12345678",
+  "123456789",
+  "qwerty123",
+  "letmein123",
+  "admin123",
+  "admin1234",
+  "welcome123",
+  "test1234",
+  "test12345",
+  "changeme123",
+]);
+
+function getPasswordPolicyIssues(value) {
+  const password = String(value || "");
+  const issues = [];
+  if (password.length < 12) {
+    issues.push("Password must be at least 12 characters.");
+  }
+  if (!/[a-z]/.test(password)) {
+    issues.push("Password must include a lowercase letter.");
+  }
+  if (!/[A-Z]/.test(password)) {
+    issues.push("Password must include an uppercase letter.");
+  }
+  if (!/\d/.test(password)) {
+    issues.push("Password must include a number.");
+  }
+  if (!/[^\w\s]/.test(password)) {
+    issues.push("Password must include a symbol.");
+  }
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    issues.push("Password is too common. Choose a stronger one.");
+  }
+  return issues;
+}
+
+function addPasswordPolicyIssues(password, context, path) {
+  const issues = getPasswordPolicyIssues(password);
+  issues.forEach((message) => {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [path],
+      message,
+    });
+  });
+}
+
 const loginPayloadSchema = z.object({
   login: z
     .string({
@@ -59,17 +109,18 @@ const resetPasswordSchema = z
         error: "New password is required.",
       })
       .trim()
-      .min(8, "New password must be at least 8 characters.")
+      .min(12, "New password must be at least 12 characters.")
       .max(128, "New password must be less than 128 characters."),
     confirmPassword: z
       .string({
         error: "Confirm password is required.",
       })
       .trim()
-      .min(8, "Confirm password must be at least 8 characters.")
+      .min(12, "Confirm password must be at least 12 characters.")
       .max(128, "Confirm password must be less than 128 characters."),
   })
   .superRefine((value, context) => {
+    addPasswordPolicyIssues(value.newPassword, context, "newPassword");
     if (value.newPassword !== value.confirmPassword) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -87,7 +138,7 @@ const registerPayloadSchema = z
       })
       .trim()
       .min(3, "Username must be at least 3 characters.")
-      .max(60, "Username must be less than 60 characters."),
+      .max(15, "Username must be less than 15 characters."),
     email: z
       .string({
         error: "Email is required.",
@@ -100,14 +151,14 @@ const registerPayloadSchema = z
         error: "Password is required.",
       })
       .trim()
-      .min(8, "Password must be at least 8 characters.")
+      .min(12, "Password must be at least 12 characters.")
       .max(128, "Password must be less than 128 characters."),
     confirmPassword: z
       .string({
         error: "Confirm password is required.",
       })
       .trim()
-      .min(8, "Confirm password must be at least 8 characters.")
+      .min(12, "Confirm password must be at least 12 characters.")
       .max(128, "Confirm password must be less than 128 characters."),
     gender: z
       .string({
@@ -118,6 +169,7 @@ const registerPayloadSchema = z
       .max(24, "Gender must be less than 24 characters."),
   })
   .superRefine((value, context) => {
+    addPasswordPolicyIssues(value.password, context, "password");
     if (value.password !== value.confirmPassword) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -139,6 +191,28 @@ const safeNoStoreHeaders = {
 };
 const MAX_AVATAR_BYTES = Number(process.env.MAX_AVATAR_BYTES || 512 * 1024); // 512 KB default
 const allowedAvatarMimeTypes = ["image/png", "image/jpeg", "image/webp"];
+function sniffAvatarMime(buffer) {
+  if (!buffer || buffer.length < 12) return "";
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+    return "image/png";
+  }
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return "";
+}
 const avatarUploadSchema = z.object({
   userId: z
     .string({
@@ -189,7 +263,13 @@ const rumMetricSchema = z.object({
 });
 
 function createPublicController(options = {}) {
-  const { logger = console, appVersion = "dev", assetVersion = "dev" } = options;
+  const {
+    logger = console,
+    appVersion = "dev",
+    assetVersion = "dev",
+    secureCookies = false,
+    userSessionCookie = "user_session",
+  } = options;
   const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
   const OTP_RESEND_COOLDOWN_SECONDS = Number(process.env.OTP_RESEND_COOLDOWN_SECONDS || 60);
   const RESET_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -200,6 +280,21 @@ function createPublicController(options = {}) {
   const MAX_USERS = Number(process.env.MAX_USERS || 0); // 0 = unlimited
   const AUTH_BACKEND_DISABLED =
     process.env.AUTH_BACKEND_DISABLED === "true" || process.env.NODE_ENV === "test";
+  const sessionCookieOptions = {
+    httpOnly: true,
+    secure: secureCookies,
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_TTL_MS,
+  };
+
+  const setUserSessionCookie = (res, token) => {
+    res.cookie(userSessionCookie, token, sessionCookieOptions);
+  };
+
+  const clearUserSessionCookie = (res) => {
+    res.clearCookie(userSessionCookie, sessionCookieOptions);
+  };
 
   function renderLanding(req, res) {
     res.render("pages/user/landing", {
@@ -254,6 +349,11 @@ function createPublicController(options = {}) {
       res.status(400).json({ error: "Invalid avatar encoding." });
       return;
     }
+    const sniffedMime = sniffAvatarMime(avatarBuffer);
+    if (!sniffedMime || sniffedMime !== mimeType) {
+      res.status(400).json({ error: "Avatar content does not match declared mime type." });
+      return;
+    }
     if (avatarBuffer.length > MAX_AVATAR_BYTES) {
       res.status(413).json({
         error: "Avatar too large.",
@@ -263,7 +363,8 @@ function createPublicController(options = {}) {
       return;
     }
 
-    const client = await pool.connect();
+    const client = await safeGetClient(res, logger);
+    if (!client) return;
     try {
       const update = await client.query(
         `
@@ -278,6 +379,15 @@ function createPublicController(options = {}) {
         res.status(404).json({ error: "User not found." });
         return;
       }
+      await recordAudit(client, {
+        req,
+        actorUserId: userId,
+        action: "profile_avatar_update",
+        targetType: "user",
+        targetId: userId,
+        status: "success",
+        meta: { bytes: avatarBuffer.length, mimeType },
+      });
       res.status(200).json({
         message: "Avatar updated.",
         bytes: avatarBuffer.length,
@@ -344,14 +454,20 @@ function createPublicController(options = {}) {
         return;
       }
 
-      const client = await pool.connect();
+      const client = await safeGetClient(res, logger);
+      if (!client) return;
       const ip = req.ip || req.socket?.remoteAddress || null;
       const fingerprint = req.body?.fingerprint || null;
       const loginValue = parsedPayload.data.login.toLowerCase();
       try {
         // Brute-force lock check
         const lockKey = `lock:user:${loginValue}`;
-        const locked = await redis.ttl(lockKey);
+        let locked = -1;
+        try {
+          locked = await redis.ttl(lockKey);
+        } catch (error) {
+          logger.warn({ err: error }, "Redis lock check failed");
+        }
         if (locked > 0) {
           res.status(423).json({
             error: "Account temporarily locked. Try again later.",
@@ -370,6 +486,13 @@ function createPublicController(options = {}) {
           [loginValue]
         );
         if (userQuery.rowCount === 0) {
+          await recordAudit(client, {
+            req,
+            action: "login_failed",
+            status: "failed",
+            reason: "user_not_found",
+            meta: { login: loginValue },
+          });
           res.status(401).json({ error: "Invalid credentials." });
           return;
         }
@@ -381,11 +504,24 @@ function createPublicController(options = {}) {
             [user.id, ip, null]
           );
           const failKey = `fail:user:${user.id}`;
-          const fails = await redis.incr(failKey);
-          await redis.expire(failKey, 15 * 60); // 15 minutes window
-          if (fails >= MAX_FAILED_ATTEMPTS) {
-            await redis.setex(lockKey, ACCOUNT_LOCK_MINUTES * 60, "1");
+          try {
+            const fails = await redis.incr(failKey);
+            await redis.expire(failKey, 15 * 60); // 15 minutes window
+            if (fails >= MAX_FAILED_ATTEMPTS) {
+              await redis.setex(lockKey, ACCOUNT_LOCK_MINUTES * 60, "1");
+            }
+          } catch (error) {
+            logger.warn({ err: error }, "Redis failure tracking failed");
           }
+          await recordAudit(client, {
+            req,
+            actorUserId: user.id,
+            action: "login_failed",
+            targetType: "user",
+            targetId: user.id,
+            status: "failed",
+            reason: "invalid_password",
+          });
           res.status(401).json({ error: "Invalid credentials." });
           return;
         }
@@ -415,6 +551,16 @@ function createPublicController(options = {}) {
 
         if (!requiresOtp && !requiresWebAuthn) {
           const sessionToken = await issueSession(client, user.id, fingerprint, ip);
+          setUserSessionCookie(res, sessionToken);
+          await recordAudit(client, {
+            req,
+            actorUserId: user.id,
+            action: "login_success",
+            targetType: "user",
+            targetId: user.id,
+            status: "success",
+            meta: { risk: risk.score, trusted: risk.trustedDevice },
+          });
           res.status(200).json({
             sessionToken,
             userId: user.id,
@@ -452,6 +598,15 @@ function createPublicController(options = {}) {
           }
         }
 
+        await recordAudit(client, {
+          req,
+          actorUserId: user.id,
+          action: requiresOtp ? "login_step_up_otp" : "login_step_up_webauthn",
+          targetType: "user",
+          targetId: user.id,
+          status: "success",
+          meta: { risk: risk.score, reasons },
+        });
         res.status(200).json({
           userId: user.id,
           requiresOtp,
@@ -487,7 +642,8 @@ function createPublicController(options = {}) {
         return;
       }
 
-      const client = await pool.connect();
+      const client = await safeGetClient(res, logger);
+      if (!client) return;
 
       try {
         if (MAX_USERS > 0) {
@@ -507,6 +663,13 @@ function createPublicController(options = {}) {
           [parsedPayload.data.email, parsedPayload.data.username]
         );
         if (existing.rowCount > 0) {
+          await recordAudit(client, {
+            req,
+            action: "register_failed",
+            status: "failed",
+            reason: "user_exists",
+            meta: { email: parsedPayload.data.email, username: parsedPayload.data.username },
+          });
           res.status(409).json({ error: "Username or email already exists." });
           return;
         }
@@ -522,6 +685,14 @@ function createPublicController(options = {}) {
         );
 
         const userId = insertUser.rows[0].id;
+        await recordAudit(client, {
+          req,
+          actorUserId: userId,
+          action: "register",
+          targetType: "user",
+          targetId: userId,
+          status: "success",
+        });
         const otp = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 5);
         const otpHash = await bcrypt.hash(otp, 10);
         const expiresAt = new Date(Date.now() + OTP_TTL_MS);
@@ -579,7 +750,8 @@ function createPublicController(options = {}) {
         return;
       }
 
-      const client = await pool.connect();
+      const client = await safeGetClient(res, logger);
+      if (!client) return;
       try {
         const userQuery = await client.query(
           `SELECT id, email FROM users WHERE lower(email)=lower($1)`,
@@ -615,6 +787,15 @@ function createPublicController(options = {}) {
           logger.info({ email: user.email, code }, "Dev reset code (email fallback)");
         }
 
+        await recordAudit(client, {
+          req,
+          actorUserId: user.id,
+          action: "password_reset_request",
+          targetType: "user",
+          targetId: user.id,
+          status: "success",
+        });
+
         res.status(202).json({
           message: "Reset code sent. Check your email.",
         });
@@ -640,7 +821,8 @@ function createPublicController(options = {}) {
         return;
       }
 
-      const client = await pool.connect();
+      const client = await safeGetClient(res, logger);
+      if (!client) return;
       try {
         const userQuery = await client.query(
           `SELECT id, email FROM users WHERE lower(email)=lower($1)`,
@@ -688,6 +870,15 @@ function createPublicController(options = {}) {
           logger.warn({ err: error }, "Failed to send reset confirmation email");
         }
 
+        await recordAudit(client, {
+          req,
+          actorUserId: user.id,
+          action: "password_reset_complete",
+          targetType: "user",
+          targetId: user.id,
+          status: "success",
+        });
+
         res.status(200).json({
           message: "Password updated. Please log in again.",
         });
@@ -698,6 +889,17 @@ function createPublicController(options = {}) {
         client.release();
       }
     })();
+  }
+
+  async function safeGetClient(res, log) {
+    try {
+      const client = await pool.connect();
+      return client;
+    } catch (error) {
+      if (log?.error) log.error({ err: error }, "Database connection failed");
+      res.status(503).json({ error: "Service unavailable. Try again soon." });
+      return null;
+    }
   }
 
   function health(req, res) {
@@ -730,6 +932,44 @@ function createPublicController(options = {}) {
       return;
     }
 
+    const userAgent = req.get("user-agent") || "";
+    const ipAddress = req.ip || req.socket?.remoteAddress || "";
+    const normalizeOptional = (value) => {
+      const text = String(value || "").trim();
+      return text.length > 0 ? text : null;
+    };
+
+    if (!AUTH_BACKEND_DISABLED) {
+      pool
+        .query(
+          `INSERT INTO rum_events (
+            user_agent,
+            ip,
+            name,
+            value,
+            path,
+            page,
+            field_name,
+            connection_type
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            normalizeOptional(userAgent),
+            normalizeOptional(ipAddress),
+            metric.name,
+            metric.value,
+            metric.path,
+            normalizeOptional(metric.page),
+            normalizeOptional(metric.fieldName),
+            normalizeOptional(metric.connectionType),
+          ]
+        )
+        .catch((error) => {
+          if (logger?.warn) {
+            logger.warn({ err: error }, "Failed to persist RUM metric");
+          }
+        });
+    }
+
     if (typeof logger.info === "function") {
       logger.info(
         {
@@ -741,8 +981,8 @@ function createPublicController(options = {}) {
           fieldName: metric.fieldName,
           connectionType: metric.connectionType,
           timestamp: metric.timestamp,
-          userAgent: req.get("user-agent") || "",
-          ip: req.ip || req.socket?.remoteAddress || "",
+          userAgent,
+          ip: ipAddress,
         },
         "Frontend web vital received"
       );
@@ -806,6 +1046,15 @@ function createPublicController(options = {}) {
           logger.info({ email: userQuery.rows[0].email, otp }, "Dev OTP (email fallback)");
         }
 
+        await recordAudit(client, {
+          req,
+          actorUserId: userId,
+          action: "otp_resend",
+          targetType: "user",
+          targetId: userId,
+          status: "success",
+        });
+
         res.status(202).json({
           message: "OTP resent.",
           retryAfterSeconds: OTP_RESEND_COOLDOWN_SECONDS,
@@ -852,6 +1101,14 @@ function createPublicController(options = {}) {
 
       const ok = await bcrypt.compare(otp, otpHash);
       if (!ok) {
+        await recordAudit(client, {
+          req,
+          actorUserId: userId,
+          action: "otp_verify_failed",
+          targetType: "user",
+          targetId: userId,
+          status: "failed",
+        });
         res.status(400).json({ error: "OTP expired or invalid." });
         return;
       }
@@ -862,6 +1119,7 @@ function createPublicController(options = {}) {
         fingerprint,
         req.ip || req.socket?.remoteAddress || null
       );
+      setUserSessionCookie(res, sessionToken);
 
       await client.query(
         `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id=$1`,
@@ -881,6 +1139,15 @@ function createPublicController(options = {}) {
 
       await redis.del(`otp:user:${userId}`);
       await client.query(`DELETE FROM otp_tokens WHERE user_id=$1`, [userId]);
+
+      await recordAudit(client, {
+        req,
+        actorUserId: userId,
+        action: "otp_verify",
+        targetType: "user",
+        targetId: userId,
+        status: "success",
+      });
 
       res.status(200).json({
         sessionToken,
@@ -914,6 +1181,7 @@ function createPublicController(options = {}) {
   async function issueSession(client, userId, fingerprint, ip) {
     const token = crypto.randomBytes(32).toString("base64url");
     const expires = new Date(Date.now() + SESSION_TTL_MS);
+    await client.query(`DELETE FROM sessions WHERE user_id=$1`, [userId]);
     await client.query(
       `
       INSERT INTO sessions (user_id, session_token, device_fingerprint, expires_at, created_at)
@@ -926,6 +1194,38 @@ function createPublicController(options = {}) {
       ip || null,
     ]);
     return token;
+  }
+
+  async function logout(req, res) {
+    const token = req.cookies?.[userSessionCookie];
+    const client = await safeGetClient(res, logger);
+    if (!client) return;
+    try {
+      if (token) {
+        const row = await client.query(`SELECT user_id FROM sessions WHERE session_token=$1`, [
+          token,
+        ]);
+        const userId = row.rows[0]?.user_id || null;
+        await client.query(`DELETE FROM sessions WHERE session_token=$1`, [token]);
+        if (userId) {
+          await recordAudit(client, {
+            req,
+            actorUserId: userId,
+            action: "logout",
+            targetType: "user",
+            targetId: userId,
+            status: "success",
+          });
+        }
+      }
+      clearUserSessionCookie(res);
+      res.status(200).json({ message: "Logged out." });
+    } catch (error) {
+      logger.error({ err: error }, "Logout failed");
+      res.status(500).json({ error: "Unable to log out right now." });
+    } finally {
+      client.release();
+    }
   }
 
   async function generateOtp() {
@@ -947,6 +1247,7 @@ function createPublicController(options = {}) {
     renderLogin,
     renderRegister,
     renderDashboard,
+    logout,
     login,
     register,
     requestPasswordReset,
@@ -987,6 +1288,37 @@ async function safeRedisDel(key) {
     return await redis.del(key);
   } catch (error) {
     return 0;
+  }
+}
+
+async function recordAudit(client, options = {}) {
+  const {
+    req,
+    actorUserId = null,
+    action,
+    targetType = null,
+    targetId = null,
+    status = "success",
+    reason = null,
+    meta = null,
+  } = options;
+  if (!client || !action) return;
+  const ip =
+    req?.headers?.["x-forwarded-for"]?.split(",")?.[0]?.trim() ||
+    req?.ip ||
+    req?.connection?.remoteAddress ||
+    null;
+  const userAgent = req?.headers?.["user-agent"] || null;
+  try {
+    await client.query(
+      `
+      INSERT INTO audit_logs (actor_user_id, action, target_type, target_id, ip, user_agent, status, reason, meta)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `,
+      [actorUserId, action, targetType, targetId, ip, userAgent, status, reason, meta]
+    );
+  } catch (error) {
+    // non-blocking
   }
 }
 
