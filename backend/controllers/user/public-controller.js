@@ -227,6 +227,16 @@ function createPublicController(options = {}) {
     });
   }
 
+  function renderDashboard(req, res) {
+    res.set(safeNoStoreHeaders);
+    res.render("pages/user/dashboard", {
+      title: "Your Vault",
+      activePage: "dashboard",
+      page: "dashboard",
+      appVersion,
+    });
+  }
+
   async function uploadAvatar(req, res) {
     if (AUTH_BACKEND_DISABLED) {
       res.status(501).json(authNotConfiguredResponse);
@@ -926,6 +936,7 @@ function createPublicController(options = {}) {
     renderLanding,
     renderLogin,
     renderRegister,
+    renderDashboard,
     login,
     register,
     requestPasswordReset,

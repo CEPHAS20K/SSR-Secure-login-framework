@@ -2,7 +2,7 @@ doctype html
 html(lang="en")
   -
     const currentPage = typeof page === "string" ? page : "";
-    const gsapPages = new Set(["landing", "admin-dashboard", "error"]);
+    const gsapPages = new Set(["landing", "admin-dashboard", "dashboard", "error"]);
     const shouldLoadGsap = gsapPages.has(currentPage);
     const shouldPreloadLandingVisuals = currentPage === "landing";
     const preloadFontHrefs = ["/fonts/inter-latin-400.woff2"];

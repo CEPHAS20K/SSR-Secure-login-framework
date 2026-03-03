@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let loginLockoutSecondsLeft = 0;
   let loginLockoutTimer = null;
   // After successful login/OTP, send the user to the landing page (was looping back to /login)
-  const LOGIN_SUCCESS_REDIRECT = "/";
+  const LOGIN_SUCCESS_REDIRECT = "/dashboard";
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
 

@@ -31,6 +31,7 @@ function registerPublicRoutes(app, options = {}) {
   app.get("/", publicController.renderLanding);
   app.get("/login", publicController.renderLogin);
   app.get("/register", publicController.renderRegister);
+  app.get("/dashboard", publicController.renderDashboard);
   app.post("/auth/login", ipLimiter, strictIpLimiter, emailLimiter, publicController.login);
   app.post("/auth/register", ipLimiter, emailLimiter, publicController.register);
   app.post(
