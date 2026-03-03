@@ -11,14 +11,17 @@ block content
         h1.text-4xl.font-black.text-rose-900.font-headline Tracking your secure vault
         span.rounded-full.bg-rose-900/90.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50 Version #{ appVersion || "dev" }
 
-      .grid.gap-5.lg:grid-cols-3
-        .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur.lg:col-span-2
+      .grid.gap-5(class="lg:grid-cols-3")
+        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur(class="lg:col-span-2")
           h2.text-lg.font-bold.text-rose-900 Vault Storage
           p.mt-1.text-sm.font-semibold.text-rose-800 Vault usage is calculated from encrypted items and attachments.
           .mt-4.flex.items-center.gap-3.flex-wrap
             div
               p.text-xs.font-bold.uppercase.text-rose-700 User ID
-              input#userIdInput.w-64.rounded-lg.border.border-rose-200.bg-white/70.px-3.py-2.text-sm.font-semibold.text-rose-950.placeholder:text-rose-300.outline-none.focus:border-primary.focus:ring-2.focus:ring-primary/20(type="text", placeholder="paste user UUID")
+              input#userIdInput.w-64.rounded-lg.border.border-rose-200.bg-white/70.px-3.py-2.text-sm.font-semibold.text-rose-950.placeholder.outline-none.focus.focus.focus:text-rose-300:border-primary:ring-2:ring-primary/20(
+                type="text",
+                placeholder="paste user UUID"
+              )
             +appButton("Save", "primary", "button")#saveUserIdBtn
             +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
             p#usageStatus.text-xs.font-semibold.text-rose-700
@@ -26,24 +29,32 @@ block content
             p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
               span.h-3.w-3.rounded-full.bg-emerald-500
               | Vault usage
-            .mt-2.w-full.rounded-xl.border border-rose-200.bg-white/80.p-3.shadow-inner
+            .mt-2.w-full.rounded-xl.border.border-rose-200.bg-white/80.p-3.shadow-inner
               .flex.items-center.justify-between.text-xs.font-semibold.text-rose-800
                 span Current
                 span#vaultUsageSummary 0 B used
               .mt-2.h-3.w-full.rounded-full.bg-rose-100
-                .h-3.rounded-full.bg-gradient-to-r.from-orange-400.to-rose-600.transition-all.duration-300.ease-out#usageBar(style="width: 0%")
-              p.mt-1.text-[11px].font-semibold.text-rose-700#usageHint Quota: —
-        .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
+                #usageBar.h-3.rounded-full.bg-gradient-to-r.from-orange-400.to-rose-600.transition-all.duration-300.ease-out(
+                  style="width: 0%"
+                )
+              p#usageHint.mt-1.font-semibold.text-rose-700(class="text-[11px]") Quota: —
+        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
           h2.text-lg.font-bold.text-rose-900 Your Actions
           .mt-3.flex.flex-col.gap-3
-            +appButton("Open Vault API docs", "primary", "button")(onclick="window.location.href='/api-docs'")
-            +appButton("Back to login", "ghost", "button")(onclick="window.location.href='/login'")
-            +appButton("Refresh this dashboard", "ghost", "button")(onclick="window.location.reload()")
+            +appButton("Open Vault API docs", "primary", "button")(
+              onclick="window.location.href='/api-docs'"
+            )
+            +appButton("Back to login", "ghost", "button")(
+              onclick="window.location.href='/login'"
+            )
+            +appButton("Refresh this dashboard", "ghost", "button")(
+              onclick="window.location.reload()"
+            )
           p.mt-3.text-sm.font-semibold.text-rose-800 This dashboard is user-only and will soon include uploads, sharing, and attachments.
 
-      .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
+      .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
         h2.text-lg.font-bold.text-rose-900 What’s next
-        ul.mt-3.grid.list-disc.gap-2.pl-4.text-sm.font-semibold.text-rose-900.sm:grid-cols-2
+        ul.mt-3.grid.list-disc.gap-2.pl-4.text-sm.font-semibold.text-rose-900(class="sm:grid-cols-2")
           li End-to-end encrypted vault UI with upload progress
           li Per-user storage graph and quota warnings
           li Attachment download with audit trails
