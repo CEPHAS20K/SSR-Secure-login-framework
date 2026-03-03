@@ -17,15 +17,15 @@ block content
             span.rounded-full.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50(
               style="background-color: #7f1d1d"
             ) Version #{ appVersion || "dev" }
-            span.rounded-full.bg-white/80.px-3.py-1.text-xs.font-semibold.text-rose-900.border.border-rose-200 Live
+            span.rounded-full.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900.border.border-rose-200.opacity-80 Live
             span.rounded-full.bg-emerald-50.px-3.py-1.text-xs.font-semibold.text-emerald-800.border.border-emerald-200 Encryption: AES-256
-        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-4.shadow-lg.backdrop-blur
+        .rounded-2xl.border.border-rose-200.bg-white.p-4.shadow-lg.backdrop-blur.opacity-80
           p.text-xs.font-bold.uppercase.text-rose-700 Quick stats
           .mt-3.grid.grid-cols-2.gap-3
-            .rounded-xl.bg-rose-900/90.p-3.text-rose-50.shadow-inner
+            .rounded-xl.bg-rose-900.p-3.text-rose-50.shadow-inner.opacity-90
               p.font-semibold.uppercase(class="text-[11px]") Used
               p#metricUsed.text-lg.font-black --
-            .rounded-xl.bg-white/90.p-3.text-rose-900.border.border-rose-200
+            .rounded-xl.bg-white.p-3.text-rose-900.border.border-rose-200.opacity-90
               p.font-semibold.uppercase(class="text-[11px]") Quota
               p#metricQuota.text-lg.font-black --
             .rounded-xl.bg-white/90.p-3.text-rose-900.border.border-rose-200
@@ -37,16 +37,18 @@ block content
 
       // Storage + links
       .grid.gap-5(class="lg:grid-cols-3")
-        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur(class="lg:col-span-2")
+        .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80(
+          class="lg:col-span-2"
+        )
           h2.text-lg.font-bold.text-rose-900 Vault Storage
           p.mt-1.text-sm.font-semibold.text-rose-800 Vault usage is calculated from encrypted items and attachments.
           .mt-4.flex.items-center.gap-3.flex-wrap
             div
               p.text-xs.font-bold.uppercase.text-rose-700 User ID
-              input#userIdInput.w-64.rounded-lg.border.border-rose-200.px-3.py-2.text-sm.font-semibold.text-rose-950.outline-none(
+              input#userIdInput.w-64.rounded-lg.border.border-rose-200.px-3.py-2.text-sm.font-semibold.text-rose-950.outline-none.bg-white.opacity-80(
                 type="text",
                 placeholder="paste user UUID",
-                class="bg-white/70 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                class="placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
             +appButton("Save", "primary", "button")#saveUserIdBtn
             +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
@@ -56,7 +58,7 @@ block content
             p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
               span.h-3.w-3.rounded-full.bg-emerald-500
               | Vault usage
-            .mt-2.w-full.rounded-xl.border.border-rose-200.bg-white/80.p-3.shadow-inner
+            .mt-2.w-full.rounded-xl.border.border-rose-200.bg-white.p-3.shadow-inner.opacity-80
               .flex.items-center.justify-between.text-xs.font-semibold.text-rose-800
                 span Current
                 span#vaultUsageSummary 0 B used
@@ -69,13 +71,13 @@ block content
             p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
               span.h-3.w-3.rounded-full.bg-sky-500
               | Usage trend (last 7 days)
-            .mt-3.w-full.rounded-xl.border.border-rose-100.bg-white/80.p-3.shadow-inner
+            .mt-3.w-full.rounded-xl.border.border-rose-100.bg-white.p-3.shadow-inner.opacity-80
               svg#usageTrendChart.h-32.w-full.text-rose-900(
                 role="img",
                 aria-label="Usage trend chart"
               )
               p#usageTrendHint.mt-2.font-semibold.text-rose-700(class="text-[11px]") Trend shows daily totals (placeholder until real data is connected).
-        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
+        .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
           h2.text-lg.font-bold.text-rose-900 Quick Links
           .mt-3.flex.flex-col.gap-3
             +appButton("Open Vault API docs", "primary", "button")(
@@ -91,14 +93,16 @@ block content
 
       // Recent items + audit glance
       .grid.gap-5(class="lg:grid-cols-3")
-        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur(class="lg:col-span-2")
+        .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80(
+          class="lg:col-span-2"
+        )
           .flex.items-center.justify-between.gap-2
             h2.text-lg.font-bold.text-rose-900 Recent vault items
             +appButton("New encrypted item", "primary", "button")#ctaNewItem
           p.mt-1.text-sm.font-semibold.text-rose-800 Requires your user ID to load encrypted items. No plaintext is shown here.
-          .mt-4.overflow-hidden.rounded-xl.border.border-rose-200.bg-white/70
+          .mt-4.overflow-hidden.rounded-xl.border.border-rose-200.bg-white.opacity-70
             table.w-full.text-sm.font-semibold.text-rose-900
-              thead.bg-rose-50/80
+              thead.bg-rose-50.opacity-80
                 tr
                   th.px-3.py-2.text-left Title
                   th.px-3.py-2.text-left Scheme
@@ -107,7 +111,7 @@ block content
               tbody#vaultItemsBody
                 tr(data-empty)
                   td.px-3.py-3.text-center.text-rose-700(colspan="4") Add a user ID and click refresh usage.
-        .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
+        .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
           h2.text-lg.font-bold.text-rose-900 Audit glance
           p.mt-1.text-sm.font-semibold.text-rose-800 Basic activity cues (client-side only for now).
           ul#auditGlance.mt-3.space-y-2.text-sm.font-semibold.text-rose-900
@@ -123,7 +127,7 @@ block content
           p.mt-4.font-semibold.text-rose-700(class="text-[11px]") Full audit history will appear once server APIs are wired.
 
       // Roadmap / compliance
-      .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
+      .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
         h2.text-lg.font-bold.text-rose-900 What’s next
         .grid.gap-4(class="md:grid-cols-2")
           .space-y-2
