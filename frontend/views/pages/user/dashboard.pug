@@ -6,10 +6,10 @@ include ../../components/button
 block content
   +appNavbar(activePage || "dashboard")
   .min-h-dvh.bg-gradient-to-br.from-orange-50.to-rose-100
-    .relative.mx-auto.flex.max-w-6xl.flex-col.gap-6.px-4.py-16.sm.lg:px-6:px-10
+    .relative.mx-auto.flex.max-w-6xl.flex-col.gap-6.px-4.py-16(class="sm:px-6 lg:px-10")
       .flex.items-center.justify-between.gap-3
         h1.text-4xl.font-black.text-rose-900.font-headline Tracking your secure vault
-        span.rounded-full.bg-rose-900/90.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50 Version #{appVersion || "dev"}
+        span.rounded-full.bg-rose-900/90.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50 Version #{ appVersion || "dev" }
 
       .grid.gap-5.lg:grid-cols-3
         .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur.lg:col-span-2
@@ -34,12 +34,12 @@ block content
                 .h-3.rounded-full.bg-gradient-to-r.from-orange-400.to-rose-600.transition-all.duration-300.ease-out#usageBar(style="width: 0%")
               p.mt-1.text-[11px].font-semibold.text-rose-700#usageHint Quota: —
         .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
-          h2.text-lg.font-bold.text-rose-900 Quick Actions
+          h2.text-lg.font-bold.text-rose-900 Your Actions
           .mt-3.flex.flex-col.gap-3
-            +appButton("Go to Vault API docs", "primary", "button")(onclick="window.location.href='/api-docs'")
-            +appButton("View Admin Dashboard", "ghost", "button")(onclick="window.location.href='/admin/dashboard'")
-            +appButton("Open login page", "ghost", "button")(onclick="window.location.href='/login'")
-          p.mt-3.text-sm.font-semibold.text-rose-800 The full user vault UI is coming next. Upload endpoints are live for client integrations.
+            +appButton("Open Vault API docs", "primary", "button")(onclick="window.location.href='/api-docs'")
+            +appButton("Back to login", "ghost", "button")(onclick="window.location.href='/login'")
+            +appButton("Refresh this dashboard", "ghost", "button")(onclick="window.location.reload()")
+          p.mt-3.text-sm.font-semibold.text-rose-800 This dashboard is user-only and will soon include uploads, sharing, and attachments.
 
       .rounded-2xl.border border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
         h2.text-lg.font-bold.text-rose-900 What’s next
