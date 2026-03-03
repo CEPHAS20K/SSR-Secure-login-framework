@@ -362,7 +362,7 @@ function createPublicController(options = {}) {
 
         const userQuery = await client.query(
           `
-          SELECT id, password_hash, last_login_ip, email_verified_at
+          SELECT id, username, email, password_hash, last_login_ip, email_verified_at
           FROM users
           WHERE lower(email)=lower($1) OR lower(username)=lower($1)
           LIMIT 1
@@ -411,6 +411,8 @@ function createPublicController(options = {}) {
           }
         }
 
+        const notifyEmail = user.email || (loginValue.includes("@") ? loginValue : null);
+
         if (!requiresOtp && !requiresWebAuthn) {
           const sessionToken = await issueSession(client, user.id, fingerprint, ip);
           res.status(200).json({
@@ -441,10 +443,12 @@ function createPublicController(options = {}) {
             logger.warn({ err: error }, "Failed to cache OTP in redis");
           }
           try {
-            await sendOtpEmail(parsedPayload.data.email, otp);
+            if (notifyEmail) {
+              await sendOtpEmail(notifyEmail, otp);
+            }
           } catch (error) {
             logger.warn({ err: error }, "Failed to send OTP email");
-            logger.info({ email: parsedPayload.data.email, otp }, "Dev OTP (email fallback)");
+            logger.info({ email: notifyEmail, otp }, "Dev OTP (email fallback)");
           }
         }
 
