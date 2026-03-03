@@ -643,7 +643,7 @@ function createPublicController(options = {}) {
         const user = userQuery.rows[0];
 
         const storedHash =
-          (await redis.get(`pwdreset:user:${user.id}`)) ||
+          (await safeRedisGet(`pwdreset:user:${user.id}`)) ||
           (await (async () => {
             const row = await client.query(
               `SELECT reset_token_hash FROM password_resets WHERE user_id=$1 AND expires_at > now()`,
@@ -670,7 +670,7 @@ function createPublicController(options = {}) {
         ]);
         await client.query(`DELETE FROM password_resets WHERE user_id=$1`, [user.id]);
         await client.query(`DELETE FROM sessions WHERE user_id=$1`, [user.id]);
-        await redis.del(`pwdreset:user:${user.id}`);
+        await safeRedisDel(`pwdreset:user:${user.id}`);
 
         try {
           await sendPasswordResetConfirmation(user.email);
@@ -961,6 +961,22 @@ function decodeBase64Payload(value) {
     return Buffer.from(cleaned, "base64");
   } catch (error) {
     return null;
+  }
+}
+
+async function safeRedisGet(key) {
+  try {
+    return await redis.get(key);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function safeRedisDel(key) {
+  try {
+    return await redis.del(key);
+  } catch (error) {
+    return 0;
   }
 }
 
