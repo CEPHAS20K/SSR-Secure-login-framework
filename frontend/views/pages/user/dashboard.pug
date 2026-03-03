@@ -7,9 +7,16 @@ block content
   +appNavbar(activePage || "dashboard")
   .min-h-dvh.bg-gradient-to-br.from-orange-50.to-rose-100
     .relative.mx-auto.flex.max-w-6xl.flex-col.gap-6.px-4.py-16(class="sm:px-6 lg:px-10")
-      .flex.items-center.justify-between.gap-3
-        h1.text-4xl.font-black.text-rose-900.font-headline Tracking your secure vault
-        span.rounded-full.bg-rose-900/90.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50 Version #{ appVersion || "dev" }
+      .flex.flex-col.gap-2(class="sm:flex-row sm:items-center sm:justify-between")
+        div
+          p.text-xs.font-bold.uppercase.tracking-wide.text-rose-700 Secure Vault
+          h1.text-4xl.font-black.text-rose-900.font-headline(class="sm:text-5xl") Your encrypted space
+          p.mt-1.text-sm.font-semibold.text-rose-800 Manage your encrypted notes, attachments, and usage at a glance.
+        .flex.items-center.gap-2
+          span.rounded-full.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50(
+            style="background-color: #7f1d1d"
+          ) Version #{ appVersion || "dev" }
+          span.rounded-full.bg-white/80.px-3.py-1.text-xs.font-semibold.text-rose-900.border.border-rose-200 Live
 
       .grid.gap-5(class="lg:grid-cols-3")
         .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur(class="lg:col-span-2")
@@ -25,6 +32,7 @@ block content
               )
             +appButton("Save", "primary", "button")#saveUserIdBtn
             +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
+            +appButton("Use demo user", "ghost", "button")#loadDemoUserBtn
             p#usageStatus.text-xs.font-semibold.text-rose-700
           .mt-5
             p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
@@ -40,7 +48,7 @@ block content
                 )
               p#usageHint.mt-1.font-semibold.text-rose-700(class="text-[11px]") Quota: —
         .rounded-2xl.border.border-rose-200/70.bg-white/80.p-5.shadow-lg.backdrop-blur
-          h2.text-lg.font-bold.text-rose-900 Your Actions
+          h2.text-lg.font-bold.text-rose-900 Quick Links
           .mt-3.flex.flex-col.gap-3
             +appButton("Open Vault API docs", "primary", "button")(
               onclick="window.location.href='/api-docs'"

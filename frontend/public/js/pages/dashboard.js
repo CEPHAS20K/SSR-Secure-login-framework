@@ -4,6 +4,7 @@ import { notify } from "../lib/toast.js";
 import { createApiClient } from "../lib/api-client.js";
 
 const apiClient = createApiClient();
+const DEMO_USER_ID = "ffa1054f-25c3-4c7b-a063-825629903aea";
 
 async function fetchUsage() {
   const statusEl = document.getElementById("usageStatus");
@@ -80,6 +81,7 @@ function wireUserIdControls() {
   const input = document.getElementById("userIdInput");
   const saveBtn = document.getElementById("saveUserIdBtn");
   const refreshBtn = document.getElementById("refreshUsageBtn");
+  const loadDemoBtn = document.getElementById("loadDemoUserBtn");
   if (input) input.value = readUserId();
 
   if (saveBtn) {
@@ -96,6 +98,14 @@ function wireUserIdControls() {
   }
   if (refreshBtn) {
     refreshBtn.addEventListener("click", fetchUsage);
+  }
+  if (loadDemoBtn) {
+    loadDemoBtn.addEventListener("click", () => {
+      if (input) input.value = DEMO_USER_ID;
+      safeWriteStorage("last_user_id", DEMO_USER_ID);
+      notify("Demo user selected.", "success", "Dashboard");
+      fetchUsage();
+    });
   }
 }
 
