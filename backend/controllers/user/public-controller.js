@@ -13,13 +13,13 @@ const {
 const { assessRisk } = require("../../services/risk-engine");
 
 const loginPayloadSchema = z.object({
-  email: z
+  login: z
     .string({
-      error: "Email is required.",
+      error: "Email or username is required.",
     })
     .trim()
-    .email("Provide a valid email address.")
-    .transform((value) => value.toLowerCase()),
+    .min(3, "Enter a valid email or username.")
+    .max(120, "Login must be less than 120 characters."),
   password: z
     .string({
       error: "Password is required.",
@@ -347,9 +347,10 @@ function createPublicController(options = {}) {
       const client = await pool.connect();
       const ip = req.ip || req.socket?.remoteAddress || null;
       const fingerprint = req.body?.fingerprint || null;
+      const loginValue = parsedPayload.data.login.toLowerCase();
       try {
         // Brute-force lock check
-        const lockKey = `lock:user:${parsedPayload.data.email}`;
+        const lockKey = `lock:user:${loginValue}`;
         const locked = await redis.ttl(lockKey);
         if (locked > 0) {
           res.status(423).json({
@@ -360,8 +361,13 @@ function createPublicController(options = {}) {
         }
 
         const userQuery = await client.query(
-          `SELECT id, password_hash, last_login_ip, email_verified_at FROM users WHERE lower(email)=lower($1)`,
-          [parsedPayload.data.email]
+          `
+          SELECT id, password_hash, last_login_ip, email_verified_at
+          FROM users
+          WHERE lower(email)=lower($1) OR lower(username)=lower($1)
+          LIMIT 1
+        `,
+          [loginValue]
         );
         if (userQuery.rowCount === 0) {
           res.status(401).json({ error: "Invalid credentials." });

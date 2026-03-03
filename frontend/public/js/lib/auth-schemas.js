@@ -42,17 +42,20 @@ function isBetweenLength(value, min, max) {
 
 export const loginSchema = {
   safeParse(input) {
-    const email = trimString(input?.email);
+    const login = trimString(input?.login ?? input?.email);
     const password = asString(input?.password);
 
-    if (!isValidEmail(email)) {
-      return createIssue("Enter a valid email address.", "email");
+    const isEmail = isValidEmail(login);
+    const isUsername = isBetweenLength(login, 3, 60);
+
+    if (!isEmail && !isUsername) {
+      return createIssue("Enter a valid email or username.", "login");
     }
     if (!isBetweenLength(password, 8, 128)) {
       return createIssue("Password must be at least 8 characters.", "password");
     }
     return createSuccess({
-      email,
+      login,
       password,
     });
   },

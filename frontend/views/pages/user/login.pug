@@ -31,12 +31,12 @@ block content
             .auth-skeleton-block.h-10
             .auth-skeleton-block.h-11.mt-1
           form#loginForm.grid.gap-2(action="/auth/login", method="POST")
-            +authFieldShell("email", "Email", "login-field space-y-1.5")
+            +authFieldShell("login", "Email or Username", "login-field space-y-1.5")
               input#email.w-full.rounded-xl.border.border-rose-200.px-4.py-3.text-sm.font-semibold.text-rose-950.outline-none.transition(
-                type="email",
-                name="email",
-                autocomplete="email",
-                placeholder="you@example.com",
+                type="text",
+                name="login",
+                autocomplete="username",
+                placeholder="you@example.com or username",
                 required,
                 class="bg-white/60 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )

@@ -216,7 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const parse = loginSchema.safeParse({
-      email: email.value.trim(),
+      login: email.value.trim(),
       password: password.value,
     });
     loginBtn.disabled = !parse.success;
@@ -661,6 +661,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       notify("Login successful. Redirecting...", "success", "Login");
+      if (response?.userId) {
+        safeWriteStorage("last_user_id", response.userId);
+      }
       window.setTimeout(() => {
         window.location.href = LOGIN_SUCCESS_REDIRECT;
       }, 700);
@@ -856,6 +859,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         notify("Login successful. Redirecting...", "success", "Login");
         closeOtpModal();
+        safeWriteStorage("last_user_id", pendingUserId);
         window.setTimeout(() => {
           window.location.href = LOGIN_SUCCESS_REDIRECT;
         }, 700);
