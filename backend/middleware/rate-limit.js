@@ -32,7 +32,7 @@ function rateLimit(options) {
   } = options;
 
   return async function rateLimitMiddleware(req, res, next) {
-    if (RATE_LIMIT_DISABLED || !redis) {
+    if (RATE_LIMIT_DISABLED || !redis || redis.status !== "ready") {
       next();
       return;
     }
