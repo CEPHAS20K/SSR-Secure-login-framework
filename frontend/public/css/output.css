@@ -524,6 +524,9 @@
   .h-28 {
     height: calc(var(--spacing) * 28);
   }
+  .h-40 {
+    height: calc(var(--spacing) * 40);
+  }
   .h-44 {
     height: calc(var(--spacing) * 44);
   }
@@ -2110,9 +2113,19 @@
       padding-inline: calc(var(--spacing) * 6);
     }
   }
+  .lg\:grid-cols-3 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
   .lg\:grid-cols-\[1fr_20rem\] {
     @media (width >= 64rem) {
       grid-template-columns: 1fr 20rem;
+    }
+  }
+  .lg\:grid-cols-\[1fr_22rem\] {
+    @media (width >= 64rem) {
+      grid-template-columns: 1fr 22rem;
     }
   }
   .lg\:grid-cols-\[16rem_1fr\] {

@@ -55,6 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetEmail = document.getElementById("resetEmail");
   const resetNewPassword = document.getElementById("resetNewPassword");
   const resetConfirmPassword = document.getElementById("resetConfirmPassword");
+  const resetTogglePassword = document.getElementById("resetTogglePassword");
+  const resetToggleConfirm = document.getElementById("resetToggleConfirm");
   const resetSubmit = document.getElementById("resetSubmit");
   const resetCodeInputs = Array.from(document.querySelectorAll("[data-reset-digit]"));
   const resetCodeBlock = document.getElementById("resetCodeBlock");
@@ -80,7 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let otpDemoMode = false;
   let loginLockoutSecondsLeft = 0;
   let loginLockoutTimer = null;
-  const LOGIN_SUCCESS_REDIRECT = "/login";
+  // After successful login/OTP, send the user to the landing page (was looping back to /login)
+  const LOGIN_SUCCESS_REDIRECT = "/";
 
   if (!form || !email || !password || !loginBtn || !modal || !togglePassword) return;
 
@@ -229,6 +232,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const readOtpValue = () => otpInputs.map((el) => el.value.trim()).join("");
   const readResetCode = () => resetCodeInputs.map((el) => el.value.trim()).join("");
+  const clearResetCodeErrors = () => {
+    resetCodeInputs.forEach((input) => input.classList.remove("ring-2", "ring-rose-400"));
+  };
 
   const updateOtpSubmitState = () => {
     if (!otpSubmit || otpInputs.length === 0) return;
@@ -592,6 +598,19 @@ document.addEventListener("DOMContentLoaded", () => {
   togglePassword.setAttribute("aria-pressed", "false");
   togglePassword.setAttribute("aria-label", "Show password");
 
+  const bindPasswordToggle = (input, toggleBtn) => {
+    if (!input || !toggleBtn) return;
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+      toggleBtn.textContent = isPassword ? "Hide" : "Show";
+      toggleBtn.setAttribute("aria-pressed", isPassword ? "true" : "false");
+      toggleBtn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+    });
+    toggleBtn.setAttribute("aria-pressed", "false");
+    toggleBtn.setAttribute("aria-label", "Show password");
+  };
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -763,6 +782,7 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("input", (event) => {
       const value = event.target.value.replace(/\D/g, "").slice(0, 1);
       event.target.value = value;
+      clearResetCodeErrors();
       if (value && index < resetCodeInputs.length - 1) {
         focusResetNext(index);
       }
@@ -790,6 +810,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resetCodeInputs.forEach((el, i) => {
         el.value = digits[i] || "";
       });
+      clearResetCodeErrors();
       updateResetSubmitState();
       const nextIndex = Math.min(digits.length, resetCodeInputs.length - 1);
       resetCodeInputs[nextIndex]?.focus();
@@ -923,6 +944,8 @@ document.addEventListener("DOMContentLoaded", () => {
     updateResetSubmitState();
     updateResetResendState();
     setResetSubmitLabel("send");
+    bindPasswordToggle(resetNewPassword, resetTogglePassword);
+    bindPasswordToggle(resetConfirmPassword, resetToggleConfirm);
 
     forgotPasswordLink.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1013,6 +1036,9 @@ document.addEventListener("DOMContentLoaded", () => {
             resetSubmit.click()
           );
           return;
+        }
+        if (error.status === 400) {
+          resetCodeInputs.forEach((input) => input.classList.add("ring-2", "ring-rose-400"));
         }
         notify(error.message || "Unable to submit reset request right now.", "error", "Reset");
       } finally {

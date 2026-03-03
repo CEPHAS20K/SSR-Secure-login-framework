@@ -53,6 +53,7 @@ const { createAdminController, createPublicController } = require("./controllers
 const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
 const {
   createAdminInternalAccessGuard,
+  createAdminAuth,
   notFoundHandler,
   internalServerErrorHandler,
 } = require("./middleware");
@@ -112,12 +113,31 @@ function createApp(options = {}) {
     message: { error: "Too many authentication attempts. Try again in 15 minutes." },
   });
 
+  const adminAuth = createAdminAuth({
+    secret: env.ADMIN_SESSION_SECRET,
+    ttlHours: env.ADMIN_SESSION_TTL_HOURS,
+    secureCookies: config.IS_PRODUCTION,
+  });
+
   const publicController = createPublicController({
     logger,
     appVersion: config.APP_VERSION,
     assetVersion: config.ASSET_VERSION,
   });
-  const adminController = createAdminController({ logger });
+  const adminController = createAdminController({
+    logger,
+    adminUsername: env.ADMIN_USERNAME,
+    adminPassword: env.ADMIN_PASSWORD,
+    appVersion: config.APP_VERSION,
+    auth: adminAuth,
+  });
+  const { createVaultController } = require("./controllers/admin/vault-controller");
+  const vaultController = createVaultController({
+    logger,
+    perUserQuotaBytes: env.USER_STORAGE_QUOTA_BYTES
+      ? Number(env.USER_STORAGE_QUOTA_BYTES)
+      : 10 * 1024 * 1024 * 1024,
+  });
   const requireInternalAdminAccess = createAdminInternalAccessGuard({
     enabled: config.ADMIN_INTERNAL_ONLY,
     allowList: config.ADMIN_ALLOW_IPS,
@@ -213,6 +233,9 @@ function createApp(options = {}) {
     app.use("/admin", requireInternalAdminAccess);
     registerAdminRoutes(app, {
       adminController,
+      vaultController,
+      requireAdminAuth: adminAuth.requireAdminAuth,
+      requireAdminApiAuth: adminAuth.requireAdminApiAuth,
     });
   } else {
     logger.info("Admin routes are disabled (set ADMIN_ENABLED=true to enable).");

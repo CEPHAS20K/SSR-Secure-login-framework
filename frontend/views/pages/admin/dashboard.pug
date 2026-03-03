@@ -26,6 +26,7 @@ block content
         aside.rounded-2xl.border.p-4.backdrop-blur-2xl(class="border-white/40 bg-white/20")
           p.text-xs.font-black.uppercase.text-rose-700(class="tracking-[0.18em]") Admin Suite
           h2.mt-2.font-headline.text-3xl.leading-none.text-rose-900 Dashboard
+          p.mt-1.font-bold.text-rose-700(style="font-size: 11px") App v#{ appVersion }
           nav#adminSidebarNav.mt-5.space-y-2
             a.block.rounded-lg.px-3.py-2.text-sm.font-bold.text-rose-900.transition(
               href="#overview",
@@ -100,6 +101,44 @@ block content
               .rounded-xl.border.p-3(class="border-white/50 bg-white/65")
                 p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Avg Risk Score
                 p#metricAvgRisk.mt-1.text-3xl.font-black.text-rose-900 0
+            .mt-3.grid.gap-3(class="sm:grid-cols-2 lg:grid-cols-3")
+              .rounded-xl.border.p-3(class="border-white/50 bg-white/65")
+                p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Vault Items
+                p#metricVaultItems.mt-1.text-3xl.font-black.text-rose-900 0
+                p.text-xs.font-semibold.text-rose-700.mt-1 Stale (90d+):
+                p#metricVaultStale.text-sm.font-bold.text-rose-900 0
+              .rounded-xl.border.p-3(class="border-white/50 bg-white/65")
+                p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Encrypted Storage
+                p#metricVaultBytes.mt-1.text-3xl.font-black.text-rose-900 0 B
+                p.text-xs.font-semibold.text-rose-700.mt-1 Attachments
+                p#metricVaultAttachments.text-sm.font-bold.text-rose-900 0 B
+              .rounded-xl.border.p-3(class="border-white/50 bg-white/65")
+                p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Capacity (Prod)
+                p#metricUserCap.mt-1.text-3xl.font-black.text-rose-900 0 / 0
+                p.text-xs.font-semibold.text-rose-700.mt-1 Quota
+                p#metricUserQuota.text-sm.font-bold.text-rose-900 0
+
+            .mt-4.grid.gap-3(class="lg:grid-cols-[1fr_22rem]")
+              .rounded-2xl.border.p-3.backdrop-blur-2xl(class="border-white/40 bg-white/20")
+                .flex.items-center.justify-between
+                  p.text-sm.font-black.text-rose-900 Vault Storage Trend
+                  p#vaultStorageHint.text-xs.font-semibold.text-rose-700 Last 7 days
+                svg#vaultStorageChart.mt-3.h-40.w-full.rounded-lg(class="bg-white/70")
+              .rounded-2xl.border.p-3.backdrop-blur-2xl(class="border-white/40 bg-white/20")
+                .flex.items-center.justify-between
+                  p.text-sm.font-black.text-rose-900 Per-User Usage
+                  p.text-xs.font-semibold.text-rose-700 Sorted by size
+                .mt-2.overflow-x-auto
+                  table.min-w-full.text-sm
+                    thead.text-rose-900(class="bg-white/70")
+                      tr
+                        th.px-3.py-2.text-left.font-black Username
+                        th.px-3.py-2.text-left.font-black Email
+                        th.px-3.py-2.text-left.font-black Items
+                        th.px-3.py-2.text-left.font-black Encrypted Bytes
+                    tbody#vaultUsageTableBody.text-rose-900
+                      tr
+                        td.px-3.py-2(colspan="4") Loading...
 
             .mt-3.grid.gap-3(class="sm:grid-cols-3")
               .rounded-xl.border.p-3(class="border-white/50 bg-white/65")

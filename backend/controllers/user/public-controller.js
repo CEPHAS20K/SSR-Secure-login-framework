@@ -179,6 +179,7 @@ function createPublicController(options = {}) {
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 12);
   const ACCOUNT_LOCK_MINUTES = Number(process.env.ACCOUNT_LOCK_MINUTES || 5);
   const MAX_FAILED_ATTEMPTS = Number(process.env.MAX_FAILED_ATTEMPTS || 5);
+  const MAX_USERS = Number(process.env.MAX_USERS || 0); // 0 = unlimited
   const AUTH_BACKEND_DISABLED =
     process.env.AUTH_BACKEND_DISABLED === "true" || process.env.NODE_ENV === "test";
 
@@ -246,11 +247,11 @@ function createPublicController(options = {}) {
         }
         const user = userQuery.rows[0];
         const passwordOk = await bcrypt.compare(parsedPayload.data.password, user.password_hash);
-        await client.query(
-          `INSERT INTO login_attempts (user_id, ip, success, created_at) VALUES ($1,$2,$3,now())`,
-          [user.id, ip, passwordOk]
-        );
         if (!passwordOk) {
+          await client.query(
+            `INSERT INTO login_attempts (user_id, ip, success, risk_score, created_at) VALUES ($1,$2,false,$3,now())`,
+            [user.id, ip, null]
+          );
           const failKey = `fail:user:${user.id}`;
           const fails = await redis.incr(failKey);
           await redis.expire(failKey, 15 * 60); // 15 minutes window
@@ -268,6 +269,10 @@ function createPublicController(options = {}) {
           fingerprint,
           headers: req.headers || {},
         });
+        await client.query(
+          `INSERT INTO login_attempts (user_id, ip, success, risk_score, created_at) VALUES ($1,$2,true,$3,now())`,
+          [user.id, ip, Number.isFinite(risk.score) ? risk.score : null]
+        );
         let requiresOtp = risk.requiresOtp;
         let requiresWebAuthn = risk.requiresWebAuthn;
         const reasons = Array.isArray(risk.reasons) ? [...risk.reasons] : [];
@@ -279,7 +284,7 @@ function createPublicController(options = {}) {
         }
 
         if (!requiresOtp && !requiresWebAuthn) {
-          const sessionToken = await issueSession(client, user.id, fingerprint);
+          const sessionToken = await issueSession(client, user.id, fingerprint, ip);
           res.status(200).json({
             sessionToken,
             userId: user.id,
@@ -353,6 +358,14 @@ function createPublicController(options = {}) {
       const client = await pool.connect();
 
       try {
+        if (MAX_USERS > 0) {
+          const totalUsers = await client.query(`SELECT COUNT(*)::int AS count FROM users`);
+          if ((totalUsers.rows[0]?.count || 0) >= MAX_USERS) {
+            res.status(403).json({ error: "User registration is closed (capacity reached)." });
+            return;
+          }
+        }
+
         const existing = await client.query(
           `
           SELECT 1 FROM users
@@ -711,7 +724,12 @@ function createPublicController(options = {}) {
         return;
       }
 
-      const sessionToken = await issueSession(client, userId, fingerprint);
+      const sessionToken = await issueSession(
+        client,
+        userId,
+        fingerprint,
+        req.ip || req.socket?.remoteAddress || null
+      );
 
       await client.query(
         `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id=$1`,
@@ -761,7 +779,7 @@ function createPublicController(options = {}) {
     res.status(501).json({ error: "WebAuthn login not implemented yet." });
   }
 
-  async function issueSession(client, userId, fingerprint) {
+  async function issueSession(client, userId, fingerprint, ip) {
     const token = crypto.randomBytes(32).toString("base64url");
     const expires = new Date(Date.now() + SESSION_TTL_MS);
     await client.query(
@@ -773,7 +791,7 @@ function createPublicController(options = {}) {
     );
     await client.query(`UPDATE users SET last_login=now(), last_login_ip=$2 WHERE id=$1`, [
       userId,
-      null,
+      ip || null,
     ]);
     return token;
   }

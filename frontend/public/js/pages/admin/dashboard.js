@@ -90,6 +90,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const metricActiveUsers = document.getElementById("metricActiveUsers");
   const metricFlaggedUsers = document.getElementById("metricFlaggedUsers");
   const metricAvgRisk = document.getElementById("metricAvgRisk");
+  const metricVaultItems = document.getElementById("metricVaultItems");
+  const metricVaultBytes = document.getElementById("metricVaultBytes");
+  const metricVaultStale = document.getElementById("metricVaultStale");
+  const metricVaultAttachments = document.getElementById("metricVaultAttachments");
+  const metricUserCap = document.getElementById("metricUserCap");
+  const metricUserQuota = document.getElementById("metricUserQuota");
+  const vaultStorageChart = document.getElementById("vaultStorageChart");
+  const vaultStorageHint = document.getElementById("vaultStorageHint");
+  const vaultUsageTableBody = document.getElementById("vaultUsageTableBody");
   const metricActiveSessions = document.getElementById("metricActiveSessions");
   const metricFailedLogins10m = document.getElementById("metricFailedLogins10m");
   const metricStepUpQueue = document.getElementById("metricStepUpQueue");
@@ -196,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .finally(() => {
       renderAll();
       refreshDevicesTableFromApi();
+      refreshVaultUsageFromApi();
     });
   animateIn();
   warmDashboardModules();
@@ -773,6 +783,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRiskChart();
     renderUserGrowthChart();
     renderTrafficOverview();
+    renderVaultStorage();
+    renderVaultUsage();
     renderThreatGeo();
     renderAlertRules();
     renderTriggeredAlerts();
@@ -923,10 +935,21 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderMetrics() {
     const metrics = state.data.metrics || {};
     const health = state.data.health || {};
+    const quotas = state.data.quotas || {};
     setText(metricTotalUsers, metrics.totalUsers ?? 0);
     setText(metricActiveUsers, metrics.activeUsers ?? 0);
     setText(metricFlaggedUsers, metrics.flaggedUsers ?? 0);
     setText(metricAvgRisk, metrics.averageRisk ?? 0);
+    setText(metricVaultItems, metrics.vaultItems ?? 0);
+    setText(metricVaultStale, metrics.vaultStaleItems ?? 0);
+    setText(metricVaultBytes, formatBytes(metrics.vaultBytes ?? 0));
+    setText(metricVaultAttachments, formatBytes(metrics.vaultAttachmentBytes ?? 0));
+    const cap = quotas.maxUsers || "∞";
+    setText(metricUserCap, `${metrics.totalUsers ?? 0} / ${cap}`);
+    setText(
+      metricUserQuota,
+      quotas.perUserQuotaBytes ? `${formatBytes(quotas.perUserQuotaBytes)} per user` : "—"
+    );
     setText(metricApiLatency, `${health.averageApiLatencyMs ?? 0} ms`);
     setText(metricApiFailed, health.failedApiRequests ?? 0);
     setText(metricQueueBacklog, health.queueBacklog ?? 0);
@@ -1245,6 +1268,59 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderVaultStorage() {
+    if (!vaultStorageChart) return;
+    const series = Array.isArray(state.data.vaultStorageTrend) ? state.data.vaultStorageTrend : [];
+    if (!series.length) {
+      vaultStorageChart.innerHTML =
+        '<text x="12" y="20" font-size="12" fill="#7f1d1d">No vault data yet</text>';
+      if (vaultStorageHint) vaultStorageHint.textContent = "No data";
+      return;
+    }
+    if (vaultStorageHint) {
+      vaultStorageHint.textContent = `Last ${state.rangeDays} days`;
+    }
+    const width = 640;
+    const height = 140;
+    const paddingX = 32;
+    const paddingTop = 12;
+    const paddingBottom = 26;
+    const maxBytes = Math.max(1, ...series.map((p) => p.bytes || 0));
+    const stepX = (width - paddingX * 2) / Math.max(series.length - 1, 1);
+    const points = series.map((item, index) => {
+      const x = paddingX + stepX * index;
+      const y =
+        paddingTop +
+        ((maxBytes - (item.bytes || 0)) / maxBytes) * (height - paddingTop - paddingBottom);
+      return { ...item, x, y };
+    });
+    const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
+    const labels = points
+      .map(
+        (p) =>
+          `<text x="${p.x}" y="${height - 8}" text-anchor="middle" font-size="9" fill="#7f1d1d">${escapeHtml(
+            formatDate(p.date, false)
+          )}</text>`
+      )
+      .join("");
+    const dots = points
+      .map(
+        (p) =>
+          `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#ba274b" />` +
+          `<title>${formatBytes(p.bytes || 0)}</title>`
+      )
+      .join("");
+
+    vaultStorageChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    vaultStorageChart.innerHTML = `
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255,255,255,0.55)" />
+      <line x1="${paddingX}" y1="${height - paddingBottom}" x2="${width - paddingX}" y2="${height - paddingBottom}" stroke="rgba(127,29,29,0.3)" stroke-width="1" />
+      <polyline fill="none" stroke="#ba274b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${polyline}" />
+      ${dots}
+      ${labels}
+    `;
+  }
+
   function renderTrafficOverview() {
     const series = getRangeTrafficTrend();
     const summary = summarizeTraffic(series, state.data.traffic || {});
@@ -1455,6 +1531,40 @@ document.addEventListener("DOMContentLoaded", () => {
             schedule.enabled ? "Enabled" : "Disabled"
           } · Next: ${formatDate(schedule.nextRunAt, true)}`
         );
+      }
+
+      async function refreshVaultUsageFromApi() {
+        try {
+          const response = await apiRequest("/admin/api/vault/usage", {
+            cache: false,
+            silent: true,
+          });
+          state.vaultUsage = Array.isArray(response.users) ? response.users : [];
+          renderVaultUsage();
+        } catch (error) {
+          showFlash(error.message || "Failed to load vault usage.", "error");
+        }
+      }
+
+      function renderVaultUsage() {
+        if (!vaultUsageTableBody) return;
+        const rows = state.vaultUsage || [];
+        if (!rows.length) {
+          vaultUsageTableBody.innerHTML =
+            '<tr><td colspan="4" class="px-3 py-2 text-sm font-semibold text-rose-800">No vault items yet.</td></tr>';
+          return;
+        }
+        vaultUsageTableBody.innerHTML = rows
+          .map(
+            (user) =>
+              `<tr class="border-b border-white/40">` +
+              `<td class="px-3 py-2 text-sm font-bold text-rose-900">${escapeHtml(user.username)}</td>` +
+              `<td class="px-3 py-2 text-xs font-semibold text-rose-700">${escapeHtml(user.email)}</td>` +
+              `<td class="px-3 py-2 text-sm font-bold text-rose-900">${user.items ?? 0}</td>` +
+              `<td class="px-3 py-2 text-sm font-semibold text-rose-900">${formatBytes(user.bytes ?? 0)}</td>` +
+              `</tr>`
+          )
+          .join("");
       }
       if (scheduledExportEnabled) {
         scheduledExportEnabled.checked = Boolean(schedule.enabled);
@@ -2376,6 +2486,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     refreshUsersTableFromApi();
     refreshDevicesTableFromApi();
+    refreshVaultUsageFromApi();
   }
 
   async function refreshDashboard() {
@@ -2385,6 +2496,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { cache: false }
       );
       applyDashboardData(snapshot);
+      refreshVaultUsageFromApi();
       showFlash("Dashboard refreshed.", "info");
     } catch (error) {
       showFlash(error.message || "Failed to refresh dashboard.", "error");
@@ -2506,6 +2618,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function normalizeDashboardData(data) {
     return normalizeDashboardDataModel(data);
+  }
+
+  function formatBytes(bytes) {
+    const value = Number(bytes || 0);
+    if (value <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const idx = Math.min(units.length - 1, Math.floor(Math.log(value) / Math.log(1024)));
+    const sized = value / 1024 ** idx;
+    return `${sized.toFixed(sized >= 10 ? 0 : 1)} ${units[idx]}`;
   }
 
   function setText(node, value) {

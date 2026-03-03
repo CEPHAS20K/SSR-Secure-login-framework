@@ -1,7 +1,8 @@
 mixin appNavbar(activePage)
-  - const showHome = activePage !== "landing";
-  - const showLogin = activePage !== "login";
-  - const showRegister = activePage !== "register";
+  - const isAdminNav = String(activePage || "").startsWith("admin");
+  - const showHome = isAdminNav ? true : activePage !== "landing";
+  - const showLogin = isAdminNav ? false : activePage !== "login";
+  - const showRegister = isAdminNav ? false : activePage !== "register";
   nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
     .mx-auto.w-full.max-w-5xl.rounded-2xl.px-3.backdrop-blur-xl.border-transparent.bg-transparent(
       class="py-2.5 sm:px-4 md:px-6"

@@ -8,6 +8,7 @@ class Browser {
   +Render Pug HTML
   +Run page JS modules
   +Register service worker
+  +Encrypt vault data client-side
 }
 
 class ServiceWorker {
@@ -47,6 +48,10 @@ class PublicRoutes {
 class AdminRoutes {
   +GET /admin/login
   +GET /admin/dashboard
+  +GET /admin/api/dashboard
+  +GET /admin/api/users
+  +GET /admin/api/vault/usage
+  +POST /admin/api/vault/items
 }
 
 class PublicController {
@@ -67,6 +72,15 @@ class PublicController {
 class AdminController {
   +renderAdminLogin()
   +renderDashboard()
+  +getDashboardSnapshot()
+  +listUsers()
+  +listUserDevices()
+  +getUserTimeline()
+}
+
+class VaultController {
+  +createVaultItem()
+  +getVaultUsage()
 }
 
 class MailerService {
@@ -90,6 +104,11 @@ class PostgresDB {
   +sessions
   +trusted_devices
   +login_attempts
+  +vault_items
+  +vault_item_versions
+  +attachments
+  +key_envelopes
+  +audit_logs
 }
 
 class WebAuthnService {
@@ -125,6 +144,7 @@ ExpressApp --> PublicRoutes
 ExpressApp --> AdminRoutes
 PublicRoutes --> PublicController
 AdminRoutes --> AdminController
+AdminRoutes --> VaultController
 PublicController --> Views
 AdminController --> Views
 PublicController --> MailerService
@@ -132,6 +152,9 @@ PublicController --> RiskEngine
 PublicController --> RedisCache
 PublicController --> PostgresDB
 PublicController --> WebAuthnService
+VaultController --> PostgresDB
+VaultController --> AuditLogs : insert
+AdminController --> PostgresDB
 ExpressApp --> StaticAssets
 ExpressApp --> Observability
 ServiceWorker --> StaticAssets : cache/read`,
@@ -142,7 +165,9 @@ participant SW as Service Worker
 participant A as Express App
 participant M as Middleware Stack
 participant R as Route
-participant C as Controller
+participant C as Public Controller
+participant AC as Admin Controller
+participant VC as Vault Controller
 participant V as Pug View
 participant D as Device Fingerprint
 participant K as Risk Engine
@@ -150,6 +175,7 @@ participant P as Postgres
 participant X as Redis
 participant S as Mailer Service
 participant W as WebAuthn Service
+participant L as Audit Logs
 
 U->>B: Open /register
 B->>A: GET /register
@@ -199,6 +225,21 @@ else WebAuthn required
   C->>W: verify assertion
   C->>P: create session
   C-->>B: 200 session token
+end
+
+== Encrypted Vault Write (Admin API) ==
+U->>B: Encrypt secret client-side (AES-GCM)
+B->>A: POST /admin/api/vault/items (ciphertext, nonce, authTag, bytes)
+A->>M: auth + logging + rate-limit
+M->>R: admin route match
+R->>VC: createVaultItem()
+VC->>P: sum existing vault bytes for user
+alt Under quota
+  VC->>P: insert vault_item + attachment_bytes
+  VC->>L: append audit_logs (vault_item_create)
+  VC-->>B: 201 + usage
+else Over quota
+  VC-->>B: 413 quota exceeded
 end`,
   notes: [
     "`assetPath()` appends asset version data for cache-busting.",
