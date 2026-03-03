@@ -1,5 +1,21 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENDER_SET = new Set(["male", "female"]);
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "password123",
+  "12345678",
+  "123456789",
+  "qwerty123",
+  "letmein123",
+  "admin123",
+  "admin1234",
+  "welcome123",
+  "test1234",
+  "test12345",
+  "changeme123",
+]);
+const PASSWORD_MIN = 12;
+const PASSWORD_MAX = 128;
 
 function createIssue(message, path) {
   return {
@@ -40,6 +56,20 @@ function isBetweenLength(value, min, max) {
   return value.length >= min && value.length <= max;
 }
 
+function validatePassword(password) {
+  if (!isBetweenLength(password, PASSWORD_MIN, PASSWORD_MAX)) {
+    return `Password must be at least ${PASSWORD_MIN} characters.`;
+  }
+  if (!/[a-z]/.test(password)) return "Password must include a lowercase letter.";
+  if (!/[A-Z]/.test(password)) return "Password must include an uppercase letter.";
+  if (!/\d/.test(password)) return "Password must include a number.";
+  if (!/[^\w\s]/.test(password)) return "Password must include a symbol.";
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    return "Password is too common. Choose a stronger one.";
+  }
+  return "";
+}
+
 export const loginSchema = {
   safeParse(input) {
     const login = trimString(input?.login ?? input?.email);
@@ -51,8 +81,8 @@ export const loginSchema = {
     if (!isEmail && !isUsername) {
       return createIssue("Enter a valid email or username.", "login");
     }
-    if (!isBetweenLength(password, 8, 128)) {
-      return createIssue("Password must be at least 8 characters.", "password");
+    if (!isBetweenLength(password, PASSWORD_MIN, PASSWORD_MAX)) {
+      return createIssue(`Password must be at least ${PASSWORD_MIN} characters.`, "password");
     }
     return createSuccess({
       login,
@@ -76,11 +106,15 @@ export const registerSchema = {
     if (!isValidEmail(email)) {
       return createIssue("Enter a valid email address.", "email");
     }
-    if (!isBetweenLength(password, 8, 128)) {
-      return createIssue("Password must be at least 8 characters.", "password");
+    const passwordIssue = validatePassword(password);
+    if (passwordIssue) {
+      return createIssue(passwordIssue, "password");
     }
-    if (!isBetweenLength(confirmPassword, 8, 128)) {
-      return createIssue("Confirm password must be at least 8 characters.", "confirmPassword");
+    if (!isBetweenLength(confirmPassword, PASSWORD_MIN, PASSWORD_MAX)) {
+      return createIssue(
+        `Confirm password must be at least ${PASSWORD_MIN} characters.`,
+        "confirmPassword"
+      );
     }
     if (!GENDER_SET.has(gender)) {
       return createIssue("Select a valid gender option.", "gender");
@@ -126,11 +160,15 @@ export const resetAccountSchema = {
     if (!/^\d{5}$/.test(code)) {
       return createIssue("Reset code must be 5 digits.", "code");
     }
-    if (!isBetweenLength(newPassword, 8, 128)) {
-      return createIssue("New password must be at least 8 characters.", "newPassword");
+    const passwordIssue = validatePassword(newPassword);
+    if (passwordIssue) {
+      return createIssue(passwordIssue, "newPassword");
     }
-    if (!isBetweenLength(confirmPassword, 8, 128)) {
-      return createIssue("Confirm password must be at least 8 characters.", "confirmPassword");
+    if (!isBetweenLength(confirmPassword, PASSWORD_MIN, PASSWORD_MAX)) {
+      return createIssue(
+        `Confirm password must be at least ${PASSWORD_MIN} characters.`,
+        "confirmPassword"
+      );
     }
     if (newPassword !== confirmPassword) {
       return createIssue("New password and confirm password must match.", "confirmPassword");

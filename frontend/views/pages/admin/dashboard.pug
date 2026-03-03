@@ -404,6 +404,11 @@ block content
                 ) OTP Events
                 button.admin-log-filter.rounded-lg.border.px-3.text-xs.font-bold.text-rose-900.transition.border-rose-200.bg-white(
                   type="button",
+                  data-category="vault",
+                  class="py-1.5"
+                ) Vault Actions
+                button.admin-log-filter.rounded-lg.border.px-3.text-xs.font-bold.text-rose-900.transition.border-rose-200.bg-white(
+                  type="button",
                   data-category="admin_action",
                   class="py-1.5"
                 ) Admin Actions
@@ -668,9 +673,7 @@ block content
           class="border-white/45 bg-white/65 hover:bg-white"
         ) Close
       #timelineLoading.mt-3.hidden.text-xs.font-bold.text-rose-700 Loading timeline...
-      #timelineList.mt-3.overflow-y-auto.space-y-2.text-sm.font-semibold.text-rose-900(
-        class="max-h-[24rem]"
-      )
+      #timelineList.mt-3.overflow-y-auto.space-y-2.text-sm.font-semibold.text-rose-900.max-h-96
 
   script#adminInitialData(type="application/json") !{ JSON.stringify(dashboardData || {}) }
   script(src=assetPath("/js/pages/admin/dashboard.js"), type="module")

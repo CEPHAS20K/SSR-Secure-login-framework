@@ -22,6 +22,7 @@ html(lang="en")
     meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
     meta(name="apple-mobile-web-app-title", content="Secure Storage Vault")
     title Secure Storage Vault
+    block headExtra
     link(rel="icon", type="image/png", sizes="32x32", href=assetPath("/images/favicon-32.png"))
     link(rel="icon", type="image/png", sizes="16x16", href=assetPath("/images/favicon-16.png"))
     link(rel="apple-touch-icon", sizes="192x192", href=assetPath("/images/icon-192.png"))
@@ -65,6 +66,21 @@ html(lang="en")
     script(src=assetPath("/vendor/notyf.min.js"))
     main
       block content
+    script.
+      (function () {
+        const markReady = () => {
+          document.querySelectorAll(".auth-form-shell").forEach((shell) => {
+            shell.classList.remove("auth-form-loading");
+            shell.classList.add("auth-form-ready");
+          });
+        };
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", markReady, { once: true });
+        } else {
+          markReady();
+        }
+        window.setTimeout(markReady, 1800);
+      })();
     if shouldLoadGsap
       script(src=assetPath("/vendor/gsap.min.js"), defer)
     if rumEnabled

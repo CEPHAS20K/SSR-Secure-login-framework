@@ -34,6 +34,22 @@ function safeRemoveStorage(key) {
   }
 }
 
+function getDeviceFingerprint() {
+  const cached = safeReadStorage("device_fingerprint");
+  if (cached) return cached;
+  const parts = [
+    navigator.userAgent || "",
+    navigator.language || "",
+    `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    navigator.platform || "",
+  ];
+  const raw = parts.join("|");
+  const encoded = btoa(unescape(encodeURIComponent(raw))).slice(0, 120);
+  safeWriteStorage("device_fingerprint", encoded);
+  return encoded;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
   const email = document.getElementById("email");
@@ -73,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const RESET_CODE_COUNTDOWN_SECONDS = 60;
   const FORM_SKELETON_MIN_MS = 220;
   const rememberedEmail = safeReadStorage("auth_email");
+  const deviceFingerprint = getDeviceFingerprint();
   let resendSecondsLeft = OTP_COUNTDOWN_SECONDS;
   let resendTimer = null;
   let resetResendSecondsLeft = 0;
@@ -626,7 +643,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (rememberMe) {
       if (rememberMe.checked) {
-        safeWriteStorage("auth_email", parse.data.email);
+        safeWriteStorage("auth_email", parse.data.login);
       } else {
         safeRemoveStorage("auth_email");
       }
@@ -638,7 +655,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await apiClient.request("/auth/login", {
         method: "POST",
-        data: parse.data,
+        data: { ...parse.data, fingerprint: deviceFingerprint },
         retries: 1,
         timeoutMs: 5200,
       });
@@ -853,6 +870,7 @@ document.addEventListener("DOMContentLoaded", () => {
             userId: pendingUserId,
             otp: readOtpValue(),
             trustDevice: Boolean(trustDevice?.checked),
+            fingerprint: deviceFingerprint,
           },
           retries: 1,
           timeoutMs: 5200,
@@ -907,7 +925,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const response = await apiClient.request("/auth/otp/resend", {
           method: "POST",
-          data: { userId: pendingUserId },
+          data: { userId: pendingUserId, fingerprint: deviceFingerprint },
           retries: 1,
           timeoutMs: 5200,
         });

@@ -1,6 +1,8 @@
 const { test, expect } = require("@playwright/test");
 
 test.describe("Auth flow", () => {
+  const strongPassword = "Str0ng!Passw0rd1";
+
   test("landing page renders and links to auth pages", async ({ page }) => {
     await page.goto("/");
 
@@ -16,13 +18,13 @@ test.describe("Auth flow", () => {
     await expect(loginButton).toBeDisabled();
 
     await page.fill("#email", "tester@example.com");
-    await page.fill("#password", "password123");
+    await page.fill("#password", strongPassword);
 
     await expect(loginButton).toBeEnabled();
     await loginButton.click();
 
     await expect(page.locator("#otpModal")).toBeVisible();
-    await expect(page.locator("#otpInput")).toBeVisible();
+    await expect(page.locator("[data-otp-digit]")).toBeVisible();
   });
 
   test("register form enables submit and opens OTP modal", async ({ page }) => {
@@ -33,8 +35,8 @@ test.describe("Auth flow", () => {
 
     await page.fill("#username", "test-user");
     await page.fill("#regEmail", "test-user@example.com");
-    await page.fill("#regPassword", "password123");
-    await page.fill("#regPasswordConfirm", "password123");
+    await page.fill("#regPassword", strongPassword);
+    await page.fill("#regPasswordConfirm", strongPassword);
     await page.selectOption("#gender", "male");
     await page.check("#agreeTerms");
 
@@ -42,6 +44,6 @@ test.describe("Auth flow", () => {
     await registerButton.click();
 
     await expect(page.locator("#registerOtpModal")).toBeVisible();
-    await expect(page.locator("#registerOtpInput")).toBeVisible();
+    await expect(page.locator("[data-otp-digit]")).toBeVisible();
   });
 });

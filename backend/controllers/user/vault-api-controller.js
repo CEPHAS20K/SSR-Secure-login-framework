@@ -6,7 +6,14 @@ function createVaultApiController(options = {}) {
   const {
     logger = console,
     perUserQuotaBytes = Number(process.env.USER_STORAGE_QUOTA_BYTES || 10 * 1024 * 1024 * 1024),
+    allowHeaderAuth = true,
   } = options;
+
+  function readUserId(req) {
+    if (req.user?.id) return String(req.user.id);
+    if (!allowHeaderAuth) return "";
+    return String(req.headers?.["x-user-id"] || req.query?.userId || req.body?.userId || "").trim();
+  }
 
   async function createVaultItem(req, res) {
     const {
@@ -325,16 +332,29 @@ function createVaultApiController(options = {}) {
     }
     const client = await pool.connect();
     try {
-      const user = await ensureUser(client, userId);
+      const user = await getUserProfile(client, userId);
       if (!user) {
         res.status(401).json({ error: "Invalid user." });
         return;
       }
-      const used = await getUserUsageBytes(client, userId);
+      const usage = await getUserUsageSummary(client, userId);
       res.status(200).json({
         userId,
-        usedBytes: used,
+        usedBytes: usage.usedBytes,
+        attachmentBytes: usage.attachmentBytes,
+        ciphertextBytes: usage.ciphertextBytes,
         quotaBytes: perUserQuotaBytes > 0 ? perUserQuotaBytes : null,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          gender: user.gender,
+          createdAt: user.created_at,
+          lastLogin: user.last_login,
+          lastLoginIp: user.last_login_ip,
+          emailVerifiedAt: user.email_verified_at,
+          avatarUpdatedAt: user.avatar_updated_at,
+        },
       });
     } catch (error) {
       logger.error({ err: error }, "getVaultUsage failed");
@@ -467,12 +487,6 @@ function createVaultApiController(options = {}) {
   };
 }
 
-function readUserId(req) {
-  return (
-    String(req.headers?.["x-user-id"] || req.query?.userId || req.body?.userId || "").trim() || ""
-  );
-}
-
 function sanitizeBody(body) {
   return {
     userId: String(body.userId || "").trim(),
@@ -502,6 +516,47 @@ async function ensureUser(client, userId) {
   if (!userId) return null;
   const row = await client.query(`SELECT id FROM users WHERE id=$1`, [userId]);
   return row.rowCount ? row.rows[0] : null;
+}
+
+async function getUserProfile(client, userId) {
+  if (!userId) return null;
+  const row = await client.query(
+    `
+    SELECT id, username, email, gender, created_at, last_login, last_login_ip, email_verified_at, avatar_updated_at
+    FROM users
+    WHERE id=$1
+  `,
+    [userId]
+  );
+  return row.rowCount ? row.rows[0] : null;
+}
+
+async function getUserUsageSummary(client, userId) {
+  const row = await client.query(
+    `
+    SELECT
+      COALESCE(SUM(octet_length(v.ciphertext)), 0)::bigint AS ciphertext_bytes,
+      COALESCE(SUM(v.attachment_bytes), 0)::bigint AS attachment_bytes,
+      COALESCE(SUM(a.size_bytes), 0)::bigint AS attachment_table_bytes
+    FROM vault_items v
+    LEFT JOIN attachments a ON a.vault_item_id = v.id
+    WHERE v.user_id = $1
+  `,
+    [userId]
+  );
+  if (!row.rowCount) {
+    return { usedBytes: 0, ciphertextBytes: 0, attachmentBytes: 0 };
+  }
+  const ciphertextBytes = Number(row.rows[0].ciphertext_bytes || 0);
+  const attachmentBytes = Math.max(
+    Number(row.rows[0].attachment_bytes || 0),
+    Number(row.rows[0].attachment_table_bytes || 0)
+  );
+  return {
+    ciphertextBytes,
+    attachmentBytes,
+    usedBytes: ciphertextBytes + attachmentBytes,
+  };
 }
 
 async function getUserUsageBytes(client, userId) {

@@ -5,35 +5,55 @@ include ../../components/button
 
 block content
   +appNavbar(activePage || "dashboard")
-  .min-h-dvh.bg-gradient-to-br.from-orange-50.to-rose-100
-    .relative.mx-auto.flex.max-w-6xl.flex-col.gap-6.px-4.py-16(class="sm:px-6 lg:px-10")
-      // Hero + quick stats
-      .flex.flex-col.gap-3(class="sm:flex-row sm:items-start sm:justify-between")
-        .space-y-2
-          p.text-xs.font-bold.uppercase.tracking-wide.text-rose-700 Secure Vault
-          h1.text-4xl.font-black.text-rose-900.font-headline(class="sm:text-5xl") Your encrypted space
-          p.text-sm.font-semibold.text-rose-800 Manage encrypted notes, attachments, and usage at a glance.
-          .flex.flex-wrap.items-center.gap-2
-            span.rounded-full.px-3.py-1.text-xs.font-semibold.uppercase.text-rose-50(
-              style="background-color: #7f1d1d"
-            ) Version #{ appVersion || "dev" }
-            span.rounded-full.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900.border.border-rose-200.opacity-80 Live
-            span.rounded-full.bg-emerald-50.px-3.py-1.text-xs.font-semibold.text-emerald-800.border.border-emerald-200 Encryption: AES-256
-        .rounded-2xl.border.border-rose-200.bg-white.p-4.shadow-lg.backdrop-blur.opacity-80
-          p.text-xs.font-bold.uppercase.text-rose-700 Quick stats
-          .mt-3.grid.grid-cols-2.gap-3
-            .rounded-xl.bg-rose-900.p-3.text-rose-50.shadow-inner.opacity-90
-              p.font-semibold.uppercase(class="text-[11px]") Used
-              p#metricUsed.text-lg.font-black --
-            .rounded-xl.bg-white.p-3.text-rose-900.border.border-rose-200.opacity-90
-              p.font-semibold.uppercase(class="text-[11px]") Quota
-              p#metricQuota.text-lg.font-black --
-            .rounded-xl.bg-white.p-3.text-rose-900.border.border-rose-200.opacity-90
-              p.font-semibold.uppercase(class="text-[11px]") Items
-              p#metricItems.text-lg.font-black —
-            .rounded-xl.bg-white.p-3.text-rose-900.border.border-rose-200.opacity-90
-              p.font-semibold.uppercase(class="text-[11px]") Attachments
-              p#metricAttachments.text-lg.font-black —
+  #userView.relative.overflow-hidden.bg-auth-svg.min-h-dvh
+    .pointer-events-none.absolute.-left-20.top-12.hidden.h-64.w-64.rounded-full.blur-3xl(
+      class="bg-fuchsia-200/30 sm:block"
+    )
+    .pointer-events-none.absolute.-right-16.bottom-16.hidden.h-72.w-72.rounded-full.blur-3xl(
+      class="bg-orange-200/30 sm:block"
+    )
+    #userDashboard.relative.z-10.mx-auto.flex.max-w-6xl.flex-col.gap-6.px-4.pb-10.pt-24(
+      class="sm:pt-28 sm:px-6 lg:px-10"
+    )
+      // Hero + quick stats (polished)
+      .grid.gap-4(class="md:grid-cols-3")
+        .rounded-3xl.border.p-7.backdrop-blur-2xl.text-rose-900(
+          class="md:col-span-2 border-white/40 bg-white/20"
+        )
+          .flex.items-start.justify-between.gap-4.flex-wrap
+            div
+              p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Secure Vault
+              h1.font-headline.text-4xl.leading-tight.text-rose-900(class="sm:text-5xl") Your encrypted space
+              p.mt-2.text-sm.font-semibold.text-rose-800 Manage encrypted files, shares, and usage in one secure home.
+            .flex.flex-col.items-end.gap-2
+              span.rounded-full.px-3.py-1.text-xs.font-semibold.border.text-rose-900(
+                class="bg-white/70 border-white/50"
+              ) Version #{ appVersion || "dev" }
+              span.rounded-full.px-3.py-1.text-xs.font-semibold.border.text-emerald-50.border-emerald-200(
+                class="bg-emerald-500/90"
+              ) Encryption: AES-256
+          .mt-6.flex.flex-wrap.items-center.gap-3
+            +appButton("Upload file", "primary", "button")#ctaUpload
+            +appButton("New secret note", "ghost", "button")#ctaNewNote
+            +appButton("Create share link", "ghost", "button")#ctaShare
+            +appButton("Open editor", "ghost", "button")#noteLaunchHero(
+              data-open-note="true"
+            )
+        .rounded-3xl.border.p-6.backdrop-blur-2xl(class="border-white/40 bg-white/25")
+          p.text-xs.font-black.uppercase.tracking-wider.text-rose-700 Tracking
+          .mt-4.grid.grid-cols-2.gap-3
+            .rounded-2xl.border.p-3(class="border-white/60 bg-white/70")
+              p.font-semibold.uppercase.text-xs.text-rose-700 Used
+              p#metricUsed.text-xl.font-black.text-rose-900 --
+            .rounded-2xl.border.p-3(class="border-white/60 bg-white/70")
+              p.font-semibold.uppercase.text-xs.text-rose-700 Quota
+              p#metricQuota.text-xl.font-black.text-rose-900 --
+            .rounded-2xl.border.p-3(class="border-white/60 bg-white/70")
+              p.font-semibold.uppercase.text-xs.text-rose-700 Items
+              p#metricItems.text-xl.font-black.text-rose-900 —
+            .rounded-2xl.border.p-3(class="border-white/60 bg-white/70")
+              p.font-semibold.uppercase.text-xs.text-rose-700 Attachments
+              p#metricAttachments.text-xl.font-black.text-rose-900 —
 
       // Storage + links
       .grid.gap-5(class="lg:grid-cols-3")
@@ -43,17 +63,36 @@ block content
           h2.text-lg.font-bold.text-rose-900 Vault Storage
           p.mt-1.text-sm.font-semibold.text-rose-800 Vault usage is calculated from encrypted items and attachments.
           .mt-4.flex.items-center.gap-3.flex-wrap
-            div
-              p.text-xs.font-bold.uppercase.text-rose-700 User ID
-              input#userIdInput.w-64.rounded-lg.border.border-rose-200.px-3.py-2.text-sm.font-semibold.text-rose-950.outline-none.bg-white.opacity-80(
-                type="text",
-                placeholder="paste user UUID",
-                class="placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
-              )
-            +appButton("Save", "primary", "button")#saveUserIdBtn
-            +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
-            +appButton("Use demo user", "ghost", "button")#loadDemoUserBtn
-            p#usageStatus.text-xs.font-semibold.text-rose-700
+            p#usageStatus.text-xs.font-semibold.text-rose-700 Auto-using demo user; usage refreshes on load.
+          .mt-4.rounded-xl.border.border-rose-200.bg-white.p-4
+            .flex.items-center.justify-between
+              h3.text-sm.font-black.uppercase.tracking-wider.text-rose-700 Profile
+              span#profileVerified.text-xs.font-semibold.text-rose-600 Pending verification
+            .mt-3.grid.gap-3(class="sm:grid-cols-2")
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 User ID
+                p#profileUserId.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Username
+                p#profileUsername.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Email
+                p#profileEmail.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Gender
+                p#profileGender.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Created
+                p#profileCreated.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Last login
+                p#profileLastLogin.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Last IP
+                p#profileLastIp.text-xs.font-semibold.text-rose-900 —
+              .rounded-lg.border.border-rose-100.p-3(class="bg-rose-50/60")
+                p.text-xs.font-bold.uppercase.text-rose-700 Avatar updated
+                p#profileAvatarUpdated.text-xs.font-semibold.text-rose-900 —
           .mt-5
             p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
               span.h-3.w-3.rounded-full.bg-emerald-500
@@ -66,7 +105,36 @@ block content
                 #usageBar.h-3.rounded-full.bg-gradient-to-r.from-orange-400.to-rose-600.transition-all.duration-300.ease-out(
                   style="width: 0%"
                 )
-              p#usageHint.mt-1.font-semibold.text-rose-700(class="text-[11px]") Quota: —
+              p#usageHint.mt-1.font-semibold.text-rose-700.text-xs Quota: —
+            .mt-4.grid.gap-3(class="sm:grid-cols-3")
+              .rounded-xl.border.border-rose-200.bg-white.p-3
+                p.text-xs.font-bold.uppercase.text-rose-700 Remaining
+                p#usageRemaining.text-sm.font-black.text-rose-900 --
+              .rounded-xl.border.border-rose-200.bg-white.p-3
+                p.text-xs.font-bold.uppercase.text-rose-700 Used %
+                p#usagePercent.text-sm.font-black.text-rose-900 --
+              .rounded-xl.border.border-rose-200.bg-white.p-3
+                p.text-xs.font-bold.uppercase.text-rose-700 Status
+                p#usageBadge.text-sm.font-black.text-emerald-700 Healthy
+            .mt-4
+              p.text-xs.font-bold.uppercase.text-rose-700 Storage breakdown
+              .mt-3.space-y-3
+                .space-y-1
+                  .flex.items-center.justify-between.text-xs.font-semibold.text-rose-700
+                    span Encrypted items
+                    span#usageEncryptedSize --
+                  .h-2.w-full.rounded-full.bg-rose-100
+                    #usageEncryptedBar.h-2.rounded-full.bg-rose-400(style="width: 0%")
+                .space-y-1
+                  .flex.items-center.justify-between.text-xs.font-semibold.text-rose-700
+                    span Attachments
+                    span#usageAttachmentSize --
+                  .h-2.w-full.rounded-full.bg-rose-100
+                    #usageAttachmentBar.h-2.rounded-full.bg-orange-300(style="width: 0%")
+            .mt-4.flex.items-center.gap-2.flex-wrap
+              +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
+              +appButton("Export report", "ghost", "button")#exportUsageBtn
+              p#usageUpdatedAt.text-xs.font-semibold.text-rose-700
           .mt-6
             p.text-sm.font-bold.text-rose-900.flex.items-center.gap-2
               span.h-3.w-3.rounded-full.bg-sky-500
@@ -76,21 +144,82 @@ block content
                 role="img",
                 aria-label="Usage trend chart"
               )
-              p#usageTrendHint.mt-2.font-semibold.text-rose-700(class="text-[11px]") Trend shows daily totals (placeholder until real data is connected).
-        .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
-          h2.text-lg.font-bold.text-rose-900 Quick Links
-          .mt-3.flex.flex-col.gap-3
-            +appButton("Open Vault API docs", "primary", "button")(
-              onclick="window.location.href='/api-docs'"
-            )
-            +appButton("Back to login", "ghost", "button")(
-              onclick="window.location.href='/login'"
-            )
-            +appButton("Refresh this dashboard", "ghost", "button")(
-              onclick="window.location.reload()"
-            )
-          p.mt-3.text-sm.font-semibold.text-rose-800 This dashboard is user-only and will soon include uploads, sharing, and attachments.
-
+              p#usageTrendHint.mt-2.font-semibold.text-rose-700.text-xs Trend shows daily totals (placeholder until real data is connected).
+        .space-y-4
+          .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
+            .flex.items-start.justify-between.gap-4
+              div
+                h2.text-lg.font-bold.text-rose-900 Upload & compose
+                p.mt-1.text-sm.font-semibold.text-rose-800 Securely stage files with client-side encryption and rich notes.
+              .flex.items-center.gap-2.flex-wrap
+                span.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-700 AES-256
+                span.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-700 Private
+            input#fileInput.sr-only(type="file", accept=".pdf,.doc,.docx,.txt,image/*,video/*")
+            input#avatarInput.sr-only(type="file", accept="image/*")
+            .mt-4.grid.gap-4(class="md:grid-cols-[1.2fr,0.8fr]")
+              .rounded-xl.border.border-rose-200.bg-white.p-4
+                .flex.items-center.justify-between
+                  h3.text-sm.font-black.uppercase.tracking-wider.text-rose-700 Upload dropbox
+                  button#uploadBrowseBtn.text-xs.font-semibold.text-rose-700 Browse files
+                #uploadDropZone.mt-3.rounded-xl.border-2.border-dashed.border-rose-200.p-5.text-center.cursor-pointer(
+                  class="bg-rose-50/80"
+                )
+                  .mx-auto.flex.h-12.w-12.items-center.justify-center.rounded-full.bg-gradient-to-br.from-rose-500.to-orange-400.text-xs.font-black.text-rose-50 UP
+                  p.mt-3.text-sm.font-bold.text-rose-900 Drop files here or click to browse
+                  p.text-xs.font-semibold.text-rose-700.mt-1 PDF · DOCX · Images · Video
+                .mt-3.flex.items-center.justify-between.gap-3.flex-wrap
+                  .min-w-0
+                    p#uploadFileName.text-sm.font-bold.text-rose-900.truncate No file selected
+                    p#uploadFileMeta.text-xs.font-semibold.text-rose-700 —
+                  button#uploadClearBtn.text-xs.font-semibold.text-rose-700 Clear
+                .mt-3
+                  .flex.items-center.gap-3
+                    progress#uploadProgress.w-full.h-3.rounded-lg.bg-rose-100(value="0", max="100")
+                    span#uploadPercent.text-xs.font-semibold.text-rose-700 0%
+                  p#uploadStatus.mt-2.text-xs.font-semibold.text-rose-700 Ready for upload.
+                .mt-3.flex.items-center.gap-3.flex-wrap
+                  label.text-xs.font-bold.text-rose-700(for="uploadCategory") Category
+                  select#uploadCategory.rounded-lg.border.border-rose-200.px-3.py-2.text-sm.font-semibold.text-rose-900.bg-white
+                    option(value="doc") Docs
+                    option(value="image") Images
+                    option(value="video") Videos
+                    option(value="other", selected) Other
+              .rounded-xl.border.border-rose-200.bg-white.p-4
+                h3.text-sm.font-black.uppercase.tracking-wider.text-rose-700 Compose note
+                p.mt-1.text-sm.font-semibold.text-rose-800 Attach a note to the upload or launch the rich editor.
+                .mt-3.rounded-xl.border.border-rose-200.p-4(class="bg-rose-50/70")
+                  p.text-xs.font-semibold.text-rose-700 Quick note (stored locally)
+                  textarea#uploadNote.mt-2.w-full.rounded-lg.border.border-rose-200.bg-white.p-2.text-sm.font-semibold.text-rose-900.outline-none(
+                    rows="4",
+                    placeholder="Write a short vault note..."
+                  )
+                .mt-3.flex.items-center.gap-2.flex-wrap
+                  +appButton("Open rich editor", "primary", "button")(data-open-note="true")
+                  +appButton("Copy note", "ghost", "button")#uploadCopyNoteBtn
+          .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
+            h3.text-sm.font-black.uppercase.tracking-wider.text-rose-700 Quick actions
+            p.mt-1.text-sm.font-semibold.text-rose-800 Common tasks for your vault.
+            .mt-3.grid.gap-2(class="sm:grid-cols-2")
+              button.rounded-lg.border.px-3.py-2.text-sm.font-bold.text-rose-900.transition.border-rose-200(
+                type="button",
+                class="bg-white/80 hover:bg-white",
+                data-open-note="true"
+              ) Open editor
+              button.rounded-lg.border.px-3.py-2.text-sm.font-bold.text-rose-900.transition.border-rose-200(
+                type="button",
+                class="bg-white/80 hover:bg-white",
+                data-open-note="true"
+              ) New rich note
+              button.rounded-lg.border.px-3.py-2.text-sm.font-bold.text-rose-900.transition.border-rose-200(
+                type="button",
+                class="bg-white/80 hover:bg-white",
+                onclick="document.getElementById('fileInput')?.click()"
+              ) Upload file
+              button.rounded-lg.border.px-3.py-2.text-sm.font-bold.text-rose-900.transition.border-rose-200(
+                type="button",
+                class="bg-white/80 hover:bg-white",
+                onclick="navigator.clipboard?.writeText('vault-share-demo')"
+              ) Copy share link
       // Recent items + audit glance
       .grid.gap-5(class="lg:grid-cols-3")
         .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80(
@@ -98,7 +227,23 @@ block content
         )
           .flex.items-center.justify-between.gap-2
             h2.text-lg.font-bold.text-rose-900 Recent vault items
-            +appButton("New encrypted item", "primary", "button")#ctaNewItem
+            .flex.items-center.gap-2
+              button.filter-chip.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900(
+                data-filter="all"
+              ) All
+              button.filter-chip.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900(
+                data-filter="doc"
+              ) Docs
+              button.filter-chip.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900(
+                data-filter="image"
+              ) Images
+              button.filter-chip.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900(
+                data-filter="video"
+              ) Videos
+              button.filter-chip.rounded-full.border.border-rose-200.bg-white.px-3.py-1.text-xs.font-semibold.text-rose-900(
+                data-filter="other"
+              ) Other
+              +appButton("Upload file", "primary", "button")#ctaNewItem
           p.mt-1.text-sm.font-semibold.text-rose-800 Requires your user ID to load encrypted items. No plaintext is shown here.
           .mt-4.overflow-hidden.rounded-xl.border.border-rose-200.bg-white.opacity-70
             table.w-full.text-sm.font-semibold.text-rose-900
@@ -108,9 +253,10 @@ block content
                   th.px-3.py-2.text-left Scheme
                   th.px-3.py-2.text-right Size
                   th.px-3.py-2.text-right Updated
+                  th.px-3.py-2.text-right Actions
               tbody#vaultItemsBody
                 tr(data-empty)
-                  td.px-3.py-3.text-center.text-rose-700(colspan="4") Add a user ID and click refresh usage.
+                  td.px-3.py-3.text-center.text-rose-700(colspan="5") Add a user ID and click refresh usage.
         .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
           h2.text-lg.font-bold.text-rose-900 Audit glance
           p.mt-1.text-sm.font-semibold.text-rose-800 Basic activity cues (client-side only for now).
@@ -124,25 +270,72 @@ block content
             li.flex.items-center.gap-2
               span.h-2.w-2.rounded-full.bg-sky-500
               | Attachments tracked when uploaded.
-          p.mt-4.font-semibold.text-rose-700(class="text-[11px]") Full audit history will appear once server APIs are wired.
+          p.mt-4.font-semibold.text-rose-700.text-xs Full audit history will appear once server APIs are wired.
 
-      // Roadmap / compliance
+      // Upload queue & actions
       .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
-        h2.text-lg.font-bold.text-rose-900 What’s next
-        .grid.gap-4(class="md:grid-cols-2")
-          .space-y-2
-            p.text-xs.font-bold.uppercase.text-rose-700 Features
-            ul.list-disc.pl-4.text-sm.font-semibold.text-rose-900
-              li READ / WRITE / DOWNLOAD sharing tokens with expiry
-              li Versioning with restore and PDF inline preview
-              li Watermarked shares for PDF exports
-              li Per-user storage quotas and audits
-          .space-y-2
-            p.text-xs.font-bold.uppercase.text-rose-700 Security & Performance
-            ul.list-disc.pl-4.text-sm.font-semibold.text-rose-900
-              li HTTPS + HSTS + CSP + rate limits
-              li CSRF + XSS sanitization guardrails
-              li Async uploads and background encryption
-              li Cached metadata queries for speed
+        h2.text-lg.font-bold.text-rose-900 Uploads & actions
+        p.mt-1.text-sm.font-semibold.text-rose-800 Track recent uploads and act on them.
+        .mt-4.overflow-hidden.rounded-xl.border.border-rose-200.bg-white.opacity-90
+          table.w-full.text-sm.font-semibold.text-rose-900
+            thead.bg-rose-50
+              tr
+                th.px-3.py-2.text-left File
+                th.px-3.py-2.text-left Type
+                th.px-3.py-2.text-right Size
+                th.px-3.py-2.text-right Status
+                th.px-3.py-2.text-right Actions
+            tbody#uploadQueueBody
+              tr
+                td.px-3.py-3.text-center.text-rose-700(colspan="5") Pending uploads will appear here.
 
+      // Compare files
+      .rounded-2xl.border.border-rose-200.bg-white.p-5.shadow-lg.backdrop-blur.opacity-80
+        h2.text-lg.font-bold.text-rose-900 Compare files
+        p.mt-1.text-sm.font-semibold.text-rose-800 Compress, compare, and restore files locally.
+        .mt-4.grid.gap-4(class="md:grid-cols-2")
+          .rounded-xl.border.border-rose-200.bg-white.p-4
+            .flex.items-center.justify-between
+              h3.text-sm.font-bold.text-rose-900 Original
+              span#compareOriginalMeta.text-xs.font-semibold.text-rose-600 No file selected
+            input#compareOriginalFileInput.hidden(
+              type="file",
+              accept=".txt,.md,.json,.csv,.log,text/plain,text/markdown,application/json"
+            )
+            .mt-3.flex.items-center.gap-2.flex-wrap
+              +appButton("Select file", "primary", "button")#compareOriginalSelectBtn
+              +appButton("Download .gz", "ghost", "button")#compareDownloadGzBtn
+          .rounded-xl.border.border-rose-200.bg-white.p-4
+            .flex.items-center.justify-between
+              h3.text-sm.font-bold.text-rose-900 Compressed (.gz)
+              span#compareCompressedMeta.text-xs.font-semibold.text-rose-600 No file selected
+            input#compareCompressedFileInput.hidden(type="file", accept=".gz,application/gzip")
+            .mt-3.flex.items-center.gap-2.flex-wrap
+              +appButton("Select .gz", "ghost", "button")#compareCompressedSelectBtn
+              +appButton("Decompress", "ghost", "button")#compareDecompressBtn
+              +appButton("Download .txt", "ghost", "button")#compareDownloadTextBtn
+        p#compareInfo.mt-3.text-xs.font-semibold.text-rose-700
+
+  // Note editor modal
+  #noteModal.hidden.fixed.inset-0.z-50.flex.items-center.justify-center.backdrop-blur-sm(
+    class="bg-black/40"
+  )
+    .w-full.max-w-2xl.rounded-2xl.bg-white.p-6.shadow-2xl
+      .flex.items-center.justify-between
+        h3.text-xl.font-black.text-rose-900 Note editor
+        button#noteCloseBtn.text-rose-700.text-sm.font-bold &times;
+      p.mt-1.text-sm.font-semibold.text-rose-700 Encrypted-friendly scratch area; saved locally.
+      input#noteModalBody(type="hidden")
+      #noteEditor.mt-4.pell
+      textarea#noteFallback.mt-4.w-full.rounded-xl.border.border-rose-200.bg-white.p-3.text-sm.font-semibold.text-rose-900.outline-none(
+        rows="8",
+        placeholder="Write your secure note here..."
+      )
+      .mt-4.flex.items-center.gap-3
+        +appButton("Save note", "primary", "button")#noteSaveBtn
+        +appButton("Download .txt", "ghost", "button")#noteDownloadBtn
+        p#noteModalStatus.text-xs.font-semibold.text-rose-700
+
+  script(src=assetPath("/vendor/pako.min.js"))
+  script(src=assetPath("/vendor/rich-text-editor-bundle.js"))
   script(src=assetPath("/js/pages/dashboard.js"), type="module")

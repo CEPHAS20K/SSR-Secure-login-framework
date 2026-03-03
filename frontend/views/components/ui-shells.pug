@@ -16,17 +16,19 @@ mixin authSectionTitle(titleText, subtitleText, titleId, wrapperClass, titleClas
     if subtitleText
       p(class=resolvedSubtitleClass)= subtitleText
 
-mixin authModalHeader(titleText, subtitleText, closeId, titleClass, closeLabel)
+mixin authModalHeader(titleText, subtitleText, closeId, titleClass, closeLabel, closeHref)
   -
     const resolvedTitleClass = titleClass || "text-lg font-black text-rose-900";
     const resolvedCloseLabel = closeLabel || "Close";
+    const resolvedCloseHref = closeHref || "#";
   .mb-2.flex.items-start.justify-between
     .pr-3
       h3(class=resolvedTitleClass)= titleText
       if subtitleText
         p.mt-1.text-sm.font-semibold.text-rose-800= subtitleText
-    button.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
+    a.rounded-md.px-2.py-1.text-xs.font-bold.text-fuchsia-900.transition(
       id=closeId,
-      type="button",
+      href=resolvedCloseHref,
+      role="button",
       class="hover:bg-fuchsia-100"
     )= resolvedCloseLabel

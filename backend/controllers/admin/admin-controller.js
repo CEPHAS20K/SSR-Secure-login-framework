@@ -433,6 +433,16 @@ function mapDeviceRow(row) {
   };
 }
 
+function categorizeAuditAction(action = "") {
+  const value = String(action || "").toLowerCase();
+  if (value.startsWith("vault_") || value.startsWith("attachment_")) return "vault";
+  if (value.includes("otp")) return "otp";
+  if (value.startsWith("admin_")) return "admin_action";
+  if (value.includes("password_reset")) return "login_attempt";
+  if (value.startsWith("login") || value.startsWith("register")) return "login_attempt";
+  return "login_attempt";
+}
+
 async function buildDashboardData(options = {}) {
   const {
     rangeDays = 7,
@@ -567,11 +577,12 @@ async function buildDashboardData(options = {}) {
     `);
 
     const auditLogs = await client.query(`
-      SELECT la.created_at, la.success, la.ip, la.risk_score, u.username, u.email
-      FROM login_attempts la
-      LEFT JOIN users u ON u.id = la.user_id
-      ORDER BY la.created_at DESC
-      LIMIT 20
+      SELECT a.created_at, a.action, a.status, a.target_type, a.target_id, a.reason, a.meta, a.ip,
+             u.username, u.email
+      FROM audit_logs a
+      LEFT JOIN users u ON u.id = a.actor_user_id
+      ORDER BY a.created_at DESC
+      LIMIT 40
     `);
 
     const threatGeo = await client.query(`
@@ -659,14 +670,15 @@ async function buildDashboardData(options = {}) {
       })),
       users: usersResult.rows.map(mapUserRow),
       auditLogs: auditLogs.rows.map((row) => ({
-        action: "login",
-        status: row.success ? "success" : "failed",
-        category: "auth",
+        action: row.action || "event",
+        status: row.status || "success",
+        category: categorizeAuditAction(row.action),
         timestamp: row.created_at,
         actor: row.username || row.email || "unknown",
+        target: row.target_id || row.target_type || "—",
         details: {
           ip: row.ip || "unknown",
-          risk: row.risk_score ?? "n/a",
+          reason: row.reason || "",
         },
       })),
     };

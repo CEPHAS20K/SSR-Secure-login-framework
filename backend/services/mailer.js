@@ -3,16 +3,33 @@
 const nodemailer = require("nodemailer");
 
 function createTransport() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE } = process.env;
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_SECURE,
+    SMTP_REQUIRE_TLS,
+    SMTP_TLS_REJECT_UNAUTHORIZED,
+  } = process.env;
 
   if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
+    const port = Number(SMTP_PORT);
+    const secure = String(SMTP_SECURE || "").toLowerCase() === "true" || String(port) === "465";
+    const requireTLS =
+      String(SMTP_REQUIRE_TLS || "").toLowerCase() === "true" || (!secure && port === 587);
+    const rejectUnauthorized = String(SMTP_TLS_REJECT_UNAUTHORIZED || "").toLowerCase() !== "false";
     return nodemailer.createTransport({
       host: SMTP_HOST,
-      port: Number(SMTP_PORT),
-      secure: String(SMTP_SECURE || "").toLowerCase() === "true" || SMTP_PORT === "465",
+      port,
+      secure,
       auth: {
         user: SMTP_USER,
         pass: SMTP_PASS,
+      },
+      requireTLS,
+      tls: {
+        rejectUnauthorized,
       },
     });
   }
@@ -25,6 +42,13 @@ function createTransport() {
 
 const transporter = createTransport();
 const defaultFrom = process.env.SMTP_FROM || "no-reply@example.com";
+const shouldVerify = String(process.env.SMTP_VERIFY_ON_START || "").toLowerCase() === "true";
+if (shouldVerify) {
+  transporter.verify().then(
+    () => console.log("SMTP transport verified"),
+    (error) => console.warn("SMTP transport verify failed", error)
+  );
+}
 
 async function sendOtpEmail(to, otpCode) {
   const subject = "Your Secure Storage Vault verification code";

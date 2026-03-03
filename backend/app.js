@@ -10,6 +10,7 @@ const pino = require("pino");
 const pinoHttp = require("pino-http");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
+const geoip = require("geoip-lite");
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 const VIEWS_DIR = path.join(FRONTEND_DIR, "views");
 const PUBLIC_DIR = path.join(FRONTEND_DIR, "public");
@@ -58,6 +59,8 @@ const { registerAdminRoutes, registerPublicRoutes } = require("./routes");
 const {
   createAdminInternalAccessGuard,
   createAdminAuth,
+  createUserSessionMiddleware,
+  createRequireUserSession,
   notFoundHandler,
   internalServerErrorHandler,
 } = require("./middleware");
@@ -127,12 +130,15 @@ function createApp(options = {}) {
     logger,
     appVersion: config.APP_VERSION,
     assetVersion: config.ASSET_VERSION,
+    secureCookies: config.IS_PRODUCTION,
+    userSessionCookie: env.USER_SESSION_COOKIE || "user_session",
   });
   const vaultController = createVaultApiController({
     logger,
     perUserQuotaBytes: env.USER_STORAGE_QUOTA_BYTES
       ? Number(env.USER_STORAGE_QUOTA_BYTES)
       : 10 * 1024 * 1024 * 1024,
+    allowHeaderAuth: !config.IS_PRODUCTION,
   });
   const adminController = createAdminController({
     logger,
@@ -183,14 +189,69 @@ function createApp(options = {}) {
     res.setHeader("X-App-Version", config.APP_VERSION);
     next();
   });
+  const cspDirectives = {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:", "blob:"],
+    connectSrc: ["'self'"],
+    fontSrc: ["'self'", "data:"],
+    objectSrc: ["'none'"],
+    baseUri: ["'self'"],
+    frameAncestors: ["'none'"],
+    formAction: ["'self'"],
+  };
+  if (config.IS_PRODUCTION) {
+    cspDirectives.upgradeInsecureRequests = [];
+  }
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: cspDirectives,
+      },
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "same-origin" },
+      frameguard: { action: "deny" },
+      hsts: config.IS_PRODUCTION
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false,
+      referrerPolicy: { policy: "no-referrer" },
     })
   );
+  const allowedOrigin = env.CORS_ORIGIN || `http://${config.HOST}:${String(config.PORT || 3000)}`;
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (!origin) return next();
+    if (origin !== allowedOrigin) {
+      res.status(403).json({ error: "CORS origin denied." });
+      return;
+    }
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-User-Id, X-Device-Fingerprint");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.setHeader("Vary", "Origin");
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
   app.use(compression());
   app.use(cookieParser());
+  app.use(
+    createUserSessionMiddleware({
+      logger,
+      cookieName: env.USER_SESSION_COOKIE || "user_session",
+      secureCookies: config.IS_PRODUCTION,
+      enforceFingerprint: resolveBoolean(env.SESSION_BIND_FINGERPRINT, config.IS_PRODUCTION),
+      enforceIp: resolveBoolean(env.SESSION_BIND_IP, false),
+    })
+  );
+  const requireUserSession = createRequireUserSession({
+    allowHeaderAuth: !config.IS_PRODUCTION,
+  });
   app.use(
     express.static(PUBLIC_DIR, {
       etag: true,
@@ -218,6 +279,35 @@ function createApp(options = {}) {
       },
     })
   );
+  const geoRestrictEnabled = resolveBoolean(env.GEO_RESTRICT_ENABLED, config.IS_PRODUCTION);
+  const allowedCountryCodes = new Set(
+    String(env.GEO_ALLOW_COUNTRIES || "KE")
+      .split(",")
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean)
+  );
+  app.use((req, res, next) => {
+    if (!geoRestrictEnabled) return next();
+    const ip = normalizeIp(
+      req.headers?.["x-forwarded-for"]?.split(",")?.[0]?.trim() || req.ip || ""
+    );
+    if (!ip || isLocalIp(ip) || isPrivateIp(ip)) return next();
+    const geo = geoip.lookup(ip);
+    const country = geo?.country || "";
+    if (!country || !allowedCountryCodes.has(country.toUpperCase())) {
+      res.status(451);
+      if (req.accepts("html")) {
+        res.render("pages/errors/geo-blocked", {
+          title: "Service Unavailable",
+          country: country || "Unknown",
+        });
+        return;
+      }
+      res.json({ error: "Service unavailable in your region." });
+      return;
+    }
+    next();
+  });
   app.use(
     "/vendor/zod",
     express.static(ZOD_VENDOR_DIR, {
@@ -240,6 +330,7 @@ function createApp(options = {}) {
   registerPublicRoutes(app, {
     publicController,
     vaultController,
+    requireUserSession,
   });
   if (config.ADMIN_ENABLED) {
     app.use("/admin", requireInternalAdminAccess);
@@ -378,6 +469,29 @@ function resolvePort(value, fallback) {
     return parsed;
   }
   return fallback;
+}
+
+function normalizeIp(value) {
+  const raw = String(value || "").trim();
+  if (raw.startsWith("::ffff:")) return raw.slice(7);
+  return raw;
+}
+
+function isLocalIp(ip) {
+  return ip === "127.0.0.1" || ip === "::1";
+}
+
+function isPrivateIp(ip) {
+  if (!ip) return false;
+  if (ip.startsWith("10.")) return true;
+  if (ip.startsWith("192.168.")) return true;
+  if (ip.startsWith("172.")) {
+    const parts = ip.split(".");
+    const second = Number(parts[1] || 0);
+    return second >= 16 && second <= 31;
+  }
+  if (ip.startsWith("127.")) return true;
+  return false;
 }
 
 function resolveAssetVersion(options = {}) {

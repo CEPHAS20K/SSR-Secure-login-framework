@@ -3,7 +3,7 @@
 const { rateLimit } = require("../../middleware/rate-limit");
 
 function registerPublicRoutes(app, options = {}) {
-  const { publicController, vaultController } = options;
+  const { publicController, vaultController, requireUserSession } = options;
 
   const ipLimiter = rateLimit({ windowSec: 60, limit: 20, keyBuilder: (req) => req.ip || "ip" });
   const strictIpLimiter = rateLimit({
@@ -32,6 +32,7 @@ function registerPublicRoutes(app, options = {}) {
   app.get("/login", publicController.renderLogin);
   app.get("/register", publicController.renderRegister);
   app.get("/dashboard", publicController.renderDashboard);
+  app.post("/logout", publicController.logout);
   app.post("/auth/login", ipLimiter, strictIpLimiter, emailLimiter, publicController.login);
   app.post("/auth/register", ipLimiter, emailLimiter, publicController.register);
   app.post(
@@ -61,12 +62,18 @@ function registerPublicRoutes(app, options = {}) {
   app.get("/version", publicController.getVersion);
 
   if (vaultController) {
-    app.get("/api/vault/items", ipLimiter, vaultController.listVaultItems);
-    app.get("/api/vault/items/:id", ipLimiter, vaultController.getVaultItem);
-    app.post("/api/vault/items", ipLimiter, vaultController.createVaultItem);
-    app.put("/api/vault/items/:id", ipLimiter, vaultController.updateVaultItem);
-    app.post("/api/vault/items/:id/attachments", ipLimiter, vaultController.createAttachment);
-    app.get("/api/vault/usage", ipLimiter, vaultController.getVaultUsage);
+    const guard = requireUserSession || ((req, res, next) => next());
+    app.get("/api/vault/items", ipLimiter, guard, vaultController.listVaultItems);
+    app.get("/api/vault/items/:id", ipLimiter, guard, vaultController.getVaultItem);
+    app.post("/api/vault/items", ipLimiter, guard, vaultController.createVaultItem);
+    app.put("/api/vault/items/:id", ipLimiter, guard, vaultController.updateVaultItem);
+    app.post(
+      "/api/vault/items/:id/attachments",
+      ipLimiter,
+      guard,
+      vaultController.createAttachment
+    );
+    app.get("/api/vault/usage", ipLimiter, guard, vaultController.getVaultUsage);
   }
 }
 

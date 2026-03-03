@@ -168,6 +168,7 @@ async function executeFetchRequest(options) {
       headers: payload ? { "Content-Type": "application/json", ...headers } : headers,
       body: payload ? JSON.stringify(payload) : undefined,
       signal: controller.signal,
+      credentials: "same-origin",
     });
     const responsePayload = await response.json().catch(() => ({}));
 

@@ -219,3 +219,11 @@ CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
 INSERT INTO users (username, email, password_hash, gender, email_verified_at)
 VALUES ('testuser', 'test@example.com', '$2b$10$cu3CZ8Zrnct56ydlQD.BSuRSZQGGSV5REdA0kOA1Z2LI819uV62.q', 'male', now())
 ON CONFLICT DO NOTHING;
+
+-- Test user credentials (local only):
+-- username: demo
+-- email: demo@vault.local
+-- password: Test12345!AB
+INSERT INTO users (username, email, password_hash, gender, email_verified_at)
+VALUES ('demo', 'demo@vault.local', '$2b$10$nS7rifbFs5Hbd9WAi/YZwOYET8KippwJpEp2jjNI.zpPwjGr8/zT2', 'male', now())
+ON CONFLICT DO NOTHING;

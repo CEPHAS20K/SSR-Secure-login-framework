@@ -1,8 +1,9 @@
 mixin appNavbar(activePage)
   - const isAdminNav = String(activePage || "").startsWith("admin");
-  - const showHome = isAdminNav ? true : activePage !== "landing";
-  - const showLogin = isAdminNav ? false : activePage !== "login";
-  - const showRegister = isAdminNav ? false : activePage !== "register";
+  - const isUserDashboard = String(activePage || "") === "dashboard";
+  - const showHome = isAdminNav ? true : !isUserDashboard && activePage !== "landing";
+  - const showLogin = isAdminNav ? false : !isUserDashboard && activePage !== "login";
+  - const showRegister = isAdminNav ? false : !isUserDashboard && activePage !== "register";
   nav#appNavbar.fixed.inset-x-0.top-0.z-40.px-3.py-3(class="sm:px-4 sm:py-4")
     .mx-auto.w-full.max-w-5xl.rounded-2xl.px-3.backdrop-blur-xl.border-transparent.bg-transparent(
       class="py-2.5 sm:px-4 md:px-6"
@@ -28,6 +29,20 @@ mixin appNavbar(activePage)
             span.block.w-4.rounded-full.bg-current(class="h-0.5")
             span.block.w-4.rounded-full.bg-current(class="h-0.5")
         .hidden.items-center.gap-3(class="sm:flex sm:gap-5")
+          if isUserDashboard
+            button.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
+              type="button",
+              onclick="window.location.reload()",
+              class="py-1.5 bg-white/20 hover:bg-primary hover:text-white"
+            ) Refresh
+            button.rounded-lg.px-3.text-sm.font-bold.transition.bg-primary.text-white(
+              type="button",
+              data-logout="true",
+              class="py-1.5 hover:bg-secondary hover:text-amber-50"
+            ) Logout
+            .flex.items-center.gap-2.pl-2
+              span#navUserAvatar.flex.h-8.w-8.items-center.justify-center.rounded-full.bg-gradient-to-br.from-rose-500.to-orange-400.text-xs.font-black.text-rose-50.uppercase U
+              span#navUserLabel.text-sm.font-bold.text-rose-900 User
           if showHome
             a.rounded-lg.px-3.text-sm.font-bold.transition.text-rose-900(
               href="/",
@@ -51,6 +66,20 @@ mixin appNavbar(activePage)
             ) Register
       #mobileNav.hidden.border-t.pt-3.mt-3.border-transparent.bg-transparent(class="sm:hidden")
         .grid.gap-2
+          if isUserDashboard
+            button.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
+              type="button",
+              class="bg-white/20 hover:bg-primary hover:text-white",
+              onclick="window.location.reload()"
+            ) Refresh
+            button.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
+              type="button",
+              data-logout="true",
+              class="bg-white/20 hover:bg-primary hover:text-white"
+            ) Logout
+            .flex.items-center.gap-2.px-3.py-2
+              span#navUserAvatarMobile.flex.h-9.w-9.items-center.justify-center.rounded-full.bg-gradient-to-br.from-rose-500.to-orange-400.text-sm.font-black.text-rose-50.uppercase U
+              span#navUserLabelMobile.text-sm.font-bold.text-rose-900 User
           if showHome
             a.rounded-lg.px-3.py-2.text-base.font-bold.transition.text-rose-900(
               href="/",

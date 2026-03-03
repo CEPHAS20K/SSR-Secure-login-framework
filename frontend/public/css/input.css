@@ -124,6 +124,26 @@
     transition: opacity 220ms ease;
   }
 
+  .auth-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: block;
+  }
+
+  #resetModal:target {
+    display: flex !important;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #otpModal,
+  #registerOtpModal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+  }
+
   .auth-skeleton-line,
   .auth-skeleton-block {
     border-radius: 0.75rem;
@@ -163,10 +183,68 @@
     position: relative;
     min-width: 9rem;
     line-height: 1.2;
+    overflow: hidden;
+    transform: translateZ(0);
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease,
+      filter 220ms ease;
   }
 
   .app-btn[data-loading="true"] {
     pointer-events: none;
+  }
+
+  .app-btn::after {
+    content: "";
+    position: absolute;
+    inset: -40% -10% auto -10%;
+    height: 140%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.45), transparent 55%);
+    opacity: 0;
+    transform: translateY(10%);
+    transition:
+      opacity 220ms ease,
+      transform 220ms ease;
+    pointer-events: none;
+  }
+
+  .app-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 45%,
+      transparent 70%
+    );
+    opacity: 0;
+    transform: translateX(-120%);
+    transition:
+      transform 420ms ease,
+      opacity 220ms ease;
+    pointer-events: none;
+  }
+
+  .app-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 10px 24px rgba(124, 32, 58, 0.15);
+    filter: saturate(1.05);
+  }
+
+  .app-btn:hover::before {
+    opacity: 1;
+    transform: translateX(120%);
+  }
+
+  .app-btn:hover::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .app-btn:active {
+    transform: translateY(0) scale(0.99);
   }
 
   .focus-ring {
@@ -419,7 +497,7 @@ html[data-theme="dark"] .auth-glass-card textarea {
   input[type="button"],
   input[type="submit"],
   input[type="reset"] {
-    font-family: "Finger Paint", cursive;
+    font-family: inherit;
   }
 
   .notyf {

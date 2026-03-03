@@ -49,5 +49,10 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "svgo": "^4.0.0"
+  },
+  "dependencies": {
+    "pako": "^2.1.0",
+    "pell": "^1.0.6",
+    "rich-text-editor": "^8.2.4"
   }
 }
