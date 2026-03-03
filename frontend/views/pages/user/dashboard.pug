@@ -18,9 +18,10 @@ block content
           .mt-4.flex.items-center.gap-3.flex-wrap
             div
               p.text-xs.font-bold.uppercase.text-rose-700 User ID
-              input#userIdInput.w-64.rounded-lg.border.border-rose-200.bg-white/70.px-3.py-2.text-sm.font-semibold.text-rose-950.placeholder.outline-none.focus.focus.focus:text-rose-300:border-primary:ring-2:ring-primary/20(
+              input#userIdInput.w-64.rounded-lg.border.border-rose-200.px-3.py-2.text-sm.font-semibold.text-rose-950.outline-none(
                 type="text",
-                placeholder="paste user UUID"
+                placeholder="paste user UUID",
+                class="bg-white/70 placeholder:text-rose-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
               )
             +appButton("Save", "primary", "button")#saveUserIdBtn
             +appButton("Refresh usage", "ghost", "button")#refreshUsageBtn
