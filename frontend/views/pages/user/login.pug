@@ -90,6 +90,11 @@ block content
 
             .login-field.flex.justify-center
               +appButton("Login", "primary", "submit")#loginBtn.py-3.px-8.min-w-36(disabled)
+            .login-field.flex.justify-center
+              +appButton("Skip for now → Dashboard", "ghost", "button").min-w-44(
+                onclick="window.location.href='/dashboard'",
+                aria-label="Skip login and view dashboard"
+              )
 
   +authModalShell("otpModal")
     +authModalHeader("Enter OTP", "Check your device for the code.", "otpClose")
